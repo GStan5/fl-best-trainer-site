@@ -1,0 +1,4 @@
+# Version 1.1
+- Hero animation: <HeroAnimation /> using /animations/hero.json
+- PageLoader fades out on mount
+- Intended for use in _app.tsx or Layout wrapper

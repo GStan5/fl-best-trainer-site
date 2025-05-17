@@ -1,0 +1,12 @@
+# Version 1.0 (Pre-release)
+
+## Added:
+- Lottie animation support via <LottieWrapper src="/animations/placeholder.json" />
+- Public animation folder scaffolded
+- Dev note planning future transitions, loaders, and section animations
+
+## Next:
+- Animate homepage elements
+- Create reusable Hero section w/ animation
+- Add loading animation during page transitions
+- Continue SEO content expansion

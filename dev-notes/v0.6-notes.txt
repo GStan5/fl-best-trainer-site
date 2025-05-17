@@ -1,0 +1,12 @@
+# Dev Notes for Version 0.6
+
+## New Features
+- Blog index page at /blog
+- Page toggling via `siteConfig.ts`
+- Google Fonts (Inter) added to global styles
+- Ready for animations (Framer Motion & Lottie scaffold next)
+
+## Packages (install with one line)
+npm install framer-motion react-icons
+
+## siteConfig.ts allows toggling page visibility easily

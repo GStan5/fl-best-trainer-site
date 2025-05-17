@@ -1,0 +1,8 @@
+# Required packages for FL Best Trainer v0.8
+framer-motion
+react-icons
+@clerk/clerk-react
+@clerk/nextjs
+
+# Install all with:
+npm install framer-motion react-icons @clerk/clerk-react @clerk/nextjs
