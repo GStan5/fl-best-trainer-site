@@ -1,12 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "@": __dirname,
-    };
-    return config;
+  images: {
+    domains: ["images.unsplash.com"],
+    // Add more domains as needed for external images
   },
 };
 

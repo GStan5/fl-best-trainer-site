@@ -63,6 +63,8 @@ module.exports = {
         float: "float 6s ease-in-out infinite",
         "fade-in": "fade-in 0.5s ease-out",
         "slide-up": "slide-up 0.5s ease-out",
+        "slight-bounce": "slightBounce 2s ease-in-out infinite",
+        shine: "shine 8s infinite linear",
       },
       keyframes: {
         gradient: {
@@ -96,6 +98,14 @@ module.exports = {
         "slide-up": {
           "0%": { transform: "translateY(20px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        slightBounce: {
+          "0%, 100%": { transform: "translateY(0) translateX(-50%)" },
+          "50%": { transform: "translateY(-3px) translateX(-50%)" },
+        },
+        shine: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
         },
       },
       backdropBlur: {
