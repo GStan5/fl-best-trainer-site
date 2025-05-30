@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   FaChevronRight,
   FaHeart,
@@ -8,6 +8,11 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
+
+// Create a wrapper component to fix the type issue
+const IconWrapper = ({ icon: Icon, className }) => {
+  return <Icon className={className} />;
+};
 
 export default function ApproachTabs() {
   const [activeTab, setActiveTab] = useState("philosophy");
@@ -36,7 +41,9 @@ export default function ApproachTabs() {
                         : "bg-white/10 text-white/60"
                     }`}
                   >
-                    <FaHeart
+                    {/* Replace FaHeart with the wrapper */}
+                    <IconWrapper
+                      icon={FaHeart}
                       className={
                         activeTab === "philosophy"
                           ? "text-royal"
@@ -44,9 +51,14 @@ export default function ApproachTabs() {
                       }
                     />
                   </div>
-                  <span>Philosophy</span>
+                  Philosophy
                 </div>
-                {activeTab === "philosophy" && <FaChevronRight />}
+                <FaChevronRight
+                  className={`transition-transform ${
+                    activeTab === "philosophy" ? "rotate-90" : ""
+                  }`}
+                  size={14}
+                />
               </button>
               <button
                 onClick={() => setActiveTab("training")}
@@ -72,7 +84,7 @@ export default function ApproachTabs() {
                       }
                     />
                   </div>
-                  <span>Training Style</span>
+                  Training Style
                 </div>
                 {activeTab === "training" && <FaChevronRight />}
               </button>
@@ -100,7 +112,7 @@ export default function ApproachTabs() {
                       }
                     />
                   </div>
-                  <span>Nutrition Approach</span>
+                  Nutrition Approach
                 </div>
                 {activeTab === "nutrition" && <FaChevronRight />}
               </button>
