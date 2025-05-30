@@ -100,14 +100,14 @@ export default function Header() {
       path: "/training",
       icon: <FaRunning className="mr-1.5" />,
       highlight: true,
-      special: "Popular",
+      special: "popular",
     },
     {
       name: "Workout Plans",
       path: "/plans",
       icon: <FaDumbbell className="mr-1.5" />,
       highlight: true,
-      special: "Best Value",
+      special: "Remote",
     },
     { name: "Blog", path: "/blog", icon: <FaBlog className="mr-1.5" /> },
     { name: "About", path: "/about", icon: <FaUserAlt className="mr-1.5" /> },
@@ -162,7 +162,7 @@ export default function Header() {
                   {link.icon}
                   {link.name}
                   {link.special && (
-                    <span className="absolute -top-2 -right-1 px-1.5 py-0.5 bg-royal text-[10px] font-bold text-white rounded-sm">
+                    <span className="absolute -top-2 -right-1 px-1  bg-royal text-[10px] font-bold text-white rounded-sm">
                       {link.special}
                     </span>
                   )}
