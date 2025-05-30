@@ -14,16 +14,50 @@ import BlogSidebar from "./BlogSidebar";
 import BlogPostView from "./BlogPostView";
 
 export default function BlogSection({ posts = defaultPosts }) {
+  // Initialize state with localStorage values if available
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Only run on client side
+    if (typeof window !== "undefined") {
+      const savedState = localStorage.getItem("blogSidebarCollapsed");
+      if (savedState !== null) {
+        return JSON.parse(savedState);
+      }
+    }
+    return false; // Default: show sidebar expanded
+  });
+
+  // Initialize sidebar width from localStorage or default
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedWidth = localStorage.getItem("blogSidebarWidth");
+      if (savedWidth !== null) {
+        return parseInt(savedWidth);
+      }
+    }
+    return 240; // Default width
+  });
+
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPost, setSelectedPost] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(() => {
+    // Check if we previously had a selected post (optional)
+    if (typeof window !== "undefined") {
+      const savedPost = localStorage.getItem("selectedBlogPost");
+      if (savedPost) {
+        try {
+          return JSON.parse(savedPost);
+        } catch (e) {
+          console.error("Error parsing saved post:", e);
+        }
+      }
+    }
+    return null; // Default to null if no post was saved
+  });
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [screenSize, setScreenSize] = useState("lg");
   const [isFocusMode, setIsFocusMode] = useState(false); // Add focus mode state
   const [isCollapsed, setIsCollapsed] = useState(screenSize !== "lg"); // Add isCollapsed state
-  const [sidebarWidth, setSidebarWidth] = useState(240); // Add sidebarWidth state
   const blogContentRef = useRef(null);
   const blogSectionRef = useRef(null);
 
@@ -95,7 +129,18 @@ export default function BlogSection({ posts = defaultPosts }) {
   // Handle closing the selected post
   const handleClosePost = () => {
     setSelectedPost(null);
-    setSidebarCollapsed(false);
+    // Don't collapse sidebar when closing a post
+    // setSidebarCollapsed(true); // Remove or comment out this line
+
+    // If we're in focus mode, exit it
+    if (isFocusMode) {
+      setIsFocusMode(false);
+    }
+
+    // Remove from localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("selectedBlogPost");
+    }
   };
 
   // Handle escape key to close post
@@ -118,6 +163,51 @@ export default function BlogSection({ posts = defaultPosts }) {
     );
   }, [sidebarWidth]);
 
+  // Add this effect to ensure sidebar is visible on page load for desktop
+  useEffect(() => {
+    // Run only on client side
+    if (typeof window !== "undefined") {
+      // Check if screen is large enough for sidebar
+      const isLargeScreen = window.innerWidth >= 1024; // lg breakpoint
+
+      if (isLargeScreen) {
+        // Get saved state or default to expanded
+        const savedState = localStorage.getItem("blogSidebarCollapsed");
+        const shouldBeCollapsed =
+          savedState !== null ? JSON.parse(savedState) : false;
+
+        // Update state to match saved preference
+        setSidebarCollapsed(shouldBeCollapsed);
+      } else {
+        // On smaller screens, always collapse
+        setSidebarCollapsed(true);
+      }
+    }
+  }, []); // Empty dependency array = run once on mount
+
+  // Ensure sidebar is visible initially for desktop users
+  useEffect(() => {
+    // Only run after initial mount, in the browser
+    if (typeof window !== "undefined") {
+      // Check if we're on desktop
+      const isDesktop = window.innerWidth >= 1024;
+
+      // If we're on desktop and have a selected post, show sidebar
+      if (isDesktop && selectedPost) {
+        // Force sidebar visibility
+        setSidebarCollapsed(false);
+
+        // If localStorage has a saved state, respect it after a short delay
+        const savedState = localStorage.getItem("blogSidebarCollapsed");
+        if (savedState) {
+          setTimeout(() => {
+            setSidebarCollapsed(JSON.parse(savedState));
+          }, 100);
+        }
+      }
+    }
+  }, [selectedPost]); // Only run when selectedPost changes
+
   // Handle back to top for mobile
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -128,10 +218,28 @@ export default function BlogSection({ posts = defaultPosts }) {
     setIsFocusMode((prev) => !prev);
   };
 
+  // Save selected post when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && selectedPost) {
+      localStorage.setItem("selectedBlogPost", JSON.stringify(selectedPost));
+    }
+  }, [selectedPost]);
+
+  // State to track if we're on the client side
+  const [isClientSide, setIsClientSide] = useState(false);
+
+  // Effect to set client side state
+  useEffect(() => {
+    setIsClientSide(true);
+  }, []);
+
+  // Update the blog content area to include featured posts
+  const featuredPosts = posts.filter((post) => post && post.featured);
+
   return (
     <section
       ref={blogSectionRef}
-      className="py-20 bg-gradient-to-b from-black to-navy relative"
+      className="pt-32 pb-20 bg-gradient-to-b from-black to-navy relative" // Increase pt-20 to pt-32
     >
       {/* Background elements */}
       <div className="absolute inset-0 bg-[url('/pattern.svg')] bg-repeat opacity-5"></div>
@@ -144,8 +252,8 @@ export default function BlogSection({ posts = defaultPosts }) {
 
       {/* Redesigned layout with fixed sidebar */}
       <div className="relative">
-        {/* Fixed sidebar when post is selected - always visible when scrolling */}
-        {selectedPost && !isMobile && (
+        {/* Fixed sidebar - always visible on desktop when client-side has loaded */}
+        {isClientSide && !isMobile && (
           <BlogSidebar
             selectedPost={selectedPost}
             categories={categories}
@@ -154,39 +262,22 @@ export default function BlogSection({ posts = defaultPosts }) {
             setActiveCategory={setActiveCategory}
             handlePostSelect={handlePostSelect}
             handleClosePost={handleClosePost}
-            sidebarCollapsed={isCollapsed}
-            setSidebarCollapsed={setIsCollapsed}
-            sidebarWidth={sidebarWidth} // Add this prop
-            setSidebarWidth={setSidebarWidth} // Add this prop
+            sidebarCollapsed={sidebarCollapsed}
+            setSidebarCollapsed={setSidebarCollapsed}
+            sidebarWidth={sidebarWidth}
+            setSidebarWidth={setSidebarWidth}
+            screenSize={screenSize}
             blogSectionRef={blogSectionRef}
             isMobile={isMobile}
-            screenSize={screenSize}
           />
         )}
 
-        {/* Main content area - update to account for fixed sidebar */}
-        <div
-          className="transition-all duration-300 w-full"
-          style={{
-            marginLeft:
-              screenSize === "lg" && !isFocusMode
-                ? isCollapsed
-                  ? "60px"
-                  : `${sidebarWidth}px`
-                : "0",
-            width:
-              screenSize === "lg" && !isFocusMode
-                ? isCollapsed
-                  ? "calc(100% - 60px)"
-                  : `calc(100% - ${sidebarWidth}px)`
-                : "100%",
-          }}
-        >
+        {/* Main content area - REMOVED adjust for sidebar */}
+        <div className="transition-all duration-300 w-full">
           <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
             {isLoaded ? (
               <>
-                {/* Blog list section */}
-                {!selectedPost && (
+                {!selectedPost ? (
                   <>
                     <BlogHeader />
                     <BlogSearch
@@ -196,50 +287,51 @@ export default function BlogSection({ posts = defaultPosts }) {
                       activeCategory={activeCategory}
                       setActiveCategory={setActiveCategory}
                     />
-                    {featuredPost && (
+
+                    {/* Always show featured posts at the top regardless of category */}
+                    {featuredPosts.length > 0 && activeCategory !== "featured" && (
+                      <div className="mb-12">
+                        <h2 className="text-2xl font-bold text-white mb-6">
+                          Featured
+                        </h2>
+                        <BlogFeatured
+                          posts={featuredPosts}
+                          handlePostSelect={handlePostSelect}
+                        />
+                      </div>
+                    )}
+
+                    {/* Then show filtered posts based on active category */}
+                    {activeCategory === "featured" ? (
                       <BlogFeatured
-                        featuredPost={featuredPost}
+                        posts={featuredPosts}
                         handlePostSelect={handlePostSelect}
                       />
+                    ) : (
+                      <div className="mt-8">
+                        <h2 className="text-2xl font-bold text-white mb-6">
+                          {activeCategory === "all"
+                            ? "All Posts"
+                            : `${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} Posts`}
+                        </h2>
+                        <BlogList
+                          filteredPosts={filteredPosts}
+                          handlePostSelect={handlePostSelect}
+                        />
+                      </div>
                     )}
-                    <BlogList
-                      filteredPosts={filteredPosts}
-                      handlePostSelect={handlePostSelect}
-                    />
-                    {filteredPosts.length > 0 && <BlogPagination />}
                   </>
-                )}
-
-                {/* Blog post view centered in available space */}
-                <AnimatePresence>
-                  {selectedPost && (
-                    <div className="flex justify-center w-full">
-                      <BlogPostView
-                        selectedPost={selectedPost}
-                        handleClosePost={handleClosePost}
-                        blogContentRef={blogContentRef}
-                        toggleFocusMode={toggleFocusMode}
-                        isFocusMode={isFocusMode}
-                      />
-                    </div>
-                  )}
-                </AnimatePresence>
-
-                {/* Mobile back button at the top of blog post view */}
-                {selectedPost && isMobile && (
-                  <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md p-4 border-b border-white/10">
-                    <button
-                      onClick={handleClosePost}
-                      className="flex items-center text-white/80 hover:text-white"
-                    >
-                      <FaArrowLeft className="mr-2" />
-                      <span>Back to Blog</span>
-                    </button>
-                  </div>
+                ) : (
+                  <BlogPostView
+                    selectedPost={selectedPost}
+                    handleClosePost={handleClosePost}
+                    blogContentRef={blogContentRef}
+                    toggleFocusMode={toggleFocusMode}
+                    isFocusMode={isFocusMode}
+                  />
                 )}
               </>
             ) : (
-              // Loading state
               <div className="flex justify-center items-center py-40">
                 <div className="animate-spin w-12 h-12 border-4 border-royal border-t-transparent rounded-full"></div>
               </div>

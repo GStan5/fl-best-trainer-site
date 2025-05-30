@@ -1,35 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
+import Head from "next/head";
 import Layout from "@/components/shared/Layout";
 import CoreBenefits from "@/components/home/CoreBenefits";
-import Stats from "@/components/home/Stats";
-import dynamic from "next/dynamic";
+import TestimonialCarousel from "@/components/home/TestimonialCarousel";
+import Hero from "@/components/home/Hero";
+import InstagramFeed from "@/components/home/InstagramFeed";
 import TrainingPricing from "@/components/training/TrainingPricing";
 import ContactSection from "@/components/training/ContactSection";
-
-// Dynamically import components that use browser APIs
-const Hero = dynamic(() => import("@/components/home/Hero"), { ssr: false });
-const HowItWorks = dynamic(() => import("@/components/home/HowItWorks"), {
-  ssr: false,
-});
-const TestimonialCarousel = dynamic(
-  () => import("@/components/home/TestimonialCarousel"),
-  { ssr: false }
-);
-const FAQSection = dynamic(() => import("@/components/home/FAQSection"), {
-  ssr: false,
-});
-const InstagramFeed = dynamic(() => import("@/components/home/InstagramFeed"), {
-  ssr: false,
-});
-const Newsletter = dynamic(() => import("@/components/home/Newsletter"), {
-  ssr: false,
-});
-const CTASection = dynamic(() => import("@/components/home/CTASection"), {
-  ssr: false,
-});
+import { useRouter } from "next/router";
 
 export default function Home() {
+  const router = useRouter();
   const [nameBackgroundOpacity, setNameBackgroundOpacity] = useState(1);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -42,32 +24,94 @@ export default function Home() {
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      setIsMounted(false);
+    };
   }, []);
 
+  useEffect(() => {
+    // Check if we should scroll to testimonials
+    if (
+      router.query.scrollTo === "testimonials" &&
+      typeof window !== "undefined"
+    ) {
+      setTimeout(() => {
+        document.getElementById("testimonials")?.scrollIntoView({
+          behavior: "smooth",
+        });
+      }, 300);
+    }
+  }, [router.query]);
+
   return (
-    <Layout>
-      {isMounted && (
-        <>
-          <Hero nameBackgroundOpacity={nameBackgroundOpacity} />
+    <>
+      <Head>
+        <title>
+          FL Best Trainer | In-Home Personal Training in Southwest Florida
+        </title>
+        <meta
+          name="description"
+          content="Premium in-home personal training in Southwest Florida. Expert guidance, customized workout plans, and proven results that come to you."
+        />
+        <meta
+          name="keywords"
+          content="personal trainer, in-home training, Southwest Florida, Bradenton, Anna Maria Island, Longboat Key Sarasota, fitness coach"
+        />
 
-          <CoreBenefits />
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://flbesttrainer.com" />
+        <meta
+          property="og:title"
+          content="FL Best Trainer | In-Home Personal Training in Southwest Florida"
+        />
+        <meta
+          property="og:description"
+          content="Premium in-home personal training in Southwest Florida. Expert guidance, customized workout plans, and proven results that come to you."
+        />
+        <meta
+          property="og:image"
+          content="https://flbesttrainer.com/images/og-image.jpg"
+        />
 
-          <Stats />
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://flbesttrainer.com" />
+        <meta
+          property="twitter:title"
+          content="FL Best Trainer | In-Home Personal Training in Southwest Florida"
+        />
+        <meta
+          property="twitter:description"
+          content="Premium in-home personal training in Southwest Florida. Expert guidance, customized workout plans, and proven results that come to you."
+        />
+        <meta
+          property="twitter:image"
+          content="https://flbesttrainer.com/images/og-image.jpg"
+        />
 
-          {/* Main content sections with navy background */}
-          <div className="bg-gradient-to-b from-navy via-royal-dark to-navy">
-            <HowItWorks />
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://flbesttrainer.com" />
+      </Head>
 
-            <TestimonialCarousel />
-            <TrainingPricing />
-          </div>
-          <InstagramFeed />
-          {/* <Newsletter /> */}
-          <CTASection />
-          <ContactSection />
-        </>
-      )}
-    </Layout>
+      <Layout>
+        {isMounted && (
+          <>
+            <Hero nameBackgroundOpacity={nameBackgroundOpacity} />
+            <CoreBenefits />
+
+            {/* Main content sections with navy background */}
+            <div className="bg-gradient-to-b from-navy via-royal-dark to-navy">
+              <TestimonialCarousel />
+              <TrainingPricing id="pricing" />
+            </div>
+
+            {/* <InstagramFeed /> */}
+            <ContactSection id="contact" />
+          </>
+        )}
+      </Layout>
+    </>
   );
 }

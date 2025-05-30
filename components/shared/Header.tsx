@@ -116,6 +116,7 @@ export default function Header() {
   return (
     <>
       <header
+        id="top"
         className={`fixed w-full z-50 transition-all duration-300 ${
           scrolled
             ? "py-2 backdrop-blur-md bg-gradient-to-r from-black/95 to-navy/95 shadow-lg shadow-black/30"

@@ -122,7 +122,10 @@ export default function TestimonialCarousel() {
   const handleAnimationComplete = () => setIsAnimating(false);
 
   return (
-    <div className="relative py-24 bg-gradient-to-b from-black to-[#1A1A1A] overflow-hidden">
+    <section
+      id="testimonials"
+      className="relative py-24 bg-gradient-to-b from-black to-[#1A1A1A] overflow-hidden"
+    >
       {/* Enhanced Background Elements */}
       <div className="absolute inset-0 bg-[url('/pattern.svg')] bg-repeat opacity-5"></div>
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-royal/50 to-transparent"></div>
@@ -483,6 +486,6 @@ export default function TestimonialCarousel() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
