@@ -8,9 +8,16 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { IconType } from "react-icons";
 
-// Create a wrapper component to fix the type issue
-const IconWrapper = ({ icon: Icon, className }) => {
+// Create a wrapper component with proper TypeScript types
+const IconWrapper = ({
+  icon: Icon,
+  className,
+}: {
+  icon: IconType;
+  className: string;
+}) => {
   return <Icon className={className} />;
 };
 
