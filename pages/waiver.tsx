@@ -1,8 +1,10 @@
 import Layout from "@/components/shared/Layout";
 import SEO from "@/components/shared/SEO";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function WaiverPage() {
+  const [submitted, setSubmitted] = useState(false);
   return (
     <Layout>
       <SEO
@@ -78,6 +80,110 @@ export default function WaiverPage() {
               beginning any training program.
             </p>
           </div>
+
+          <form
+            id="waiver-form"
+            className="space-y-6 mt-8"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.currentTarget as HTMLFormElement;
+              const data = {
+                name: (form.elements.namedItem('name') as HTMLInputElement).value,
+                email: (form.elements.namedItem('email') as HTMLInputElement).value,
+                phone: (form.elements.namedItem('phone') as HTMLInputElement).value,
+                signature: (form.elements.namedItem('signature') as HTMLInputElement).value,
+              };
+              const res = await fetch('/api/waiver', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+              });
+              if (res.ok) {
+                setSubmitted(true);
+                form.reset();
+              } else {
+                alert('Failed to submit waiver.');
+              }
+            }}
+          >
+            <div>
+              <label className="block text-sm font-medium text-white mb-1" htmlFor="name">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                id="name"
+                required
+                className="w-full rounded-md bg-white/10 border border-white/20 p-2 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-1" htmlFor="email">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                required
+                className="w-full rounded-md bg-white/10 border border-white/20 p-2 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-1" htmlFor="phone">
+                Phone Number (optional)
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                id="phone"
+                className="w-full rounded-md bg-white/10 border border-white/20 p-2 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-1" htmlFor="signature">
+                Electronic Signature
+              </label>
+              <input
+                type="text"
+                name="signature"
+                id="signature"
+                required
+                className="w-full rounded-md bg-white/10 border border-white/20 p-2 text-white"
+              />
+              <p className="text-xs text-white/60 mt-1">
+                Typing your name serves as your legal signature.
+              </p>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="agree"
+                name="agree"
+                type="checkbox"
+                required
+                className="h-4 w-4 text-royal focus:ring-royal-light border-white/20 rounded mr-2"
+              />
+              <label htmlFor="agree" className="text-white text-sm">
+                I agree to the terms above and acknowledge this electronic signature.
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              className="bg-royal hover:bg-royal-light text-white font-medium py-2 px-4 rounded"
+            >
+              Submit Waiver
+            </button>
+
+            {submitted && (
+              <p className="text-green-400 mt-4">Waiver submitted successfully.</p>
+            )}
+          </form>
 
           <div className="mt-12 border-t border-white/10 pt-8">
             <Link
