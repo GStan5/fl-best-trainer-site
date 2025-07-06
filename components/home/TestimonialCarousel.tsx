@@ -14,6 +14,7 @@ const testimonials = [
   {
     name: "Karen S.",
     age: "65",
+    location: "Sarasota, FL",
     achievement: "Lost 30 lbs & gained strength",
     quote:
       "Training with Gavin has completely transformed my life. At 65, I feel stronger and more confident than I did at 45. His expertise in working with seniors makes every session both safe and effective.",
@@ -21,22 +22,24 @@ const testimonials = [
     since: "2021",
   },
   {
-    name: "Robert T.",
-    age: "58",
-    achievement: "Overcame back pain",
+    name: "Mary Jo B.",
+    age: "64",
+    location: "Longboat Key, FL",
+    achievement: "Muscle gain & Injury prevention",
     quote:
-      "After years of chronic back pain, I was hesitant to start training. Gavin's knowledge of corrective exercise and patient approach helped me regain my mobility and strength. His in-home training makes it convenient and comfortable.",
+      "I am 64 and never had worked with a Personal Trainer before.  Gavin was exceptional at understanding my goals and ensuring most importantly that I did not get hurt.  He's young, smart, and excellent with all age groups. Highly Recommend!",
     rating: 5,
-    since: "2022",
+    since: "2024",
   },
   {
-    name: "Anna M.",
-    age: "42",
-    achievement: "Reached fitness goals post-pregnancy",
+    name: "Meryl & Mel L.",
+    age: "91 & 92",
+    location: "Sarasota, FL",
+    achievement: "Physical issues overcome & Enhanced Mobility",
     quote:
-      "Every session is perfectly tailored to my needs and goals. Gavin's motivating approach and expert guidance have helped me achieve fitness levels I never thought possible after having children.",
+      "As Seniors in our 90s, We are very pleased to be training with Gavin Stanifer.  He is very knowledgable and works with us individually on our phusical issues as well as challenging us to maintain and enhance our flexibility and strenth",
     rating: 5,
-    since: "2020",
+    since: "2024",
   },
 ];
 
@@ -303,7 +306,7 @@ export default function TestimonialCarousel() {
                         ${
                           isActive
                             ? "p-4 sm:p-7 md:p-8 border-white/15 shadow-2xl" // Reduced padding on mobile
-                            : "p-3 sm:p-5 sm:p-6 border-white/5"
+                            : "p-3 sm:p-6 border-white/5"
                         }`}
                         style={{ transformStyle: "preserve-3d" }}
                       >
@@ -408,11 +411,16 @@ export default function TestimonialCarousel() {
                           </span>
                           {isActive && (
                             <div className="mt-2 flex flex-col items-center">
-                              <div className="flex items-center justify-center flex-wrap gap-1 sm:gap-2">
+                              <div className="flex items-center justify-center flex-wrap gap-1 sm:gap-2 mb-2">
                                 <span className="block bg-royal/20 text-royal-light text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                                   Age {testimonial.age}
                                 </span>
                                 <span className="block bg-royal/20 text-royal-light text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                                  {testimonial.location}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-center">
+                                <span className="block bg-emerald-500/20 text-emerald-300 text-xs sm:text-sm px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                                   {testimonial.achievement}
                                 </span>
                               </div>

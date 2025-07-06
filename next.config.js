@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  reactStrictMode: true,
   transpilePackages: ["react-icons"],
   typescript: {
     // This will ignore TypeScript errors during build

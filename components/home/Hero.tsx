@@ -22,7 +22,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
   useEffect(() => {
     setIsMounted(true);
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({
         x: e.clientX / window.innerWidth - 0.5,
         y: e.clientY / window.innerHeight - 0.5,
@@ -217,7 +217,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
                 <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                href="/plan"
+                href="/plans"
                 className="group bg-white/10 hover:bg-white/20 px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg text-white text-sm sm:text-base font-medium border border-royal/30 transition-colors flex items-center justify-center sm:justify-start"
               >
                 <span>Get Custom Plan</span>
