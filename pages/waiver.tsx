@@ -3,6 +3,7 @@ import SEO from "@/components/shared/SEO";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import SignaturePad from "signature_pad";
+import { event } from "../utils/gtag";
 
 export default function WaiverPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -223,10 +224,24 @@ export default function WaiverPage() {
                 });
 
                 if (res.ok) {
+                  // Track successful waiver submission
+                  event({
+                    action: "submit_waiver",
+                    category: "engagement",
+                    label: "liability_waiver_completed",
+                  });
+
                   setSubmitted(true);
                   form.reset();
                   clearSignature();
                 } else {
+                  // Track failed waiver submission
+                  event({
+                    action: "submit_waiver_failed",
+                    category: "engagement",
+                    label: "liability_waiver_error",
+                  });
+
                   const errorData = await res.json();
                   setError(errorData.error || "Failed to submit waiver.");
                 }
