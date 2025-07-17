@@ -12,17 +12,17 @@ import { useSwipeable } from "react-swipeable";
 
 const testimonials = [
   {
-    name: "Karen S.",
+    name: "Jackie Berling",
     age: "65",
-    location: "Sarasota, FL",
-    achievement: "Lost 30 lbs & gained strength",
+    location: "Longboat Key, FL",
+    achievement: "Strength, Balance & Flexibility Improvement",
     quote:
-      "Training with Gavin has completely transformed my life. At 65, I feel stronger and more confident than I did at 45. His expertise in working with seniors makes every session both safe and effective.",
+      "I have been training with Gavin for over six months and have noticed a significant improvement in my strength, toning, balance, and flexibility. We train three days a week for a well-rounded routine that targets my overall body. Gavin is laser focused on correct technique to avoid injuries. Having worked at a medically accredited fitness facility in California, compared to other fitness professionals, I am impressed by Gavin’s unique ability to convey how a specific muscle or balance exercise should feel when done correctly as well as its benefit to me. I am “so focused” on each exercise the training session flies by! I believe this ability that sets him apart from other fitness professionals. I am grateful to Gavin for the positive results I see and feel.",
     rating: 5,
-    since: "2021",
+    since: "2024",
   },
   {
-    name: "Mary Jo B.",
+    name: "Mary Jo Burgiel.",
     age: "64",
     location: "Longboat Key, FL",
     achievement: "Muscle gain & Injury prevention",
@@ -32,12 +32,22 @@ const testimonials = [
     since: "2024",
   },
   {
-    name: "Meryl & Mel L.",
+    name: "Meryl & Mel Langbort.",
     age: "91 & 92",
     location: "Sarasota, FL",
     achievement: "Physical issues overcome & Enhanced Mobility",
     quote:
       "As Seniors in our 90s, We are very pleased to be training with Gavin Stanifer.  He is very knowledgable and works with us individually on our phusical issues as well as challenging us to maintain and enhance our flexibility and strenth",
+    rating: 5,
+    since: "2024",
+  },
+  {
+    name: "Gillian Marto",
+    age: "50",
+    location: "Longboat Key, FL",
+    achievement: "Strength & Confidence Transformation",
+    quote:
+      "Working with Gavin has been an absolute game-changer for me! I've always been hesitant about weight training, mainly because I was afraid of injuring my back or doing something wrong. But from day one, Gavin put those fears to rest with his calm, encouraging demeanor and expert knowledge of proper form and technique. \nI train with him three days a week, and in a relatively short amount of time, I've seen incredible improvements in both my strength and flexibility. My stamina has grown, and I'm lifting weights I never thought I could handle—safely and confidently. Gavin's approach is all about building strength the right way. He's incredibly attentive and makes sure every movement is done with perfect form, which has not only protected me from injury but has made me stronger, faster. What really sets Gavin apart is his patience, kindness, and the way he genuinely cares about your progress. He pushes you just enough to break through mental and physical barriers, but never in a way that feels overwhelming. He makes the sessions challenging, but also motivating and fun. Thanks to Gavin, I feel empowered in the gym, stronger in my daily life, and honestly amazed by what my body is capable of. If you're looking for a knowledgeable, kind, and effective personal trainer who truly knows what he's doing—Gavin is the one. Highly, highly recommend!",
     rating: 5,
     since: "2024",
   },
@@ -58,6 +68,8 @@ export default function TestimonialCarousel() {
       if (!isAnimating) {
         setDirection(1);
         setActiveIndex((prev) => (prev + 1) % testimonials.length);
+        // Close any expanded quote when carousel moves
+        setExpandedQuote(null);
       }
     }, 10000);
 
@@ -67,13 +79,13 @@ export default function TestimonialCarousel() {
   // Add keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") goToPrev();
-      if (e.key === "ArrowRight") goToNext();
+      if (e.key === "ArrowLeft" && expandedQuote === null) goToPrev();
+      if (e.key === "ArrowRight" && expandedQuote === null) goToNext();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [expandedQuote]);
 
   // Add swipe handlers for mobile
   const swipeHandlers = useSwipeable({
@@ -88,6 +100,8 @@ export default function TestimonialCarousel() {
     if (isAnimating) return;
     setDirection(1);
     setActiveIndex((prev) => (prev + 1) % testimonials.length);
+    // Close any expanded quote when manually navigating
+    setExpandedQuote(null);
   };
 
   const goToPrev = () => {
@@ -96,6 +110,8 @@ export default function TestimonialCarousel() {
     setActiveIndex(
       (prev) => (prev - 1 + testimonials.length) % testimonials.length
     );
+    // Close any expanded quote when manually navigating
+    setExpandedQuote(null);
   };
 
   // Calculate positions for all cards
@@ -337,38 +353,48 @@ export default function TestimonialCarousel() {
                           ))}
                         </motion.div>
 
-                        <motion.blockquote
+                        <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.3, duration: 0.3 }}
                           className={`${
-                            isActive
-                              ? "text-base sm:text-lg md:text-xl text-white/90 mb-5 sm:mb-7" // Smaller font on mobile
-                              : "text-xs sm:text-sm text-white/70 mb-3 sm:mb-4 line-clamp-2"
-                          } italic`}
+                            isActive && expandedQuote === index
+                              ? "max-h-48 overflow-y-auto pr-2" // Fixed height with scroll when expanded
+                              : "max-h-none overflow-visible"
+                          }`}
                         >
-                          {isActive &&
-                          testimonial.quote.length > 180 &&
-                          expandedQuote !== index
-                            ? `${testimonial.quote.substring(0, 180)}...`
-                            : testimonial.quote}
+                          <blockquote
+                            className={`${
+                              isActive
+                                ? "text-base sm:text-lg md:text-xl text-white/90 mb-5 sm:mb-7" // Smaller font on mobile
+                                : "text-xs sm:text-sm text-white/70 mb-3 sm:mb-4 line-clamp-2"
+                            } italic`}
+                          >
+                            {isActive &&
+                            testimonial.quote.length > 180 &&
+                            expandedQuote !== index
+                              ? `${testimonial.quote.substring(0, 180)}...`
+                              : !isActive && testimonial.quote.length > 100
+                              ? `${testimonial.quote.substring(0, 100)}...`
+                              : testimonial.quote}
 
-                          {isActive && testimonial.quote.length > 180 && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setExpandedQuote(
-                                  expandedQuote === index ? null : index
-                                );
-                              }}
-                              className="ml-2 text-royal-light text-sm font-medium hover:underline"
-                            >
-                              {expandedQuote === index
-                                ? "Show less"
-                                : "Read more"}
-                            </button>
-                          )}
-                        </motion.blockquote>
+                            {isActive && testimonial.quote.length > 180 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedQuote(
+                                    expandedQuote === index ? null : index
+                                  );
+                                }}
+                                className="ml-2 text-royal-light text-sm font-medium hover:underline"
+                              >
+                                {expandedQuote === index
+                                  ? "Show less"
+                                  : "Read more"}
+                              </button>
+                            )}
+                          </blockquote>
+                        </motion.div>
 
                         <motion.div
                           initial={{ opacity: 0, scale: 0.8 }}
@@ -461,6 +487,8 @@ export default function TestimonialCarousel() {
                   if (!isAnimating) {
                     setDirection(idx > activeIndex ? 1 : -1);
                     setActiveIndex(idx);
+                    // Close any expanded quote when clicking dots
+                    setExpandedQuote(null);
                   }
                 }}
                 className={`h-2.5 rounded-full transition-all duration-300 
@@ -492,6 +520,50 @@ export default function TestimonialCarousel() {
             <span className="text-royal-light">100%</span> genuine testimonials
             from real clients
           </div>
+        </motion.div>
+
+        {/* Leave a Review Button */}
+        <motion.div
+          className="mt-12 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <a
+            href="https://g.page/r/CaACepEsFdx0EAE/review"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-royal to-royal-light text-white font-semibold rounded-full hover:shadow-lg hover:shadow-royal/25 transition-all duration-300 transform hover:scale-105 active:scale-95"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            Leave a Review on Google
+            <svg
+              className="w-4 h-4 opacity-70"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+          </a>
+          <p className="text-white/40 text-xs mt-3 max-w-md mx-auto">
+            Share your experience and help others discover the transformative
+            power of personalized training
+          </p>
         </motion.div>
       </div>
     </section>

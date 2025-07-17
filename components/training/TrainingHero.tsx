@@ -10,7 +10,7 @@ import {
   FaPhone,
 } from "react-icons/fa";
 // Import the image at the top of your file
-import brandPhoto1 from "../../public/images/brandphoto1.jpeg";
+import brandPhoto1 from "../../public/images/brandphoto13.jpg";
 
 export default function TrainingHero() {
   return (

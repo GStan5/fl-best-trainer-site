@@ -261,7 +261,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
 
               {/* The image with improved styling and enhanced definition */}
               <Image
-                src="/images/brandphoto5.jpeg"
+                src="/images/brandphoto12.jpg"
                 alt="Gavin Stanifer - FL Best Trainer"
                 fill
                 style={{
