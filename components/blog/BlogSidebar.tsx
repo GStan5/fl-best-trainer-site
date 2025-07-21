@@ -151,7 +151,8 @@ export default function BlogSidebar({
       hoveredItemRefs.current[hoveredPostId] &&
       sidebarRef.current
     ) {
-      const itemRect = hoveredItemRefs.current[hoveredPostId].getBoundingClientRect();
+      const itemRect =
+        hoveredItemRefs.current[hoveredPostId].getBoundingClientRect();
       const sidebarRect = sidebarRef.current.getBoundingClientRect();
 
       // Position at vertical center of hovered item
@@ -243,7 +244,7 @@ export default function BlogSidebar({
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -20, opacity: 0 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        className={`h-screen bg-black/60 backdrop-blur-lg border-r border-white/10 z-40 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-visible fixed top-0 left-0 ${
+        className={`h-screen bg-black/60 backdrop-blur-lg border-r border-white/10 z-40 transition-all duration-300 ease-in-out overflow-y-auto overflow-x-visible scrollbar-hide fixed top-0 left-0 ${
           isMobile ? "border-r-2 border-royal/20" : ""
         }`}
       >
@@ -345,7 +346,7 @@ export default function BlogSidebar({
                     isCollapsed ? "rounded-full" : ""
                   } transition-all group ${
                     activeCategory === category
-                      ? "bg-royal text-white" // Keep active state consistent
+                      ? "bg-white/10 text-white border border-white/20" // Changed from blue to white styling
                       : `hover:bg-white/5 hover:text-white ${
                           category !== "all" && !isCollapsed
                             ? categoryClasses.replace("bg-", "hover:bg-")
@@ -393,7 +394,7 @@ export default function BlogSidebar({
 
           {/* Blog post list */}
           <div
-            className={`flex flex-col gap-2 overflow-y-auto flex-1 hide-scrollbar ${
+            className={`flex flex-col gap-2 overflow-y-auto flex-1 scrollbar-hide ${
               isCollapsed ? "" : "pr-1"
             }`}
           >
@@ -490,7 +491,9 @@ export default function BlogSidebar({
                 } rounded-lg flex items-center bg-black/40 text-white/70 hover:bg-royal/20 hover:text-white transition-all duration-200 border border-white/10 hover:border-royal/30`}
                 title="Back to Blog Home"
               >
-                <FaArrowLeft className={`w-3 h-3 ${isCollapsed ? "" : "mr-2"}`} />
+                <FaArrowLeft
+                  className={`w-3 h-3 ${isCollapsed ? "" : "mr-2"}`}
+                />
                 {!isCollapsed && <span className="text-sm">Close Post</span>}
               </button>
             )}

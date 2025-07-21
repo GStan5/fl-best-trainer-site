@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export default function BlogHeader() {
+export default function BlogHeader({ totalPosts = 0 }) {
   return (
     <div className="mt-8 mb-12 text-center max-w-3xl mx-auto">
       <motion.div
@@ -26,7 +26,7 @@ export default function BlogHeader() {
       </motion.h1>
 
       <motion.p
-        className="text-lg text-white/70 max-w-2xl mx-auto"
+        className="text-lg text-white/70 max-w-2xl mx-auto mb-3"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }} // Changed from whileInView to animate
         transition={{ duration: 0.5, delay: 0.2 }}
@@ -34,6 +34,20 @@ export default function BlogHeader() {
         Practical advice, workout tips, and fitness insights to help you achieve
         your health goals
       </motion.p>
+
+      {totalPosts > 0 && (
+        <motion.div
+          className="inline-flex items-center text-sm text-white/60 bg-white/5 px-3 py-1 rounded-full border border-white/10"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+        >
+          <span className="text-royal-light font-medium mr-1">
+            {totalPosts}
+          </span>
+          <span>{totalPosts === 1 ? "article" : "articles"} available</span>
+        </motion.div>
+      )}
     </div>
   );
 }

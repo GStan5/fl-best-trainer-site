@@ -45,6 +45,14 @@ export default function BlogList({ filteredPosts, handlePostSelect }) {
                   {post.category}
                 </span>
               </div>
+              {/* Featured indicator */}
+              {post.featured && (
+                <div className="absolute top-3 right-3">
+                  <span className="bg-royal text-white px-2 py-1 text-xs font-bold rounded-full">
+                    FEATURED
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="p-5">

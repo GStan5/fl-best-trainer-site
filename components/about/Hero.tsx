@@ -153,7 +153,7 @@ export default function Hero() {
 
               {/* The image with improved styling and enhanced definition */}
               <Image
-                src="/images/brandphoto12.jpg"
+                src="/images/brandphoto11.jpg"
                 alt="Gavin Stanifer - FL Best Trainer"
                 fill
                 style={{

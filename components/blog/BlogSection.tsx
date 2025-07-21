@@ -12,8 +12,15 @@ import BlogList from "./BlogList";
 import BlogPagination from "./BlogPagination";
 import BlogSidebar from "./BlogSidebar";
 import BlogPostView from "./BlogPostView";
+import BackToTop from "./BackToTop";
+import ReadingProgress from "./ReadingProgress";
+import EmptyState from "./EmptyState";
 
 export default function BlogSection({ posts = defaultPosts }) {
+  // Ensure posts is always an array
+  const safePosts =
+    Array.isArray(posts) && posts.length > 0 ? posts : defaultPosts;
+
   // Initialize state with localStorage values if available
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     // Only run on client side
@@ -54,6 +61,7 @@ export default function BlogSection({ posts = defaultPosts }) {
     return null; // Default to null if no post was saved
   });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isClientSide, setIsClientSide] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [screenSize, setScreenSize] = useState("lg");
   const [isFocusMode, setIsFocusMode] = useState(false); // Add focus mode state
@@ -61,9 +69,17 @@ export default function BlogSection({ posts = defaultPosts }) {
   const blogContentRef = useRef(null);
   const blogSectionRef = useRef(null);
 
-  // Set loaded state on mount
+  // Set loaded state on mount and ensure client-side rendering
   useEffect(() => {
     setIsLoaded(true);
+    setIsClientSide(true);
+
+    // Small delay to ensure everything is properly mounted
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Detect mobile devices
@@ -100,20 +116,26 @@ export default function BlogSection({ posts = defaultPosts }) {
   }, [screenSize]);
 
   // Get featured post
-  const featuredPost = posts.find((post) => post.featured);
+  const featuredPost = safePosts.find((post) => post.featured);
+  const featuredPosts = safePosts.filter((post) => post.featured);
 
   // Filter posts based on category and search term
-  const filteredPosts = posts.filter((post) => {
+  const filteredPosts = safePosts.filter((post) => {
     const matchesCategory =
-      activeCategory === "all" || post.category === activeCategory;
+      activeCategory === "all" ||
+      post.category?.toLowerCase() === activeCategory.toLowerCase();
     const matchesSearch =
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch && !post.featured;
+
+    return matchesCategory && matchesSearch;
   });
 
   // Get unique categories for filter
-  const categories = ["all", ...new Set(posts.map((post) => post.category))];
+  const categories = [
+    "all",
+    ...Array.from(new Set(safePosts.map((post) => post.category))),
+  ];
 
   // Handle selecting a post to read
   const handlePostSelect = (post) => {
@@ -141,6 +163,12 @@ export default function BlogSection({ posts = defaultPosts }) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("selectedBlogPost");
     }
+  };
+
+  // Handle clearing all filters
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setActiveCategory("all");
   };
 
   // Handle escape key to close post
@@ -225,16 +253,10 @@ export default function BlogSection({ posts = defaultPosts }) {
     }
   }, [selectedPost]);
 
-  // State to track if we're on the client side
-  const [isClientSide, setIsClientSide] = useState(false);
-
-  // Effect to set client side state
-  useEffect(() => {
-    setIsClientSide(true);
-  }, []);
-
-  // Update the blog content area to include featured posts
-  const featuredPosts = posts.filter((post) => post && post.featured);
+  // Effect to set client side state (already handled above)
+  // useEffect(() => {
+  //   setIsClientSide(true);
+  // }, []);
 
   return (
     <section
@@ -279,27 +301,30 @@ export default function BlogSection({ posts = defaultPosts }) {
               <>
                 {!selectedPost ? (
                   <>
-                    <BlogHeader />
+                    <BlogHeader totalPosts={safePosts.length} />
                     <BlogSearch
                       searchTerm={searchTerm}
                       setSearchTerm={setSearchTerm}
                       categories={categories}
                       activeCategory={activeCategory}
                       setActiveCategory={setActiveCategory}
+                      totalResults={filteredPosts.length}
                     />
 
-                    {/* Always show featured posts at the top regardless of category */}
-                    {featuredPosts.length > 0 && activeCategory !== "featured" && (
-                      <div className="mb-12">
-                        <h2 className="text-2xl font-bold text-white mb-6">
-                          Featured
-                        </h2>
-                        <BlogFeatured
-                          posts={featuredPosts}
-                          handlePostSelect={handlePostSelect}
-                        />
-                      </div>
-                    )}
+                    {/* Show featured posts at the top only when not viewing "all" or "featured" category */}
+                    {featuredPosts.length > 0 &&
+                      activeCategory !== "featured" &&
+                      activeCategory !== "all" && (
+                        <div className="mb-12">
+                          <h2 className="text-2xl font-bold text-white mb-6">
+                            Featured
+                          </h2>
+                          <BlogFeatured
+                            posts={featuredPosts}
+                            handlePostSelect={handlePostSelect}
+                          />
+                        </div>
+                      )}
 
                     {/* Then show filtered posts based on active category */}
                     {activeCategory === "featured" ? (
@@ -312,12 +337,23 @@ export default function BlogSection({ posts = defaultPosts }) {
                         <h2 className="text-2xl font-bold text-white mb-6">
                           {activeCategory === "all"
                             ? "All Posts"
-                            : `${activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)} Posts`}
+                            : `${
+                                activeCategory.charAt(0).toUpperCase() +
+                                activeCategory.slice(1)
+                              } Posts`}
                         </h2>
-                        <BlogList
-                          filteredPosts={filteredPosts}
-                          handlePostSelect={handlePostSelect}
-                        />
+                        {filteredPosts.length > 0 ? (
+                          <BlogList
+                            filteredPosts={filteredPosts}
+                            handlePostSelect={handlePostSelect}
+                          />
+                        ) : (
+                          <EmptyState
+                            searchTerm={searchTerm}
+                            activeCategory={activeCategory}
+                            onClearFilters={handleClearFilters}
+                          />
+                        )}
                       </div>
                     )}
                   </>
@@ -339,6 +375,12 @@ export default function BlogSection({ posts = defaultPosts }) {
           </div>
         </div>
       </div>
+
+      {/* Reading Progress Bar */}
+      <ReadingProgress />
+
+      {/* Back to Top Button */}
+      <BackToTop />
     </section>
   );
 }

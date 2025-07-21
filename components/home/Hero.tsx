@@ -117,7 +117,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
             >
               <div className="bg-black/20 backdrop-blur-sm rounded-md p-2 sm:p-3 border border-white/5 hover:bg-black/30 transition-colors">
                 <div className="text-royal-light font-bold text-lg sm:text-xl md:text-2xl">
-                  100+
+                  500+
                 </div>
                 <div className="text-white/70 text-[10px] sm:text-xs">
                   Happy Clients
@@ -187,15 +187,30 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
                   </div>
                   <div>
                     <p className="italic text-white/90 text-xs sm:text-sm">
-                      "Gavin has completely transformed my approach to fitness.
-                      The convenience of in-home training combined with his
-                      expertise has helped me achieve goals I never thought
-                      possible."
+                      "I have been training with Gavin for over six months and
+                      have noticed a significant improvement in my strength,
+                      toning, balance, and flexibility. Gavin is laser focused
+                      on correct technique to avoid injuries..."
                     </p>
-                    <div className="mt-1 sm:mt-2">
+                    <div className="mt-1 sm:mt-2 flex items-center justify-between">
                       <span className="text-white/70 text-[10px] sm:text-xs font-semibold">
-                        — Michael R., Client for 3+ years
+                        — Jackie B., Client for 1+ years
                       </span>
+                      <button
+                        onClick={() => {
+                          const testimonialSection =
+                            document.getElementById("testimonials");
+                          if (testimonialSection) {
+                            testimonialSection.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                          }
+                        }}
+                        className="text-royal-light hover:text-royal text-[10px] sm:text-xs font-medium hover:underline transition-colors ml-2"
+                      >
+                        Read full story →
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -261,7 +276,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
 
               {/* The image with improved styling and enhanced definition */}
               <Image
-                src="/images/brandphoto12.jpg"
+                src="/images/brandphoto11.jpg"
                 alt="Gavin Stanifer - FL Best Trainer"
                 fill
                 style={{
@@ -318,7 +333,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
                     <div className="text-white/80 text-xs">Years Exp.</div>
                   </div>
                   <div className="text-center border-l border-r border-white/10">
-                    <div className="text-royal text-xl font-bold">100+</div>
+                    <div className="text-royal text-xl font-bold">500+</div>
                     <div className="text-white/80 text-xs">Clients</div>
                   </div>
                   {/* <div className="text-center">

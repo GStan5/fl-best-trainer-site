@@ -11,10 +11,20 @@ import { recoveryForOver40 } from "./posts/recoveryForOver40";
 import { scienceBehindTraining } from "./posts/scienceBehindTraining";
 import { strengthAfter50 } from "./posts/strengthAfter50";
 import { threeEssentialExercises } from "./posts/threeEssentialExercises";
+import { farmerCarriesBenefits } from "./posts/farmerCarriesBenefits";
+import { mentalBenefitsWorkout } from "./posts/mentalBenefitsWorkout";
+import { healthyFulfillingLifestyle } from "./posts/healthyFulfillingLifestyle";
+import { overcomingMentalObstacles } from "./posts/overcomingMentalObstacles";
+import { wellnessLifestyleBalance } from "./posts/wellnessLifestyleBalance";
 
 // Import more posts as you add them
 
 export const blogPosts = [
+  farmerCarriesBenefits,
+  wellnessLifestyleBalance,
+  mentalBenefitsWorkout,
+  healthyFulfillingLifestyle,
+  overcomingMentalObstacles,
   beginnerTrainingTips,
   coreForOver40,
   fitnessLifestyleOver40,
