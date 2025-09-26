@@ -7,8 +7,6 @@ import {
   FaMapMarkerAlt,
   FaPhone,
   FaEnvelope,
-  FaFileSignature,
-  FaArrowRight,
   FaDumbbell,
   FaRegCalendarAlt,
   FaRegCreditCard,
@@ -53,7 +51,7 @@ const CONTACT_INFO = {
     number: "+19285871309",
     display: "(928) 587-1309",
   },
-  email: "FLBestTrainer@outlook.com",
+  email: "flbesttrainer@gmail.com",
   location: "Southwest Florida Area",
 };
 // ===================================
@@ -86,7 +84,6 @@ export default function Footer() {
     legal: [
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
-      { name: "Waiver", href: "/waiver" },
     ],
   };
 
@@ -143,34 +140,6 @@ export default function Footer() {
         {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-[url('/pattern.svg')] bg-repeat opacity-5"></div>
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-royal/30 to-transparent"></div>
-
-        {/* Waiver Call to Action */}
-        <div className="relative bg-gradient-to-r from-royal/20 to-royal-light/10 border-b border-white/5">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="max-w-2xl">
-                <div className="flex items-center gap-3 mb-2">
-                  <FaFileSignature className="text-royal w-5 h-5" />
-                  <h3 className="text-lg font-semibold text-white">
-                    Client Waiver Form
-                  </h3>
-                </div>
-                <p className="text-white/70 text-sm leading-relaxed">
-                  Before we begin your fitness journey, please complete our
-                  waiver form. This protects both you and us as we work together
-                  toward your fitness goals.
-                </p>
-              </div>
-              <Link
-                href="/waiver"
-                className="flex items-center gap-2 bg-royal hover:bg-royal-light transition-colors px-6 py-3 rounded-lg text-white font-medium shadow-lg shadow-royal/20 pulse-on-hover"
-              >
-                Complete Waiver{" "}
-                <FaArrowRight className="w-4 h-4" aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-        </div>
 
         {/* Main Footer Content */}
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">

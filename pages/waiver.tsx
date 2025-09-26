@@ -234,6 +234,18 @@ export default function WaiverPage() {
                   setSubmitted(true);
                   form.reset();
                   clearSignature();
+
+                  // Check if we need to redirect back to a specific page
+                  const redirectUrl = localStorage.getItem(
+                    "redirectAfterWaiver"
+                  );
+                  if (redirectUrl) {
+                    localStorage.removeItem("redirectAfterWaiver");
+                    // Redirect after a short delay to show success message
+                    setTimeout(() => {
+                      window.location.href = redirectUrl;
+                    }, 2000);
+                  }
                 } else {
                   // Track failed waiver submission
                   event({
@@ -410,6 +422,17 @@ export default function WaiverPage() {
               <div className="bg-green-900/20 border border-green-500 text-green-400 px-4 py-3 rounded-md">
                 ✅ Waiver submitted successfully! You will receive a
                 confirmation email with a copy of your signed waiver shortly.
+                {localStorage.getItem("redirectAfterWaiver") && (
+                  <>
+                    <br />
+                    <div className="flex items-center mt-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-400 mr-2"></div>
+                      <span className="text-sm">
+                        Completing your registration and redirecting...
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </form>

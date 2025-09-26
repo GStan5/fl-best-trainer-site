@@ -3,6 +3,8 @@ import nodemailer from "nodemailer";
 import { google } from "googleapis";
 import jsPDF from "jspdf";
 import { Readable } from "stream";
+import { Pool } from "pg";
+import sql from "../../lib/database";
 
 interface WaiverBody {
   name: string;
@@ -44,6 +46,75 @@ const getClientIP = (req: NextApiRequest): string => {
   }
 
   return connectionIP || "Unknown";
+};
+
+// Database connection
+const getDbPool = () => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  return new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl:
+      process.env.NODE_ENV === "production"
+        ? { rejectUnauthorized: false }
+        : false,
+  });
+};
+
+// Update user's waiver status in database and complete onboarding
+const updateUserWaiverStatusAndCompleteOnboarding = async (
+  email: string,
+  pdfBuffer: Buffer,
+  fileName: string
+) => {
+  try {
+    // First try to update with PDF columns, if they don't exist, fall back to basic update
+    try {
+      console.log(
+        `📄 Saving PDF to database - Size: ${pdfBuffer.length} bytes`
+      );
+      console.log(`📄 Filename: ${fileName}`);
+
+      const result = await sql`
+        UPDATE users SET 
+          waiver_signed = true, 
+          waiver_signed_date = NOW(),
+          waiver_pdf_data = ${pdfBuffer},
+          waiver_pdf_filename = ${fileName},
+          onboarding_completed = true
+         WHERE email = ${email}
+      `;
+
+      console.log(
+        `✅ Updated waiver status with PDF and completed onboarding for user: ${email}`
+      );
+      console.log(`📄 PDF saved successfully - ${pdfBuffer.length} bytes`);
+      return result.length > 0;
+    } catch (pdfError) {
+      // If PDF columns don't exist, fall back to basic update
+      console.log("⚠️ PDF columns not available, using basic update");
+      const result = await sql`
+        UPDATE users SET 
+          waiver_signed = true, 
+          waiver_signed_date = NOW(),
+          onboarding_completed = true
+         WHERE email = ${email}
+      `;
+
+      console.log(
+        `✅ Updated waiver status and completed onboarding for user: ${email}`
+      );
+      return result.length > 0;
+    }
+  } catch (error) {
+    console.error(
+      "❌ Error updating user waiver status and onboarding:",
+      error
+    );
+    throw error;
+  }
 };
 
 const saveToGoogleSheets = async (
@@ -564,8 +635,9 @@ export default async function handler(
 
   try {
     // Generate PDF
-    const pdfBuffer = await generateWaiverPDF(req.body, req);
-    const pdfBase64 = Buffer.from(pdfBuffer).toString("base64");
+    const pdfArrayBuffer = await generateWaiverPDF(req.body, req);
+    const pdfBuffer = Buffer.from(pdfArrayBuffer);
+    const pdfBase64 = pdfBuffer.toString("base64");
 
     // Send emails with PDF attachment
     const transporter = nodemailer.createTransport({
@@ -667,41 +739,71 @@ export default async function handler(
       process.env.GDRIVE_PRIVATE_KEY &&
       process.env.GDRIVE_FOLDER_ID
     ) {
-      const auth = new google.auth.JWT(
-        process.env.GDRIVE_CLIENT_EMAIL,
-        undefined,
-        process.env.GDRIVE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-        [
-          "https://www.googleapis.com/auth/drive.file",
-          "https://www.googleapis.com/auth/spreadsheets",
-        ]
-      );
-      const drive = google.drive({ version: "v3", auth });
+      try {
+        const auth = new google.auth.JWT(
+          process.env.GDRIVE_CLIENT_EMAIL,
+          undefined,
+          process.env.GDRIVE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+          [
+            "https://www.googleapis.com/auth/drive.file",
+            "https://www.googleapis.com/auth/spreadsheets",
+          ]
+        );
+        const drive = google.drive({ version: "v3", auth });
 
-      // Create a readable stream from the PDF buffer
-      const pdfStream = new Readable({
-        read() {
-          this.push(Buffer.from(pdfBuffer));
-          this.push(null);
-        },
-      });
+        // Create a readable stream from the PDF buffer
+        const pdfStream = new Readable({
+          read() {
+            this.push(Buffer.from(pdfBuffer));
+            this.push(null);
+          },
+        });
 
-      const driveResponse = await drive.files.create({
-        requestBody: {
-          name: fileName,
-          parents: [process.env.GDRIVE_FOLDER_ID],
-        },
-        media: {
-          mimeType: "application/pdf",
-          body: pdfStream,
-        },
-      });
+        const driveResponse = await drive.files.create({
+          requestBody: {
+            name: fileName,
+            parents: [process.env.GDRIVE_FOLDER_ID],
+          },
+          media: {
+            mimeType: "application/pdf",
+            body: pdfStream,
+          },
+        });
 
-      driveFileId = driveResponse.data.id || undefined;
+        driveFileId = driveResponse.data.id || undefined;
+        console.log(`💾 Successfully saved to Google Drive: ${driveFileId}`);
+      } catch (driveError) {
+        console.warn(
+          "⚠️ Failed to save to Google Drive (continuing anyway):",
+          driveError
+        );
+        driveFileId = undefined;
+      }
     }
 
-    // Save to Google Sheets
-    await saveToGoogleSheets(req.body, req, driveFileId);
+    // Save to Google Sheets (non-critical - don't fail if this errors)
+    try {
+      await saveToGoogleSheets(req.body, req, driveFileId);
+    } catch (sheetsError) {
+      console.warn(
+        "⚠️ Failed to save to Google Sheets (continuing anyway):",
+        sheetsError
+      );
+    }
+
+    // Update user's waiver status in database and complete onboarding
+    try {
+      await updateUserWaiverStatusAndCompleteOnboarding(
+        email,
+        pdfBuffer,
+        fileName
+      );
+    } catch (dbError) {
+      console.warn(
+        "⚠️ Failed to update user waiver status in database (continuing anyway):",
+        dbError
+      );
+    }
 
     console.log(`✅ Waiver submitted successfully for ${name}`);
     console.log(

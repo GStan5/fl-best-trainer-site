@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useSession, signOut } from "next-auth/react";
 import {
   FaBars,
   FaTimes,
@@ -11,9 +12,13 @@ import {
   FaUserAlt,
   FaArrowRight,
   FaBlog,
+  FaUsers,
+  FaSignOutAlt,
+  FaSignInAlt,
 } from "react-icons/fa";
 
 export default function Header() {
+  const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
@@ -95,6 +100,7 @@ export default function Header() {
 
   const navLinks = [
     { name: "Home", path: "/", icon: <FaHome className="mr-1.5" /> },
+    { name: "Classes", path: "/classes", icon: <FaUsers className="mr-1.5" /> },
     {
       name: "In-Home Training",
       path: "/training",
@@ -175,6 +181,40 @@ export default function Header() {
 
             {/* CTA Button and Mobile Menu Button */}
             <div className="flex items-center z-20">
+              {/* Authentication Buttons */}
+              {status !== "loading" && (
+                <>
+                  {session ? (
+                    <div className="hidden lg:flex items-center gap-3 mr-4">
+                      <Link
+                        href="/account"
+                        className="flex items-center px-3 py-2 bg-royal text-white rounded-lg text-sm font-medium hover:bg-royal-light transition-all duration-300"
+                      >
+                        <FaUserAlt className="mr-1.5 text-xs" />
+                        View Account
+                      </Link>
+                      <button
+                        onClick={() => signOut({ callbackUrl: "/classes" })}
+                        className="flex items-center px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-all duration-300"
+                      >
+                        <FaSignOutAlt className="mr-1.5 text-xs" />
+                        Sign Out
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="hidden lg:flex items-center gap-2 mr-4">
+                      <Link
+                        href="/auth/signin"
+                        className="flex items-center px-3 py-2 bg-transparent border border-royal-light text-royal-light rounded-lg text-sm font-medium hover:bg-royal-light hover:text-royal-dark transition-all duration-300"
+                      >
+                        <FaSignInAlt className="mr-1.5 text-xs" />
+                        Sign In
+                      </Link>
+                    </div>
+                  )}
+                </>
+              )}
+
               {/* Call Now Button - Visible on medium screens but not large */}
               <a
                 href="#contact"
@@ -331,6 +371,43 @@ export default function Header() {
                 {link.highlight && <FaArrowRight className="opacity-50" />}
               </Link>
             ))}
+
+            {/* Authentication section for mobile */}
+            {status !== "loading" && (
+              <div className="mt-6 pt-6 border-t border-white/10">
+                {session ? (
+                  <div className="space-y-3">
+                    <Link
+                      href="/account"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full px-4 py-3 bg-royal text-white rounded-xl text-center text-lg font-medium hover:bg-royal-light transition-all duration-300 flex items-center justify-center"
+                    >
+                      <FaUserAlt className="mr-2" />
+                      View Account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsOpen(false);
+                        signOut({ callbackUrl: "/classes" });
+                      }}
+                      className="w-full px-4 py-3 bg-red-600 text-white rounded-xl text-center text-lg font-medium hover:bg-red-700 transition-all duration-300 flex items-center justify-center"
+                    >
+                      <FaSignOutAlt className="mr-2" />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/auth/signin"
+                    onClick={() => setIsOpen(false)}
+                    className="block w-full px-4 py-3 bg-transparent border-2 border-royal-light text-royal-light rounded-xl text-center text-lg font-medium hover:bg-royal-light hover:text-royal-dark transition-all duration-300 flex items-center justify-center"
+                  >
+                    <FaSignInAlt className="mr-2" />
+                    Sign In with Google
+                  </Link>
+                )}
+              </div>
+            )}
 
             <a
               href="#contact"

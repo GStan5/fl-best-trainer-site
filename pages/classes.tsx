@@ -1,0 +1,1025 @@
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
+import Layout from "../components/Layout";
+import SEO from "../components/shared/SEO";
+import OnboardingModal from "../components/shared/OnboardingModal";
+import ClassCalendar from "../components/classes/ClassCalendar";
+import ClassModal from "../components/classes/ClassModal";
+import ClassCard from "../components/classes/ClassCard";
+import LocationsLegend from "../components/classes/LocationsLegend";
+import UpcomingClassesSection from "../components/classes/UpcomingClassesSection";
+import ClassStats from "../components/classes/ClassStats";
+import CancelBookingModal from "../components/classes/CancelBookingModal";
+import StripeCheckoutButton, {
+  PACKAGE_CONFIGS,
+} from "../components/shared/StripeCheckoutButton";
+import { FaCalendarAlt, FaUsers, FaDumbbell } from "react-icons/fa";
+
+interface ClassData {
+  id: string;
+  title: string;
+  description: string;
+  instructor: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  max_participants: number;
+  current_participants: number;
+  location: string;
+  class_type: string;
+  difficulty_level: string;
+  equipment_needed: string;
+  is_active: boolean;
+}
+
+export default function Classes() {
+  const { data: session, status } = useSession();
+  const [classes, setClasses] = useState<ClassData[]>([]);
+  const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBooking, setIsBooking] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<any>(null);
+  const [weightliftingClassesRemaining, setWeightliftingClassesRemaining] =
+    useState<number | null>(null);
+  const [weightliftingClassesBooked, setWeightliftingClassesBooked] = useState<
+    number | null
+  >(null);
+  const [isUserAdmin, setIsUserAdmin] = useState<boolean>(false);
+  const [myBookings, setMyBookings] = useState<any[]>([]);
+  const [cancellingBooking, setCancellingBooking] = useState<string | null>(
+    null
+  );
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<any>(null);
+  const [modalSource, setModalSource] = useState<"calendar" | "upcoming">(
+    "calendar"
+  );
+  const [modalTopPosition, setModalTopPosition] = useState<number>(0);
+  const [cancelModalTopPosition, setCancelModalTopPosition] =
+    useState<number>(0);
+  const [userData, setUserData] = useState<any>(null);
+
+  // Fetch classes on component mount
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  // Check onboarding status when user is authenticated
+  useEffect(() => {
+    if (session?.user?.email) {
+      checkOnboardingStatus();
+      fetchMyBookings();
+    }
+  }, [session]);
+
+  // Add a refresh function to manually update bookings
+  const refreshBookings = async () => {
+    if (session?.user?.email) {
+      await fetchMyBookings();
+      await checkOnboardingStatus();
+    }
+  };
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const response = await fetch("/api/onboarding/status");
+      const data = await response.json();
+
+      if (data.success) {
+        setOnboardingStatus(data.user);
+        setUserData(data.user); // Store user data for name display
+        // Note: Removed sessions_remaining as we no longer use legacy sessions
+        setWeightliftingClassesRemaining(
+          data.user.weightlifting_classes_remaining || 0
+        );
+        setWeightliftingClassesBooked(
+          data.user.weightlifting_classes_booked || 0
+        );
+        setIsUserAdmin(data.user.is_admin || false);
+        if (data.user.needsOnboarding || data.user.needsWaiver) {
+          setShowOnboarding(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking onboarding status:", error);
+    }
+  };
+
+  const fetchMyBookings = async () => {
+    if (!session?.user?.email) return;
+
+    try {
+      const response = await fetch(
+        `/api/bookings?user_id=${session.user.email}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("All bookings fetched:", data.data);
+
+        // Filter for upcoming classes - check both date AND time
+        const now = new Date();
+
+        const upcoming = data.data
+          .filter((booking: any) => {
+            // Skip cancelled bookings
+            if (booking.status === "cancelled") {
+              return false;
+            }
+
+            // Create full datetime for the class
+            const classDate = new Date(booking.date);
+            const timeComponents = booking.start_time.split(":");
+            const classDateTime = new Date(classDate);
+            classDateTime.setHours(
+              parseInt(timeComponents[0]),
+              parseInt(timeComponents[1]),
+              0,
+              0
+            );
+
+            // Only include classes that haven't started yet
+            const isUpcoming = classDateTime > now;
+
+            console.log(`Booking: ${booking.class_title}`);
+            console.log(`- Date: ${booking.date}`);
+            console.log(`- Start Time: ${booking.start_time}`);
+            console.log(`- Status: ${booking.status || "active"}`);
+            console.log(`- Class DateTime: ${classDateTime.toLocaleString()}`);
+            console.log(`- Now: ${now.toLocaleString()}`);
+            console.log(`- Is Upcoming: ${isUpcoming}`);
+            console.log("---");
+
+            return isUpcoming;
+          })
+          .sort((a: any, b: any) => {
+            // Parse dates more reliably
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+
+            // Get today for comparison
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Check if classes are today
+            const isAToday = dateA.toDateString() === today.toDateString();
+            const isBToday = dateB.toDateString() === today.toDateString();
+
+            // Prioritize today's classes first
+            if (isAToday && !isBToday) return -1; // A (today) comes before B (future)
+            if (!isAToday && isBToday) return 1; // B (today) comes before A (future)
+
+            // If both are today or both are future, sort by datetime
+            const timeA = a.start_time.split(":");
+            const timeB = b.start_time.split(":");
+
+            const fullDateTimeA = new Date(dateA);
+            fullDateTimeA.setHours(
+              parseInt(timeA[0]),
+              parseInt(timeA[1]),
+              0,
+              0
+            );
+
+            const fullDateTimeB = new Date(dateB);
+            fullDateTimeB.setHours(
+              parseInt(timeB[0]),
+              parseInt(timeB[1]),
+              0,
+              0
+            );
+
+            console.log(
+              `Sorting: ${
+                a.class_title
+              } (${fullDateTimeA.toLocaleString()}) vs ${
+                b.class_title
+              } (${fullDateTimeB.toLocaleString()})`
+            );
+
+            return fullDateTimeA.getTime() - fullDateTimeB.getTime();
+          });
+
+        console.log("Final upcoming bookings:", upcoming);
+        setMyBookings(upcoming);
+      } else {
+        console.error("Failed to fetch bookings:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching my bookings:", error);
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const response = await fetch("/api/classes");
+      const data = await response.json();
+
+      if (data.success) {
+        setClasses(data.data);
+      } else {
+        console.error("Failed to fetch classes:", data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClassSelect = (
+    classData: ClassData,
+    sourceElement?: HTMLElement
+  ) => {
+    // Try to get position from source element first, then fallback to calendar component
+    let targetElement = sourceElement;
+
+    if (!targetElement) {
+      targetElement = document.querySelector(
+        '[data-component="calendar"]'
+      ) as HTMLElement;
+    }
+
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+
+      // Position modal to overlay the clicked element
+      const topPosition = rect.top + scrollTop;
+      setModalTopPosition(Math.max(topPosition, 20)); // Minimum 20px from top
+    } else {
+      setModalTopPosition(50); // Fallback position
+    }
+
+    setSelectedClass(classData);
+    setModalSource("calendar");
+    setIsModalOpen(true);
+  };
+
+  const handleUpcomingClassSelect = (
+    classData: ClassData,
+    sourceElement?: HTMLElement
+  ) => {
+    // Try to get position from source element first, then fallback to upcoming component
+    let targetElement = sourceElement;
+
+    if (!targetElement) {
+      targetElement = document.querySelector(
+        '[data-component="upcoming"]'
+      ) as HTMLElement;
+    }
+
+    if (targetElement) {
+      const rect = targetElement.getBoundingClientRect();
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+
+      // Position modal to overlay the clicked element
+      const topPosition = rect.top + scrollTop;
+      setModalTopPosition(Math.max(topPosition, 20)); // Minimum 20px from top
+    } else {
+      setModalTopPosition(50); // Fallback position
+    }
+
+    setSelectedClass(classData);
+    setModalSource("upcoming");
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedClass(null);
+  };
+
+  const handleBookClass = async (
+    classId?: string,
+    joinWaitlist: boolean = false
+  ) => {
+    const targetClass = selectedClass || classes.find((c) => c.id === classId);
+    if (!targetClass || !session?.user?.email) return;
+
+    // Check if user has any sessions remaining
+    const totalSessions = weightliftingClassesRemaining || 0;
+
+    if (totalSessions === 0) {
+      // User has no sessions left - this will be handled by the modal UI
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      const response = await fetch("/api/book-class", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          class_id: targetClass.id,
+          join_waitlist: joinWaitlist,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Booking successful - let the UI state changes provide feedback
+        // Refresh user data and bookings
+        await checkOnboardingStatus();
+        await fetchMyBookings();
+        await fetchClasses(); // Refresh class data to update participant counts
+
+        // Close the modal
+        handleCloseModal();
+      } else {
+        console.error(`Failed to book class: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error booking class:", error);
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const handleCancelBooking = async (
+    booking: any,
+    buttonElement?: HTMLElement
+  ) => {
+    if (buttonElement) {
+      // Get the booking card container (parent of the button)
+      const bookingCard = buttonElement.closest(
+        "[data-booking-id]"
+      ) as HTMLElement;
+
+      if (bookingCard) {
+        const rect = bookingCard.getBoundingClientRect();
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+
+        // Position modal to overlay the clicked element
+        const topPosition = rect.top + scrollTop;
+        setCancelModalTopPosition(Math.max(topPosition, 20)); // Minimum 20px from top
+      } else {
+        setCancelModalTopPosition(50); // Fallback position
+      }
+    } else {
+      // Fallback to searching for the element
+      const bookingElement = document.querySelector(
+        `[data-booking-id="${booking.id}"]`
+      );
+
+      if (bookingElement) {
+        const rect = bookingElement.getBoundingClientRect();
+        const scrollTop =
+          window.pageYOffset || document.documentElement.scrollTop;
+
+        // Position modal to overlay the clicked element
+        const topPosition = rect.top + scrollTop;
+        setCancelModalTopPosition(Math.max(topPosition, 20));
+      } else {
+        setCancelModalTopPosition(50);
+      }
+    }
+
+    setBookingToCancel(booking);
+    setShowCancelModal(true);
+  };
+
+  const confirmCancelBooking = async () => {
+    if (!bookingToCancel) return;
+
+    setCancellingBooking(bookingToCancel.id);
+    try {
+      const response = await fetch("/api/cancel-booking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          booking_id: bookingToCancel.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Close modal and reset state
+        setShowCancelModal(false);
+        setBookingToCancel(null);
+
+        // Refresh user data and bookings
+        await checkOnboardingStatus();
+        await fetchMyBookings();
+        await fetchClasses(); // Refresh class data to update participant counts
+      } else {
+        console.error(`Failed to cancel booking: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+    } finally {
+      setCancellingBooking(null);
+    }
+  };
+
+  const handleCloseCancelModal = () => {
+    setShowCancelModal(false);
+    setBookingToCancel(null);
+  };
+
+  // Helper function to calculate if cancellation is more than 24 hours before class (EST)
+  const isMoreThan24HoursBeforeClass = (booking: any): boolean => {
+    if (!booking || !booking.date || !booking.start_time) {
+      console.log("Missing booking data:", booking);
+      return false;
+    }
+
+    try {
+      console.log("Raw booking data:", {
+        date: booking.date,
+        start_time: booking.start_time,
+        class_title: booking.class_title,
+      });
+
+      // Parse date in YYYY-MM-DD format
+      const dateParts = booking.date.split("-");
+      const timeParts = booking.start_time.split(":");
+
+      // Create date object explicitly in local timezone (EST)
+      const classDateTime = new Date(
+        parseInt(dateParts[0]), // year
+        parseInt(dateParts[1]) - 1, // month (0-indexed)
+        parseInt(dateParts[2]), // day
+        parseInt(timeParts[0]), // hour
+        parseInt(timeParts[1]), // minute
+        parseInt(timeParts[2] || "0") // second (optional)
+      );
+
+      // Get current time
+      const now = new Date();
+
+      // Calculate hours difference
+      const hoursUntilClass =
+        (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      // Debug logging for cancellation timing
+      console.log("Cancellation timing check:", {
+        classDate: booking.date,
+        classTime: booking.start_time,
+        hoursUntilClass: hoursUntilClass.toFixed(2),
+        shouldGetRefund: hoursUntilClass > 24 ? "YES" : "NO",
+      });
+
+      return hoursUntilClass > 24;
+    } catch (error) {
+      console.error("Error calculating cancellation timing:", error, booking);
+      return false;
+    }
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    checkOnboardingStatus(); // Refresh status
+  };
+
+  return (
+    <Layout>
+      <SEO
+        title="Fitness Classes | FL Best Trainer - Group Training in Sarasota"
+        description="Join our dynamic fitness classes in Sarasota. Small group training, specialized workouts, and expert instruction for all fitness levels."
+        keywords="fitness classes Sarasota, group training, small group fitness, personal training classes, strength training classes"
+      />
+
+      <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-navy to-black">
+        {/* Hero Section */}
+        <section
+          className="relative"
+          style={{ paddingTop: "20vh", paddingBottom: "1rem" }}
+        >
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-center"
+            >
+              <div className="flex flex-col sm:flex-row items-center justify-center mb-4 sm:mb-6">
+                <FaUsers className="text-3xl sm:text-4xl text-royal-light mb-2 sm:mb-0 sm:mr-4" />
+                <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold text-white">
+                  Group Fitness Classes
+                </h1>
+              </div>
+
+              {/* Sign In Button - Only show if user is not signed in */}
+              {status !== "loading" && !session && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8"
+                >
+                  <p className="text-white/80 text-lg mb-4 sm:mb-0 sm:mr-6">
+                    Sign in with Google to book classes and track your progress
+                  </p>
+                  <button
+                    onClick={() => (window.location.href = "/auth/signin")}
+                    className="px-8 py-3 bg-royal-light text-royal-dark font-semibold rounded-lg hover:bg-white hover:text-royal-dark transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    Sign In with Google
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Dashboard Welcome Section */}
+              {session && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.2 }}
+                  className="mt-8"
+                >
+                  {/* Dashboard Header */}
+                  <div className="bg-gradient-to-r from-royal-dark/60 to-blue-900/60 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/10 shadow-xl">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                      <div className="text-center sm:text-left">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-1 sm:mb-2">
+                          Welcome back,{" "}
+                          <span className="text-royal-light">
+                            {userData?.first_name ||
+                              userData?.name?.split(" ")[0] ||
+                              session.user?.name?.split(" ")[0] ||
+                              "User"}
+                          </span>
+                          !
+                        </h2>
+                        <p className="text-white/70 text-base sm:text-lg">
+                          Your fitness dashboard • Ready to train?
+                        </p>
+                      </div>
+                      {isUserAdmin && (
+                        <div className="flex items-center space-x-2">
+                          <span className="px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-sm font-bold rounded-lg shadow-lg">
+                            ⚡ ADMIN
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Dashboard Stats & Actions */}
+                  {!showOnboarding && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                      className="mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-6xl mx-auto"
+                    >
+                      {/* Purchase Package Card - LEFT */}
+                      <div className="bg-gradient-to-br from-royal-light/20 to-blue-500/20 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-royal-light/30 shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-full">
+                          <div className="flex-1">
+                            <div className="flex items-start space-x-3 mb-4">
+                              <div className="bg-royal-light/30 p-2 rounded-lg">
+                                <FaDumbbell className="text-royal-light text-lg sm:text-xl" />
+                              </div>
+                              <div>
+                                <h3 className="text-white font-bold text-base sm:text-lg mb-1">
+                                  Weightlifting Package
+                                </h3>
+                                <p className="text-white/70 text-sm leading-relaxed">
+                                  10 Sessions • Small Group Training
+                                  <br />
+                                  <span className="text-royal-light font-medium">
+                                    4-Person Max • $400
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+
+                            {session ? (
+                              <StripeCheckoutButton
+                                package={
+                                  PACKAGE_CONFIGS.find(
+                                    (pkg) => pkg.id === "weightlifting-10-class"
+                                  )!
+                                }
+                                className="w-full from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light font-bold py-3 px-6 rounded-xl transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                onSuccess={() => {
+                                  setTimeout(
+                                    () => window.location.reload(),
+                                    2000
+                                  );
+                                }}
+                                onError={(error) => {
+                                  console.error("Payment error:", error);
+                                }}
+                              >
+                                Buy Package - $400
+                              </StripeCheckoutButton>
+                            ) : (
+                              <button
+                                className="w-full bg-gradient-to-r from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                onClick={() => {
+                                  window.location.href = "/auth/signin";
+                                }}
+                              >
+                                Sign In to Purchase
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Classes Counter Card - RIGHT */}
+                      <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                          <div className="flex items-center space-x-3 sm:space-x-4">
+                            <div className="bg-royal-light/20 p-2 sm:p-3 rounded-xl">
+                              <FaDumbbell className="text-royal-light text-lg sm:text-2xl" />
+                            </div>
+                            <div>
+                              <h3 className="text-white font-bold text-base sm:text-lg">
+                                Session Status
+                              </h3>
+                              <p className="text-white/60 text-xs sm:text-sm">
+                                Weightlifting classes
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Session Counters */}
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          {/* Available Sessions */}
+                          <div className="text-center">
+                            <div className="text-xl sm:text-2xl font-bold text-royal-light">
+                              {weightliftingClassesRemaining || 0}
+                            </div>
+                            <div className="text-white/70 text-xs sm:text-sm">
+                              Available
+                            </div>
+                          </div>
+
+                          {/* Booked Sessions */}
+                          <div className="text-center">
+                            <div className="text-xl sm:text-2xl font-bold text-amber-400">
+                              {weightliftingClassesBooked || 0}
+                            </div>
+                            <div className="text-white/70 text-xs sm:text-sm">
+                              Booked
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-3 sm:mt-4">
+                          <div className="bg-white/10 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-royal-light to-blue-400 h-2 rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min(
+                                  (weightliftingClassesRemaining || 0) * 10,
+                                  100
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-xs text-white/50 mt-1.5 sm:mt-2">
+                            <span>
+                              Available: {weightliftingClassesRemaining || 0}
+                            </span>
+                            <span>
+                              Booked: {weightliftingClassesBooked || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  {/* Status Messages */}
+                  {showOnboarding && (
+                    <p className="text-yellow-300 text-lg mt-4">
+                      Please complete your profile setup to book classes
+                    </p>
+                  )}
+                  {!showOnboarding && weightliftingClassesRemaining === 0 && (
+                    <p className="text-yellow-300 text-lg mt-4">
+                      No sessions remaining - Contact trainer to purchase
+                      packages
+                    </p>
+                  )}{" "}
+                  {/* My Upcoming Classes Dashboard */}
+                  {!showOnboarding && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: 0.6 }}
+                      className="mt-8 max-w-6xl mx-auto"
+                    >
+                      <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg rounded-xl p-3 sm:p-4 md:p-6 border border-white/20 shadow-lg">
+                        {/* Header Section - Improved Mobile Layout */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                          <div className="flex items-center justify-between sm:justify-start">
+                            <div className="flex items-center">
+                              <div className="bg-royal-light/20 p-2 sm:p-2.5 rounded-lg mr-2 sm:mr-3">
+                                <FaCalendarAlt className="text-royal-light text-base sm:text-lg md:text-xl" />
+                              </div>
+                              <div>
+                                <h3 className="text-white font-bold text-base sm:text-lg md:text-xl">
+                                  My Upcoming Classes
+                                </h3>
+                                <p className="text-white/60 text-xs sm:text-sm mt-0.5">
+                                  {myBookings.length}{" "}
+                                  {myBookings.length === 1
+                                    ? "class"
+                                    : "classes"}{" "}
+                                  scheduled
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={refreshBookings}
+                              className="ml-2 sm:ml-4 p-2 sm:p-2.5 bg-royal-light/20 hover:bg-royal-light/30 rounded-lg transition-colors touch-manipulation flex-shrink-0"
+                              title="Refresh bookings"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-royal-light"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Cancellation Policy - Better Mobile Positioning */}
+                          <div className="w-full sm:w-auto">
+                            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/40 rounded-lg px-2.5 sm:px-3 py-1.5 sm:py-2 backdrop-blur-sm">
+                              <p className="text-amber-200 text-xs font-semibold leading-tight">
+                                Cancellation Policy
+                              </p>
+                              <p className="text-amber-100 text-xs leading-tight">
+                                24+ hrs: Full refund • &lt;24 hrs: No refund
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {myBookings.length > 0 ? (
+                          <div className="space-y-3 sm:space-y-4">
+                            {myBookings.slice(0, 5).map((booking, index) => (
+                              <motion.div
+                                key={`${booking.id}-${booking.date}-${booking.class_title}`}
+                                data-booking-id={booking.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                  duration: 0.3,
+                                  delay: index * 0.05,
+                                }}
+                                className="bg-gradient-to-r from-white/8 to-white/4 backdrop-blur-sm rounded-xl p-3 sm:p-4 md:p-5 border border-white/15 hover:border-royal-light/30 transition-all duration-300 shadow-sm hover:shadow-md"
+                              >
+                                <div className="flex flex-col">
+                                  {/* Class Title */}
+                                  <div className="mb-3">
+                                    <div className="flex items-center gap-3 mb-2">
+                                      <h4 className="text-white font-bold text-base sm:text-lg md:text-xl leading-tight">
+                                        {booking.class_title}
+                                      </h4>
+                                      {booking.status === "waitlist" && (
+                                        <div className="bg-amber-500/20 border border-amber-400/50 px-2 py-1 rounded-full flex items-center gap-1.5">
+                                          <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
+                                          <span className="text-amber-300 text-xs font-semibold uppercase tracking-wide">
+                                            On Waitlist
+                                          </span>
+                                        </div>
+                                      )}
+                                      {booking.status === "confirmed" && (
+                                        <div className="bg-green-500/20 border border-green-400/50 px-2 py-1 rounded-full flex items-center gap-1.5">
+                                          <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                                          <span className="text-green-300 text-xs font-semibold uppercase tracking-wide">
+                                            Confirmed
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {booking.status === "waitlist" && (
+                                      <div className="bg-amber-900/30 border-l-4 border-amber-400 px-3 py-2 rounded-r-lg mb-3">
+                                        <p className="text-amber-200 text-sm font-medium">
+                                          🕐 You're on the waitlist for this
+                                          class. You'll be automatically
+                                          enrolled if a spot opens up!
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Class Details - Mobile-Optimized Grid */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-4">
+                                    {/* Date & Time Row */}
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-2 h-2 bg-royal-light rounded-full flex-shrink-0"></div>
+                                      <span className="text-royal-light font-semibold text-sm sm:text-base">
+                                        {new Date(
+                                          booking.date
+                                        ).toLocaleDateString("en-US", {
+                                          weekday: "short",
+                                          month: "short",
+                                          day: "numeric",
+                                        })}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
+                                      <span className="text-white/90 font-medium text-sm sm:text-base">
+                                        {new Date(
+                                          `2000-01-01 ${booking.start_time}`
+                                        ).toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        })}{" "}
+                                        -{" "}
+                                        {new Date(
+                                          `2000-01-01 ${booking.end_time}`
+                                        ).toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        })}
+                                      </span>
+                                    </div>
+
+                                    {/* Location & Instructor Row */}
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></div>
+                                      <span className="text-purple-300 font-medium text-sm sm:text-base truncate">
+                                        {booking.location}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-2 h-2 bg-amber-400 rounded-full flex-shrink-0"></div>
+                                      <span className="text-white/70 text-sm sm:text-base">
+                                        {booking.instructor}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Cancel Button - Full Width on Mobile */}
+                                  <div className="flex justify-end">
+                                    {cancellingBooking === booking.id ? (
+                                      <div className="flex items-center bg-red-500/20 px-4 py-2.5 rounded-lg border border-red-500/30 min-w-[120px] justify-center">
+                                        <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                                        <span className="text-red-300 text-sm font-medium">
+                                          Cancelling...
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={(e) =>
+                                          handleCancelBooking(
+                                            booking,
+                                            e.currentTarget
+                                          )
+                                        }
+                                        className="px-4 sm:px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 active:from-red-800 active:to-red-900 text-white text-sm font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg touch-manipulation min-w-[100px]"
+                                        title="Cancel this booking"
+                                      >
+                                        Cancel
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+
+                            {myBookings.length > 5 && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5, delay: 0.3 }}
+                                className="text-center mt-4 p-4 bg-royal-light/10 rounded-xl border border-royal-light/20"
+                              >
+                                <p className="text-royal-light font-semibold text-sm sm:text-base">
+                                  + {myBookings.length - 5} more upcoming
+                                  classes
+                                </p>
+                                <p className="text-white/60 text-xs sm:text-sm mt-1">
+                                  Check calendar below for full schedule
+                                </p>
+                              </motion.div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 sm:py-12">
+                            <div className="bg-white/5 rounded-full p-4 sm:p-6 w-16 sm:w-20 h-16 sm:h-20 mx-auto mb-4 flex items-center justify-center">
+                              <FaCalendarAlt className="text-white/40 text-xl sm:text-2xl" />
+                            </div>
+                            <h4 className="text-white font-semibold text-lg sm:text-xl mb-2">
+                              No upcoming classes
+                            </h4>
+                            <p className="text-white/70 text-sm sm:text-base mb-4 px-4">
+                              You haven't signed up for any classes yet
+                            </p>
+                            <div className="bg-royal-light/15 rounded-lg p-3 sm:p-4 max-w-sm mx-auto">
+                              <p className="text-royal-light font-medium text-sm sm:text-base">
+                                💡 Browse classes below to get started!
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Main Content */}
+        <section className="py-2 sm:py-4 md:py-8">
+          <div className="container mx-auto px-4">
+            {/* Upcoming Classes Section */}
+            <div data-component="upcoming">
+              <UpcomingClassesSection
+                classes={classes}
+                onClassSelect={handleUpcomingClassSelect}
+              />
+            </div>
+
+            {/* Calendar Section */}
+            <div className="mt-8 sm:mt-12 md:mt-16" data-component="calendar">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="bg-black/40 backdrop-blur-lg rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6">
+                  <FaCalendarAlt className="text-xl sm:text-2xl text-royal-light mb-2 sm:mb-0 sm:mr-3" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    Class Calendar
+                  </h2>
+                </div>
+                <ClassCalendar
+                  classes={classes}
+                  onDateSelect={handleDateSelect}
+                  onClassSelect={handleClassSelect}
+                />
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Class Modal */}
+        <ClassModal
+          classData={selectedClass}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onBook={handleBookClass}
+          isBooking={isBooking}
+          sessionsRemaining={0}
+          weightliftingClassesRemaining={weightliftingClassesRemaining || 0}
+          isAuthenticated={!!session}
+          source={modalSource}
+          topPosition={modalTopPosition}
+          currentlyBooked={myBookings.length}
+        />
+
+        {/* Onboarding Modal */}
+        {session && showOnboarding && (
+          <OnboardingModal
+            isOpen={showOnboarding}
+            onComplete={handleOnboardingComplete}
+          />
+        )}
+
+        {/* Cancel Booking Modal */}
+        <CancelBookingModal
+          isOpen={showCancelModal}
+          onClose={handleCloseCancelModal}
+          onConfirm={confirmCancelBooking}
+          booking={bookingToCancel}
+          isMoreThan24Hours={isMoreThan24HoursBeforeClass(bookingToCancel)}
+          isLoading={cancellingBooking === bookingToCancel?.id}
+          topPosition={cancelModalTopPosition}
+        />
+      </div>
+    </Layout>
+  );
+}

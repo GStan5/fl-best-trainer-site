@@ -66,10 +66,10 @@ export default function PrivacyPolicy() {
               To ask questions or comment about this privacy policy, contact us
               at:{" "}
               <a
-                href="mailto:FLBestTrainer@outlook.com"
+                href="mailto:flbesttrainer@gmail.com"
                 className="text-royal-light hover:underline"
               >
-                FLBestTrainer@outlook.com
+                flbesttrainer@gmail.com
               </a>
             </p>
           </div>

@@ -230,10 +230,10 @@ export default function TermsOfService() {
                   <p className="mb-2">
                     Email:{" "}
                     <a
-                      href="mailto:FLBestTrainer@outlook.com"
+                      href="mailto:flbesttrainer@gmail.com"
                       className="text-royal-light hover:underline"
                     >
-                      FLBestTrainer@outlook.com
+                      flbesttrainer@gmail.com
                     </a>
                   </p>
                   <p>

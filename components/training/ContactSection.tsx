@@ -25,7 +25,7 @@ VERSION:3.0
 N:Stanifer;Gavin;;;
 FN:Gavin Stanifer
 TEL;TYPE=CELL:(928) 587-1309
-EMAIL:FLBestTrainer@outlook.com
+EMAIL:flbesttrainer@gmail.com
 URL:https://flbesttrainer.com
 NOTE:Personal Trainer - Serving Manatee and Sarasota Counties
 END:VCARD`;
@@ -238,10 +238,10 @@ END:VCARD`;
                       <div>
                         <p className="text-white/60 text-sm mb-1">Email me</p>
                         <p className="text-white text-base font-medium mb-4 tracking-tight">
-                          FLBestTrainer@outlook.com
+                          flbesttrainer@gmail.com
                         </p>
                         <a
-                          href="mailto:FLBestTrainer@outlook.com?subject=Personal Training Inquiry&body=Hi Gavin, I'm interested in personal training. Please contact me."
+                          href="mailto:flbesttrainer@gmail.com?subject=Personal Training Inquiry&body=Hi Gavin, I'm interested in personal training. Please contact me."
                           className="inline-flex items-center justify-center w-full px-5 py-2.5 bg-gradient-to-r from-blue-700 to-blue-500 hover:from-blue-600 hover:to-blue-400 text-white rounded-lg text-sm font-medium transition-all duration-300 shadow-lg shadow-blue-600/10 hover:shadow-blue-500/30 active:scale-95 touch-manipulation"
                         >
                           Email Now
@@ -266,7 +266,7 @@ END:VCARD`;
                         <p className="text-white font-medium">Gavin Stanifer</p>
                         <p className="text-white/70 text-sm">(928) 587-1309</p>
                         <p className="text-royal-light/80 text-sm">
-                          FLBestTrainer@outlook.com
+                          flbesttrainer@gmail.com
                         </p>
                       </div>
                       <div className="flex flex-col gap-2">

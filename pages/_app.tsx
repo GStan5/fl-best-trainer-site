@@ -4,6 +4,8 @@ import { Inter, Montserrat } from "next/font/google";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { GA_TRACKING_ID, pageview, setGATrackingId } from "../utils/gtag";
+import { SessionProvider } from "next-auth/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,6 +27,8 @@ export default function App({
   gaTrackingId,
 }: AppPropsWithGA) {
   const router = useRouter();
+
+  const { session, ...restPageProps } = pageProps || {};
 
   useEffect(() => {
     // Set the GA tracking ID from server-side
@@ -48,9 +52,12 @@ export default function App({
   }, [router.events]);
 
   return (
-    <main className={`${inter.variable} ${montserrat.variable} font-sans`}>
-      <Component {...pageProps} />
-    </main>
+    <SessionProvider session={session}>
+      <main className={`${inter.variable} ${montserrat.variable} font-sans`}>
+        <Component {...restPageProps} />
+        <SpeedInsights />
+      </main>
+    </SessionProvider>
   );
 }
 
