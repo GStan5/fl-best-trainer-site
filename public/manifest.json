@@ -2,7 +2,7 @@
   "name": "FL Best Trainer",
   "short_name": "FL Trainer",
   "description": "Personal training services in Sarasota, Florida. Book classes, manage your account, and track your fitness journey.",
-  "start_url": "/",
+  "start_url": "/classes",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#3b82f6",
