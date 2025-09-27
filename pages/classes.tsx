@@ -15,7 +15,15 @@ import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
 import { useWeightliftingPackage } from "../hooks/usePackages";
-import { FaCalendarAlt, FaUsers, FaDumbbell } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaUsers,
+  FaDumbbell,
+  FaFacebook,
+  FaGoogle,
+  FaStar,
+} from "react-icons/fa";
+import AddToHomeScreenButton from "../components/AddToHomeScreenButton";
 
 interface ClassData {
   id: string;
@@ -330,6 +338,13 @@ export default function Classes() {
       const data = await response.json();
 
       if (data.success) {
+        // Show multiple booking warning if applicable
+        if (data.isMultipleBooking) {
+          alert(
+            `✅ ${data.message}\n\nYou now have ${data.totalBookingsForClass} booking(s) for this class.`
+          );
+        }
+
         // Booking successful - let the UI state changes provide feedback
         // Refresh user data and bookings
         await checkOnboardingStatus();
@@ -340,6 +355,7 @@ export default function Classes() {
         handleCloseModal();
       } else {
         console.error(`Failed to book class: ${data.error}`);
+        alert(`❌ Booking failed: ${data.error}`);
       }
     } catch (error) {
       console.error("Error booking class:", error);
@@ -520,6 +536,47 @@ export default function Classes() {
                 </h1>
               </div>
 
+              {/* Review Buttons - Professional Design */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="mb-6 sm:mb-8"
+              >
+                <div className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/20 max-w-lg mx-auto shadow-lg">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="flex items-center gap-1 mr-2">
+                      {[...Array(5)].map((_, i) => (
+                        <FaStar key={i} className="text-yellow-400 text-xs" />
+                      ))}
+                    </div>
+                    <p className="text-white font-medium text-sm">
+                      Love your training experience?
+                    </p>
+                  </div>
+                  <div className="flex gap-3 justify-center">
+                    <a
+                      href="https://www.facebook.com/FLBestTrainer/reviews"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                    >
+                      <FaFacebook className="text-sm" />
+                      Facebook
+                    </a>
+                    <a
+                      href="https://g.page/r/CaACepEsFdx0EBM/review"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                    >
+                      <FaGoogle className="text-sm" />
+                      Google
+                    </a>
+                  </div>
+                </div>
+              </motion.div>
+
               {/* Sign In Button - Only show if user is not signed in */}
               {status !== "loading" && !session && (
                 <motion.div
@@ -566,13 +623,14 @@ export default function Classes() {
                           Your fitness dashboard • Ready to train?
                         </p>
                       </div>
-                      {isUserAdmin && (
-                        <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2">
+                        <AddToHomeScreenButton />
+                        {isUserAdmin && (
                           <span className="px-3 py-1.5 bg-gradient-to-r from-yellow-500 to-amber-500 text-white text-sm font-bold rounded-lg shadow-lg">
                             ⚡ ADMIN
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                   {/* Dashboard Stats & Actions */}
@@ -609,6 +667,22 @@ export default function Classes() {
                                   </span>
                                 </p>
                               </div>
+                            </div>
+
+                            {/* Payment Fee Warning */}
+                            <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 mb-4">
+                              <p className="text-yellow-300 text-xs font-medium mb-1">
+                                💳 Payment Processing Notice
+                              </p>
+                              <p className="text-yellow-100 text-xs mb-2">
+                                <strong>
+                                  Online payments include a $30 processing fee.
+                                </strong>
+                              </p>
+                              <p className="text-white/80 text-xs">
+                                To avoid fees, pay with cash, check, or Zelle.
+                                Contact us to arrange.
+                              </p>
                             </div>
 
                             {session ? (

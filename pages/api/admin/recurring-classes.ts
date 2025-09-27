@@ -278,14 +278,50 @@ export default async function handler(
 
       // If requested, delete all future individual classes
       if (deleteFutureClasses) {
+        // First, get all users who have bookings for these classes to update their counts
+        const usersWithBookings = await sql`
+          SELECT user_id, COUNT(*) as booking_count
+          FROM bookings 
+          WHERE class_id IN (
+            SELECT id FROM classes 
+            WHERE parent_recurring_id = ${id} 
+            AND date >= CURRENT_DATE
+          )
+          AND status != 'cancelled'
+          GROUP BY user_id
+        `;
+
+        // Update each user's booking count before deleting bookings
+        for (const userBooking of usersWithBookings) {
+          await sql`
+            UPDATE users 
+            SET weightlifting_classes_booked = GREATEST(weightlifting_classes_booked - ${userBooking.booking_count}, 0),
+                updated_at = NOW()
+            WHERE id = ${userBooking.user_id}
+          `;
+        }
+
+        // Then delete bookings for these classes
+        await sql`
+          DELETE FROM bookings 
+          WHERE class_id IN (
+            SELECT id FROM classes 
+            WHERE parent_recurring_id = ${id} 
+            AND date >= CURRENT_DATE
+          )
+        `;
+
+        // Finally delete the classes
         await sql`
           DELETE FROM classes 
           WHERE parent_recurring_id = ${id} 
           AND date >= CURRENT_DATE
         `;
-      }
 
-      // Delete the template
+        console.log(
+          `Updated ${usersWithBookings.length} user booking counts for recurring class deletion`
+        );
+      } // Delete the template
       await sql`
         DELETE FROM recurring_class_templates WHERE id = ${id}
       `;

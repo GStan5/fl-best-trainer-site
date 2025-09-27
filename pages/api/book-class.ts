@@ -101,26 +101,13 @@ export default async function handler(
       });
     }
 
-    // Check if user is already booked for this class (any status)
-    const existingBooking = await sql`
+    // Check if user is already booked for this class (for warning purposes)
+    const existingBookings = await sql`
       SELECT id, status FROM bookings 
       WHERE user_id = ${user.id} AND class_id = ${class_id} AND status != 'cancelled'
     `;
 
-    if (existingBooking.length > 0) {
-      const currentStatus = existingBooking[0].status;
-      if (currentStatus === "confirmed") {
-        return res.status(400).json({
-          success: false,
-          error: "Already booked for this class",
-        });
-      } else if (currentStatus === "waitlist") {
-        return res.status(400).json({
-          success: false,
-          error: "Already on waitlist for this class",
-        });
-      }
-    }
+    const isMultipleBooking = existingBookings.length > 0;
 
     // Determine booking status based on class capacity
     let bookingStatus = "confirmed";
@@ -141,14 +128,10 @@ export default async function handler(
       }
     }
 
-    // Create booking - use UPSERT to handle any duplicate issues
+    // Create booking - allow multiple bookings for the same class
     const booking = await sql`
       INSERT INTO bookings (user_id, class_id, status)
       VALUES (${user.id}, ${class_id}, ${bookingStatus})
-      ON CONFLICT (user_id, class_id) 
-      DO UPDATE SET 
-        status = ${bookingStatus},
-        updated_at = NOW()
       RETURNING *
     `;
 
@@ -174,16 +157,26 @@ export default async function handler(
       `;
     }
 
+    let message;
+    if (bookingStatus === "waitlist") {
+      message = isMultipleBooking
+        ? "Added to waitlist successfully! Note: You now have multiple waitlist entries for this class."
+        : "Added to waitlist successfully! You'll be notified if a spot opens up.";
+    } else {
+      message = isMultipleBooking
+        ? "Class booked successfully! Note: You are now booked multiple times for this class (for family/friends)."
+        : "Class booked successfully!";
+    }
+
     res.status(201).json({
       success: true,
       data: {
         ...booking[0],
         class_title: classData.title,
       },
-      message:
-        bookingStatus === "waitlist"
-          ? "Added to waitlist successfully! You'll be notified if a spot opens up."
-          : "Class booked successfully!",
+      message: message,
+      isMultipleBooking: isMultipleBooking,
+      totalBookingsForClass: existingBookings.length + 1,
     });
   } catch (error) {
     console.error("Error booking class:", error);

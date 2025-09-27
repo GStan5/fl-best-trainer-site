@@ -19,6 +19,7 @@ import {
   FaEnvelope,
   FaTrophy,
 } from "react-icons/fa";
+import AddToHomeScreenButton from "../components/AddToHomeScreenButton";
 
 interface UserData {
   id: string;
@@ -420,13 +421,16 @@ export default function Account() {
                   </p>
                 </div>
               </div>
-              {userData?.is_admin && (
-                <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg self-start sm:self-center">
-                  <span className="font-bold text-sm sm:text-base">
-                    ⚡ ADMIN
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center space-x-2">
+                <AddToHomeScreenButton />
+                {userData?.is_admin && (
+                  <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg self-start sm:self-center">
+                    <span className="font-bold text-sm sm:text-base">
+                      ⚡ ADMIN
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
 
@@ -552,6 +556,23 @@ export default function Account() {
                     Small group training • 10 sessions • 4-person max • Expert
                     instruction
                   </p>
+
+                  {/* Payment Fee Warning */}
+                  <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 mb-4">
+                    <p className="text-yellow-300 text-xs font-medium mb-1">
+                      💳 Payment Processing Notice
+                    </p>
+                    <p className="text-yellow-100 text-xs mb-2">
+                      <strong>
+                        Online payments include a $30 processing fee.
+                      </strong>
+                    </p>
+                    <p className="text-white/80 text-xs">
+                      To avoid fees, pay with cash, check, or Zelle. Contact us
+                      to arrange.
+                    </p>
+                  </div>
+
                   <StripeCheckoutButton
                     package={
                       weightliftingPackage ||
@@ -651,6 +672,17 @@ export default function Account() {
                           <p className="text-white/60 text-xs mb-3">
                             {pkg.description}
                           </p>
+
+                          {/* Payment Fee Warning */}
+                          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-2 mb-3">
+                            <p className="text-yellow-300 text-xs font-medium mb-1">
+                              💳 +$30 processing fee
+                            </p>
+                            <p className="text-white/80 text-xs">
+                              Use cash, check, or Zelle to avoid fees
+                            </p>
+                          </div>
+
                           <StripeCheckoutButton
                             package={pkg}
                             className="text-xs py-2"

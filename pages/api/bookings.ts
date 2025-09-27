@@ -91,18 +91,13 @@ export default async function handler(
         });
       }
 
-      // Check if user is already booked for this class
-      const existingBooking = await sql`
+      // Check if user is already booked for this class (for warning purposes)
+      const existingBookings = await sql`
         SELECT id FROM bookings 
         WHERE user_id = ${user_id} AND class_id = ${class_id} AND status != 'cancelled'
       `;
 
-      if (existingBooking.length > 0) {
-        return res.status(400).json({
-          success: false,
-          error: "Already booked for this class",
-        });
-      }
+      const isMultipleBooking = existingBookings.length > 0;
 
       // Create the booking and update package sessions
       const booking = await sql`
@@ -119,12 +114,27 @@ export default async function handler(
         WHERE id = ${user_package_id}
       `;
 
+      // Update user's booking count
+      await sql`
+        UPDATE users 
+        SET 
+          weightlifting_classes_booked = COALESCE(weightlifting_classes_booked, 0) + 1,
+          updated_at = NOW()
+        WHERE id = ${user_id}
+      `;
+
       // The trigger will automatically update the class current_participants count
+
+      const responseMessage = isMultipleBooking
+        ? "Class booked successfully! Note: You are now booked multiple times for this class (for family/friends)."
+        : "Class booked successfully!";
 
       res.status(201).json({
         success: true,
         data: booking[0],
-        message: "Class booked successfully!",
+        message: responseMessage,
+        isMultipleBooking: isMultipleBooking,
+        totalBookingsForClass: existingBookings.length + 1,
       });
     } catch (error) {
       console.error("Error creating booking:", error);

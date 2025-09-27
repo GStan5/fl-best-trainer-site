@@ -233,7 +233,36 @@ export default async function handler(
         });
       }
 
-      // Instead of deleting, we'll mark as inactive
+      // First, get all users who have bookings for this class to update their counts
+      const usersWithBookings = await sql`
+        SELECT user_id, COUNT(*) as booking_count
+        FROM bookings 
+        WHERE class_id = ${id} AND status != 'cancelled'
+        GROUP BY user_id
+      `;
+
+      // Update each user's booking count before deleting bookings
+      for (const userBooking of usersWithBookings) {
+        await sql`
+          UPDATE users 
+          SET weightlifting_classes_booked = GREATEST(weightlifting_classes_booked - ${userBooking.booking_count}, 0),
+              updated_at = NOW()
+          WHERE id = ${userBooking.user_id}
+        `;
+      }
+
+      // Then delete all bookings for this class
+      const deletedBookings = await sql`
+        DELETE FROM bookings 
+        WHERE class_id = ${id}
+        RETURNING user_id
+      `;
+
+      console.log(
+        `Deleted ${deletedBookings.length} bookings and updated ${usersWithBookings.length} user counts`
+      );
+
+      // Then mark the class as inactive
       const cancelledClass = await sql`
         UPDATE classes SET
           is_active = false,

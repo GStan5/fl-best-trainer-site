@@ -250,54 +250,6 @@ export default function Header() {
               </button>
             </div>
           </nav>
-
-          {/* Excellence Tagline with trophy-like design */}
-          <Link
-            href="/training"
-            className={`
-              hidden lg:block text-center 
-              absolute left-1/2 -translate-x-1/2 w-auto
-              transform transition-all duration-150 ease-out
-              hover:scale-105
-              ${
-                scrolled
-                  ? "opacity-0 -translate-y-8"
-                  : "opacity-100 -bottom-14 animate-slight-bounce"
-              }
-            `}
-          >
-            <div className="relative">
-              {/* Top connector - made longer */}
-              <div className="absolute left-1/2 -top-2 w-px h-5 bg-gradient-to-b from-royal to-transparent"></div>
-
-              {/* Medal/Trophy-like shape */}
-              <div className="relative">
-                {/* Star accent */}
-                <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-royal-light rounded-full transform rotate-45"></div>
-
-                {/* Main container with gold accent */}
-                <div className="bg-gradient-to-b from-black/90 to-black/70 backdrop-blur-md border border-royal/30 shadow-lg shadow-royal/20 px-10 py-2 pt-3">
-                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-royal-light to-transparent"></div>
-
-                  {/* Text with medal-like styling */}
-                  <span className="text-white/90 font-medium tracking-wider text-sm uppercase flex items-center justify-center gap-1">
-                    <span className="bg-gradient-to-r from-royal to-royal-light bg-clip-text text-transparent font-bold">
-                      Personal
-                    </span>
-                    <span className="text-white font-medium mx-1">
-                      Training
-                    </span>
-                    <span className="bg-gradient-to-r from-royal-light to-royal bg-clip-text text-transparent font-bold flex items-center">
-                      Excellence
-                      <span className="inline-flex ml-1">
-                        <span className="w-1 h-1 bg-royal-light rounded-full animate-ping opacity-75"></span>
-                      </span>
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Link>
         </div>
       </header>
 
