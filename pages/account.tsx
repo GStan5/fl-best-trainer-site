@@ -9,6 +9,7 @@ import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
 import StripeSuccess from "../components/shared/StripeSuccess";
+import { useWeightliftingPackage } from "../hooks/usePackages";
 import {
   FaUser,
   FaDumbbell,
@@ -50,6 +51,8 @@ interface Purchase {
 
 export default function Account() {
   const { data: session, status } = useSession();
+  const { package: weightliftingPackage, loading: packageLoading } =
+    useWeightliftingPackage();
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -537,7 +540,12 @@ export default function Account() {
                   <div className="flex items-center mb-2 sm:mb-3">
                     <FaDumbbell className="text-royal-light text-base sm:text-lg mr-2" />
                     <h4 className="text-white font-semibold text-sm sm:text-base">
-                      Weightlifting Package - $400
+                      Weightlifting Package - $
+                      {weightliftingPackage?.price ||
+                        PACKAGE_CONFIGS.find(
+                          (pkg) => pkg.id === "weightlifting-10-class"
+                        )?.price ||
+                        400}
                     </h4>
                   </div>
                   <p className="text-white/70 text-xs sm:text-sm mb-3 sm:mb-4">
@@ -546,6 +554,7 @@ export default function Account() {
                   </p>
                   <StripeCheckoutButton
                     package={
+                      weightliftingPackage ||
                       PACKAGE_CONFIGS.find(
                         (pkg) => pkg.id === "weightlifting-10-class"
                       )!

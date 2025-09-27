@@ -12,8 +12,9 @@ interface Package {
   name: string;
   description: string;
   price: number;
-  sessions: number;
-  type: "weightlifting" | "private" | "combo";
+  sessions?: number; // For PACKAGE_CONFIGS compatibility
+  sessions_included?: number; // For database packages
+  type?: "weightlifting" | "private" | "combo";
   features?: string[];
 }
 
@@ -57,8 +58,8 @@ export default function StripeCheckoutButton({
           packageName: pkg.name,
           packageDescription: pkg.description,
           price: pkg.price,
-          sessions: pkg.sessions,
-          packageType: pkg.type,
+          sessions: pkg.sessions || pkg.sessions_included,
+          packageType: pkg.type || "weightlifting",
         }),
       });
 
@@ -139,7 +140,7 @@ export const PACKAGE_CONFIGS: Package[] = [
     id: "weightlifting-10-class",
     name: "10-Class Weightlifting Package",
     description: "Small group training • 4-person max • Expert instruction",
-    price: 400,
+    price: 500,
     sessions: 10,
     type: "weightlifting",
     features: [

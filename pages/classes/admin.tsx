@@ -5,6 +5,7 @@ import SEO from "../../components/shared/SEO";
 import AddEditClassModal from "../../components/classes/AddEditClassModal";
 import ClassInstancesTable from "../../components/classes/ClassInstancesTable";
 import ClassCompletionModal from "../../components/admin/ClassCompletionModal";
+import PackageEditModal from "../../components/admin/PackageEditModal";
 import {
   FaPlus,
   FaUsers,
@@ -23,6 +24,7 @@ import {
   FaRedoAlt,
   FaCalendarWeek,
   FaCheck,
+  FaHashtag,
 } from "react-icons/fa";
 
 interface RecurringTemplate {
@@ -277,6 +279,16 @@ interface Class {
   };
 }
 
+interface Package {
+  id: string;
+  name: string;
+  description: string;
+  sessions_included: number;
+  price: number;
+  duration_days: number;
+  is_active: boolean;
+}
+
 interface DashboardStats {
   totalClasses: number;
   upcomingClasses: number;
@@ -301,7 +313,7 @@ export default function ClassesAdmin() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<
-    "overview" | "classes" | "analytics"
+    "overview" | "classes" | "packages" | "analytics"
   >("overview");
   const [viewMode, setViewMode] = useState<
     "instances" | "templates" | "completed"
@@ -309,10 +321,12 @@ export default function ClassesAdmin() {
   const [recurringTemplates, setRecurringTemplates] = useState<
     RecurringTemplate[]
   >([]);
+  const [packages, setPackages] = useState<Package[]>([]);
   const [showAddClass, setShowAddClass] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [editingTemplate, setEditingTemplate] =
     useState<RecurringTemplate | null>(null);
+  const [editingPackage, setEditingPackage] = useState<Package | null>(null);
   const [showClassCompletion, setShowClassCompletion] = useState(false);
   const [completionClassId, setCompletionClassId] = useState<string | null>(
     null
@@ -327,6 +341,15 @@ export default function ClassesAdmin() {
     const loadData = async () => {
       try {
         setIsLoading(true);
+
+        // Fetch packages if in packages tab
+        if (activeTab === "packages") {
+          const packageResponse = await fetch("/api/packages");
+          const packageData = await packageResponse.json();
+          if (packageData.success) {
+            setPackages(packageData.data);
+          }
+        }
 
         // Fetch classes based on view mode
         if (viewMode === "completed") {
@@ -361,7 +384,7 @@ export default function ClassesAdmin() {
     };
 
     loadData();
-  }, [viewMode]);
+  }, [viewMode, activeTab]);
 
   // Calculate stats whenever classes or completed classes data changes
   useEffect(() => {
@@ -435,6 +458,18 @@ export default function ClassesAdmin() {
       }
     } catch (error) {
       console.error("Error fetching completed classes:", error);
+    }
+  };
+
+  const fetchPackages = async () => {
+    try {
+      const response = await fetch("/api/packages");
+      const data = await response.json();
+      if (data.success) {
+        setPackages(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching packages:", error);
     }
   };
 
@@ -913,9 +948,15 @@ export default function ClassesAdmin() {
                   shortName: "Classes",
                 },
                 {
+                  id: "packages",
+                  name: "Packages",
+                  icon: FaDollarSign,
+                  shortName: "Packages",
+                },
+                {
                   id: "analytics",
                   name: "Analytics",
-                  icon: FaDollarSign,
+                  icon: FaChartLine,
                   shortName: "Reports",
                 },
               ].map((tab) => {
@@ -1171,6 +1212,121 @@ export default function ClassesAdmin() {
             </div>
           )}
 
+          {/* Packages Management Tab */}
+          {activeTab === "packages" && (
+            <div className="space-y-6">
+              <div className="bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-slate-700">
+                <div className="px-6 py-4 border-b border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        Package Management
+                      </h3>
+                      <p className="text-sm text-slate-400">
+                        Manage pricing and details for all training packages
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {packages.map((pkg) => (
+                        <motion.div
+                          key={pkg.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-slate-900 rounded-lg p-6 border border-slate-700 hover:border-slate-600 transition-colors"
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold text-white mb-2">
+                                {pkg.name}
+                              </h4>
+                              <p className="text-slate-300 text-sm mb-3">
+                                {pkg.description}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setEditingPackage(pkg)}
+                              className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors ml-2"
+                              title="Edit Package"
+                            >
+                              <FaEdit className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400 text-sm flex items-center">
+                                <FaDollarSign className="w-3 h-3 mr-1" />
+                                Price:
+                              </span>
+                              <span className="text-green-400 font-semibold">
+                                ${pkg.price}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400 text-sm flex items-center">
+                                <FaHashtag className="w-3 h-3 mr-1" />
+                                Sessions:
+                              </span>
+                              <span className="text-white">
+                                {pkg.sessions_included}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400 text-sm">
+                                Per Session:
+                              </span>
+                              <span className="text-slate-300">
+                                $
+                                {(pkg.price / pkg.sessions_included).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400 text-sm">
+                                Valid for:
+                              </span>
+                              <span className="text-white">
+                                {pkg.duration_days} days
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-slate-700">
+                            <div className="flex items-center justify-between">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  pkg.is_active
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {pkg.is_active ? "Active" : "Inactive"}
+                              </span>
+                              <button
+                                onClick={() => setEditingPackage(pkg)}
+                                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                              >
+                                Edit Package →
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Analytics Tab */}
           {activeTab === "analytics" && (
             <div className="space-y-8">
@@ -1222,6 +1378,16 @@ export default function ClassesAdmin() {
         classId={completionClassId || ""}
         onClassCompleted={handleClassCompleted}
       />
+
+      {/* Package Edit Modal */}
+      {editingPackage && (
+        <PackageEditModal
+          package={editingPackage}
+          isOpen={!!editingPackage}
+          onClose={() => setEditingPackage(null)}
+          onSuccess={fetchPackages}
+        />
+      )}
     </Layout>
   );
 }

@@ -14,6 +14,7 @@ import CancelBookingModal from "../components/classes/CancelBookingModal";
 import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
+import { useWeightliftingPackage } from "../hooks/usePackages";
 import { FaCalendarAlt, FaUsers, FaDumbbell } from "react-icons/fa";
 
 interface ClassData {
@@ -35,6 +36,8 @@ interface ClassData {
 
 export default function Classes() {
   const { data: session, status } = useSession();
+  const { package: weightliftingPackage, loading: packageLoading } =
+    useWeightliftingPackage();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -596,7 +599,13 @@ export default function Classes() {
                                   10 Sessions • Small Group Training
                                   <br />
                                   <span className="text-royal-light font-medium">
-                                    4-Person Max • $400
+                                    4-Person Max • $
+                                    {weightliftingPackage?.price ||
+                                      PACKAGE_CONFIGS.find(
+                                        (pkg) =>
+                                          pkg.id === "weightlifting-10-class"
+                                      )?.price ||
+                                      400}
                                   </span>
                                 </p>
                               </div>
@@ -605,6 +614,7 @@ export default function Classes() {
                             {session ? (
                               <StripeCheckoutButton
                                 package={
+                                  weightliftingPackage ||
                                   PACKAGE_CONFIGS.find(
                                     (pkg) => pkg.id === "weightlifting-10-class"
                                   )!
@@ -620,7 +630,12 @@ export default function Classes() {
                                   console.error("Payment error:", error);
                                 }}
                               >
-                                Buy Package - $400
+                                Buy Package - $
+                                {weightliftingPackage?.price ||
+                                  PACKAGE_CONFIGS.find(
+                                    (pkg) => pkg.id === "weightlifting-10-class"
+                                  )?.price ||
+                                  400}
                               </StripeCheckoutButton>
                             ) : (
                               <button
