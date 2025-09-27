@@ -6,6 +6,7 @@ import AddEditClassModal from "../../components/classes/AddEditClassModal";
 import ClassInstancesTable from "../../components/classes/ClassInstancesTable";
 import ClassCompletionModal from "../../components/admin/ClassCompletionModal";
 import PackageEditModal from "../../components/admin/PackageEditModal";
+import AnalyticsTabs from "../../components/admin/AnalyticsTabsNew";
 import {
   FaPlus,
   FaUsers,
@@ -1328,24 +1329,7 @@ export default function ClassesAdmin() {
           {/* Analytics Tab */}
           {activeTab === "analytics" && (
             <div className="space-y-8">
-              <div className="bg-slate-800 rounded-xl shadow-lg p-6 border border-slate-700">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Analytics Dashboard
-                </h3>
-                <p className="text-slate-400">
-                  Detailed analytics and reporting coming soon...
-                </p>
-
-                {/* Placeholder for charts and analytics */}
-                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="h-64 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center">
-                    <p className="text-slate-400">Class Attendance Chart</p>
-                  </div>
-                  <div className="h-64 bg-slate-900 border border-slate-700 rounded-lg flex items-center justify-center">
-                    <p className="text-slate-400">Revenue Trends</p>
-                  </div>
-                </div>
-              </div>
+              <AnalyticsTabs />
             </div>
           )}
         </div>
