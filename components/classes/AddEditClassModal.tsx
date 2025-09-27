@@ -27,8 +27,8 @@ const defaultClass: Class = {
     "Perfect introduction to weight lifting in a small group setting. Learn proper form, basic exercises, and build confidence in the gym.",
   instructor: "Gavin Stanifer, NASM-CPT",
   date: "",
-  start_time: "18:00",
-  end_time: "19:00",
+  start_time: "07:30",
+  end_time: "08:30",
   max_participants: 4,
   location: "Bayfront Park Recreation Center",
   class_type: "Strength Training",
@@ -181,6 +181,11 @@ export default function AddEditClassModal({
       let newDays: string[];
 
       if (checked) {
+        // Prevent duplicate day selection
+        if (currentDays.includes(day)) {
+          console.warn(`Day ${day} is already selected`);
+          return;
+        }
         newDays = [...currentDays, day];
         // Initialize daily schedule for this day
         const newSchedule = {
@@ -241,6 +246,106 @@ export default function AddEditClassModal({
       });
     },
     []
+  );
+
+  // Handle day change for recurring templates
+  const handleDayChange = useCallback(
+    async (
+      oldDay: string,
+      newDay: string,
+      newStartTime?: string,
+      newEndTime?: string
+    ) => {
+      if (!editingRecurringTemplate?.id) {
+        console.error("No template ID for day change");
+        return;
+      }
+
+      try {
+        console.log(
+          "🔄 Changing day from",
+          oldDay,
+          "to",
+          newDay,
+          "with times",
+          newStartTime,
+          newEndTime
+        );
+
+        // Call the API to handle the day change
+        const response = await fetch(`/api/admin/recurring-classes`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: editingRecurringTemplate.id,
+            action: "change_day",
+            oldDay,
+            newDay,
+            newStartTime: newStartTime || "07:30",
+            newEndTime: newEndTime || "08:30",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to change day: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log("🎉 Day change API response:", result);
+
+        if (!result.success) {
+          throw new Error(result.error || "Unknown error");
+        }
+
+        // Calculate the updated values
+        const currentRecurringDays = formData.recurring_days || [];
+        const currentDailySchedule = { ...formData.daily_schedule };
+
+        // Remove old day, add new day
+        const newRecurringDays = currentRecurringDays.filter(
+          (day) => day !== oldDay
+        );
+        if (!newRecurringDays.includes(newDay)) {
+          newRecurringDays.push(newDay);
+        }
+
+        // Update schedule
+        delete currentDailySchedule[oldDay];
+        currentDailySchedule[newDay] = {
+          start_time: newStartTime || "07:30",
+          end_time: newEndTime || "08:30",
+        };
+
+        // Update the form data locally only after successful API response
+        setFormData((prev) => ({
+          ...prev,
+          recurring_days: newRecurringDays,
+          daily_schedule: currentDailySchedule,
+        }));
+
+        // Close the modal and refresh the page to show updated data
+        console.log("🔄 Day change completed - closing modal and refreshing");
+        onClose();
+
+        // Refresh the page to ensure clean state
+        if (typeof window !== "undefined") {
+          window.location.reload();
+        }
+
+        console.log("✅ Day change completed successfully");
+      } catch (error) {
+        console.error("❌ Error changing day:", error);
+        // Show user-friendly error message
+        alert(
+          `Failed to change day: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+      }
+    },
+    [editingRecurringTemplate?.id]
   );
 
   const validateForm = (): boolean => {
@@ -532,6 +637,8 @@ export default function AddEditClassModal({
                           updateField("recurring_end_date", value)
                         }
                         hideToggle={mode === "recurring"}
+                        isEditing={!!editingRecurringTemplate}
+                        onDayChange={handleDayChange}
                       />
 
                       {/* Date/Time for Single Classes */}

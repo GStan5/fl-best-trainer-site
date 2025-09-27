@@ -99,7 +99,17 @@ const TemplateCard = ({
   };
 
   const formatDays = (days: string[]) => {
+    const daysOrder = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
     return days
+      .sort((a, b) => daysOrder.indexOf(a) - daysOrder.indexOf(b))
       .map((day) => day.charAt(0).toUpperCase() + day.slice(1))
       .join(", ");
   };
@@ -128,14 +138,27 @@ const TemplateCard = ({
                 {(template as any).daily_schedule &&
                 Object.keys((template as any).daily_schedule).length > 0 ? (
                   <div className="space-y-1">
-                    {Object.entries((template as any).daily_schedule).map(
-                      ([day, schedule]: [string, any]) => (
+                    {Object.entries((template as any).daily_schedule)
+                      .sort(([dayA], [dayB]) => {
+                        const daysOrder = [
+                          "sunday",
+                          "monday",
+                          "tuesday",
+                          "wednesday",
+                          "thursday",
+                          "friday",
+                          "saturday",
+                        ];
+                        return (
+                          daysOrder.indexOf(dayA) - daysOrder.indexOf(dayB)
+                        );
+                      })
+                      .map(([day, schedule]: [string, any]) => (
                         <div key={day} className="text-xs">
                           <span className="capitalize">{day}:</span>{" "}
                           {schedule.start_time} - {schedule.end_time}
                         </div>
-                      )
-                    )}
+                      ))}
                   </div>
                 ) : (
                   <p>

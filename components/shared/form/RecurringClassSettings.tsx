@@ -24,6 +24,13 @@ interface RecurringClassSettingsProps {
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
   hideToggle?: boolean;
+  isEditing?: boolean;
+  onDayChange?: (
+    oldDay: string,
+    newDay: string,
+    newStartTime?: string,
+    newEndTime?: string
+  ) => void;
 }
 
 export default function RecurringClassSettings({
@@ -39,6 +46,8 @@ export default function RecurringClassSettings({
   onStartDateChange,
   onEndDateChange,
   hideToggle = false,
+  isEditing = false,
+  onDayChange,
 }: RecurringClassSettingsProps) {
   return (
     <div className="space-y-4">
@@ -104,6 +113,8 @@ export default function RecurringClassSettings({
             selectedDays={recurringDays}
             dailySchedule={dailySchedule}
             onTimeChange={onTimeChange}
+            isEditing={isEditing}
+            onDayChange={onDayChange}
           />
         </div>
       )}

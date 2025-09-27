@@ -8,13 +8,13 @@ interface DayScheduleSelectorProps {
 }
 
 const daysOfWeek = [
+  { value: "sunday", label: "Sun", full: "Sunday" },
   { value: "monday", label: "Mon", full: "Monday" },
   { value: "tuesday", label: "Tue", full: "Tuesday" },
   { value: "wednesday", label: "Wed", full: "Wednesday" },
   { value: "thursday", label: "Thu", full: "Thursday" },
   { value: "friday", label: "Fri", full: "Friday" },
   { value: "saturday", label: "Sat", full: "Saturday" },
-  { value: "sunday", label: "Sun", full: "Sunday" },
 ];
 
 export default function DayScheduleSelector({
@@ -44,7 +44,12 @@ export default function DayScheduleSelector({
               <input
                 type="checkbox"
                 checked={isSelected}
-                onChange={(e) => onDayToggle(day.value, e.target.checked)}
+                onChange={(e) => {
+                  // Prevent selecting the same day multiple times (should already be handled by selectedDays array)
+                  if (!e.target.checked || !selectedDays.includes(day.value)) {
+                    onDayToggle(day.value, e.target.checked);
+                  }
+                }}
                 className="sr-only"
               />
               <span className="text-xs font-medium">{day.label}</span>
