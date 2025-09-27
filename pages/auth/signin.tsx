@@ -1,8 +1,9 @@
 import { getProviders, signIn, getSession } from "next-auth/react";
 import { GetServerSideProps } from "next";
-import Layout from "../../components/Layout";
-import { FaGoogle } from "react-icons/fa";
+import { FaGoogle, FaHome } from "react-icons/fa";
 import { motion } from "framer-motion";
+import Head from "next/head";
+import Link from "next/link";
 
 interface SignInProps {
   providers: Record<string, any>;
@@ -10,8 +11,24 @@ interface SignInProps {
 
 export default function SignIn({ providers }: SignInProps) {
   return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-navy to-black flex items-center justify-center px-4">
+    <>
+      <Head>
+        <title>Sign In | FL Best Trainer</title>
+        <meta
+          name="description"
+          content="Sign in to FL Best Trainer to book classes and track your fitness progress"
+        />
+      </Head>
+
+      <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-navy to-black flex items-center justify-center px-4 relative">
+        {/* Home Button - Top Left */}
+        <Link
+          href="/"
+          className="absolute top-6 left-6 z-10 flex items-center gap-2 bg-black/20 hover:bg-black/40 backdrop-blur-sm border border-white/20 text-white px-4 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+        >
+          <FaHome className="text-sm" />
+          <span className="hidden sm:inline text-sm font-medium">Home</span>
+        </Link>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -58,7 +75,7 @@ export default function SignIn({ providers }: SignInProps) {
           </div>
         </motion.div>
       </div>
-    </Layout>
+    </>
   );
 }
 
