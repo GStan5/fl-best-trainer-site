@@ -196,7 +196,8 @@ export default function PackageEditModal({
               placeholder="30"
             />
             <p className="text-sm text-slate-400 mt-1">
-              Number of days the package remains valid after purchase
+              Note: Packages never expire. This field is for display purposes
+              only.
             </p>
           </div>
 
@@ -226,8 +227,8 @@ export default function PackageEditModal({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Valid for:</span>
-                <span className="text-white">
-                  {formData.duration_days} days
+                <span className="text-green-400 font-medium">
+                  Never expires
                 </span>
               </div>
             </div>

@@ -120,7 +120,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
           ${userIdNum},
           ${parseInt(sessions)},
           NOW(),
-          NOW() + INTERVAL '90 days',
+          '2099-12-31 23:59:59'::timestamp,
           true
         )
         RETURNING *

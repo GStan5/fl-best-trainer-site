@@ -1293,9 +1293,7 @@ export default function ClassesAdmin() {
                               <span className="text-slate-400 text-sm">
                                 Valid for:
                               </span>
-                              <span className="text-white">
-                                {pkg.duration_days} days
-                              </span>
+                              <span className="text-white">Never expires</span>
                             </div>
                           </div>
 

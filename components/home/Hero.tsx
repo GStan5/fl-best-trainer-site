@@ -217,7 +217,7 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
               </div>
             </motion.div>
 
-            {/* CTA buttons - with added Blog button */}
+            {/* CTA buttons - with added Classes button */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: isMounted ? 1 : 0, y: isMounted ? 0 : 20 }}
@@ -225,11 +225,18 @@ export default function Hero({ nameBackgroundOpacity }: HeroProps) {
               className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6"
             >
               <Link
-                href="#pricing"
+                href="/classes"
                 className="group bg-gradient-to-r from-royal to-royal-light px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg text-white text-sm sm:text-base font-medium hover:shadow-lg transition-all shadow-lg shadow-royal/20 flex items-center justify-center sm:justify-start"
               >
-                Explore packages
+                Book Classes Now
                 <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="#pricing"
+                className="group bg-white/10 hover:bg-white/20 px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg text-white text-sm sm:text-base font-medium border border-royal/30 transition-colors flex items-center justify-center sm:justify-start"
+              >
+                Explore packages
+                <FaArrowRight className="ml-2 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </Link>
               <Link
                 href="/plans"
