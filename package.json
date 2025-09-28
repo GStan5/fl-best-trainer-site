@@ -49,6 +49,7 @@
     "@types/node": "22.15.18",
     "@types/nodemailer": "^6.4.17",
     "@types/react": "19.1.4",
+    "@types/react-dom": "^19.1.9",
     "@types/signature_pad": "^2.3.6",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",

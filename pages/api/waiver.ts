@@ -91,7 +91,8 @@ const updateUserWaiverStatusAndCompleteOnboarding = async (
         `✅ Updated waiver status with PDF and completed onboarding for user: ${email}`
       );
       console.log(`📄 PDF saved successfully - ${pdfBuffer.length} bytes`);
-      return result.length > 0;
+      console.log(`📊 Database update result:`, result);
+      return true; // Always return true if no error was thrown
     } catch (pdfError) {
       // If PDF columns don't exist, fall back to basic update
       console.log("⚠️ PDF columns not available, using basic update");
@@ -106,7 +107,8 @@ const updateUserWaiverStatusAndCompleteOnboarding = async (
       console.log(
         `✅ Updated waiver status and completed onboarding for user: ${email}`
       );
-      return result.length > 0;
+      console.log(`📊 Database update result:`, result);
+      return true; // Always return true if no error was thrown
     }
   } catch (error) {
     console.error(
@@ -239,7 +241,7 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.text("FL BEST TRAINER", pageWidth / 2, 15, { align: "center" });
+    doc.text("GAVIN R STANIFER", pageWidth / 2, 15, { align: "center" });
 
     // Subtitle
     doc.setFontSize(12);
@@ -266,7 +268,7 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("Gavin R. Stanifer d/b/a FL Best Trainer", margin, footerY + 5);
+    doc.text("Gavin R. Stanifer", margin, footerY + 5);
     doc.text(
       `Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
       pageWidth - margin,
@@ -344,7 +346,7 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
 
-  const introText = `I, ${data.name}, in consideration for being permitted to participate in personal training services, fitness instruction, and related activities provided by Gavin R. Stanifer, doing business as "FL Best Trainer" (collectively referred to as "Provider"), acknowledge, understand, and agree to the following terms and conditions:`;
+  const introText = `I, ${data.name}, in consideration for being permitted to participate in personal training services, fitness instruction, and related activities provided by Gavin R. Stanifer (collectively referred to as "Provider"), acknowledge, understand, and agree to the following terms and conditions:`;
 
   const splitIntro = doc.splitTextToSize(introText, pageWidth - 2 * margin);
   splitIntro.forEach((line: string) => {
@@ -374,7 +376,7 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
     {
       title: "3. RELEASE AND WAIVER",
       content:
-        'I, for myself and my heirs, assigns, personal representatives, and next of kin, HEREBY RELEASE, WAIVE, DISCHARGE, AND COVENANT NOT TO SUE Gavin R. Stanifer, FL Best Trainer, and their respective officers, directors, employees, agents, contractors, and representatives (collectively "Released Parties") from any and all liability, claims, demands, losses, or damages on my account caused or alleged to be caused in whole or in part by the negligence of the Released Parties or otherwise, including negligent rescue operations.',
+        'I, for myself and my heirs, assigns, personal representatives, and next of kin, HEREBY RELEASE, WAIVE, DISCHARGE, AND COVENANT NOT TO SUE Gavin R. Stanifer (collectively "Released Parties") from any and all liability, claims, demands, losses, or damages on my account caused or alleged to be caused in whole or in part by the negligence of the Released Parties or otherwise, including negligent rescue operations.',
     },
     {
       title: "4. INDEMNIFICATION",
@@ -677,7 +679,7 @@ export default async function handler(
         }.</p>
         
         <hr>
-        <p><small>FL Best Trainer - Automated Waiver System</small></p>
+        <p><small>Gavin R Stanifer - Automated Waiver System</small></p>
       `,
       attachments: [
         {
@@ -693,11 +695,11 @@ export default async function handler(
     await transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: email,
-      subject: "FL Best Trainer - Liability Waiver Confirmation",
+      subject: "Gavin R Stanifer - Liability Waiver Confirmation",
       html: `
         <h2>Thank you for signing the liability waiver!</h2>
         <p>Hi ${name},</p>
-        <p>This email confirms that you have successfully signed the liability waiver for FL Best Trainer (Gavin R. Stanifer).</p>
+        <p>This email confirms that you have successfully signed the liability waiver for Gavin R. Stanifer.</p>
         
         <p><strong>Details:</strong></p>
         <ul>
@@ -716,7 +718,7 @@ export default async function handler(
 
         <p>Best regards,<br>
         Gavin R. Stanifer<br>
-        FL Best Trainer<br>
+        Gavin R Stanifer<br>
         www.FLBestTrainer.com</p>
 
         <hr>
@@ -793,16 +795,28 @@ export default async function handler(
 
     // Update user's waiver status in database and complete onboarding
     try {
-      await updateUserWaiverStatusAndCompleteOnboarding(
+      const dbSuccess = await updateUserWaiverStatusAndCompleteOnboarding(
         email,
         pdfBuffer,
         fileName
       );
+      if (!dbSuccess) {
+        console.error("❌ Database update failed for user:", email);
+        return res.status(500).json({
+          success: false,
+          error: "Failed to update database",
+        });
+      }
+      console.log("✅ Database updated successfully for user:", email);
     } catch (dbError) {
-      console.warn(
-        "⚠️ Failed to update user waiver status in database (continuing anyway):",
+      console.error(
+        "❌ Failed to update user waiver status in database:",
         dbError
       );
+      return res.status(500).json({
+        success: false,
+        error: "Database update failed",
+      });
     }
 
     console.log(`✅ Waiver submitted successfully for ${name}`);

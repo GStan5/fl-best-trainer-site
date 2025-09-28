@@ -21,7 +21,7 @@ interface ClassData {
 
 interface ClassesListProps {
   classes: ClassData[];
-  onClassSelect: (classItem: ClassData) => void;
+  onClassSelect: (classItem: ClassData, element?: HTMLElement) => void;
 }
 
 export default function ClassesList({
@@ -82,7 +82,9 @@ export default function ClassesList({
             <ClassCard
               key={classItem.id}
               classItem={classItem}
-              onClick={() => onClassSelect(classItem)}
+              onClick={(classItem, element) =>
+                onClassSelect(classItem, element)
+              }
             />
           ))}
         </div>

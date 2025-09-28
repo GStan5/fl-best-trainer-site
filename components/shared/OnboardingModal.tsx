@@ -128,13 +128,14 @@ export default function OnboardingModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center p-4"
-      style={{ paddingTop: "15vh" }}
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      style={{ paddingTop: "5vh", paddingBottom: "5vh" }}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-br from-royal-dark to-royal-navy rounded-2xl border border-royal-light/20 p-6 sm:p-8 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+        className="bg-gradient-to-br from-royal-dark to-royal-navy rounded-2xl border border-royal-light/20 p-6 sm:p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        style={{ paddingBottom: "2rem" }}
       >
         {/* Header */}
         <div className="text-center mb-8">
@@ -356,7 +357,7 @@ export default function OnboardingModal({
                   )}
                 </button>
 
-                <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg mb-4">
                   <p className="text-amber-200 text-sm">
                     <strong>Important:</strong> Your personal information will
                     be saved securely, then you'll complete the waiver to finish
@@ -411,7 +412,7 @@ export default function OnboardingModal({
           ) : null}
         </div>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center pb-4">
           <p className="text-white/50 text-sm">
             Step {currentStep} of 3 • All information is securely stored and
             never shared

@@ -2,10 +2,14 @@ import Layout from "@/components/shared/Layout";
 import SEO from "@/components/shared/SEO";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import SignaturePad from "signature_pad";
 import { event } from "../utils/gtag";
 
 export default function WaiverPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -14,28 +18,117 @@ export default function WaiverPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad | null>(null);
 
+  // Authentication check
   useEffect(() => {
-    if (canvasRef.current && signatureType === "draw") {
-      signaturePadRef.current = new SignaturePad(canvasRef.current, {
+    if (status === "loading") return;
+
+    if (!session) {
+      router.push(
+        "/auth/signin?callbackUrl=" + encodeURIComponent(router.asPath)
+      );
+      return;
+    }
+  }, [session, status, router]);
+
+  // Ensure signature pad initializes when component is fully ready
+  useEffect(() => {
+    if (status !== "loading" && session) {
+      // Small delay to ensure DOM is fully rendered
+      const timer = setTimeout(() => {
+        if (
+          signatureType === "draw" &&
+          canvasRef.current &&
+          !signaturePadRef.current
+        ) {
+          // Trigger re-initialization
+          setSignatureType("type");
+          setTimeout(() => setSignatureType("draw"), 50);
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [session, status]);
+
+  useEffect(() => {
+    const initializeSignaturePad = () => {
+      if (!canvasRef.current || signatureType !== "draw") return;
+
+      // Clean up existing SignaturePad instance
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+        signaturePadRef.current = null;
+      }
+
+      const canvas = canvasRef.current;
+
+      // Set fixed dimensions immediately
+      const containerWidth = canvas.parentElement?.clientWidth || 400;
+      const height = 128; // Fixed height matching h-32 class
+
+      // Set canvas actual size (for drawing)
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = containerWidth * ratio;
+      canvas.height = height * ratio;
+
+      // Set canvas display size (CSS)
+      canvas.style.width = containerWidth + "px";
+      canvas.style.height = height + "px";
+
+      // Scale the drawing context
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.scale(ratio, ratio);
+      }
+
+      // Initialize SignaturePad
+      signaturePadRef.current = new SignaturePad(canvas, {
         backgroundColor: "rgb(255, 255, 255)",
         penColor: "rgb(0, 0, 0)",
       });
 
-      // Resize canvas to fit container
-      const canvas = canvasRef.current;
-      const ratio = Math.max(window.devicePixelRatio || 1, 1);
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      canvas.getContext("2d")?.scale(ratio, ratio);
       signaturePadRef.current.clear();
+    };
+
+    // Use requestAnimationFrame to ensure DOM is ready
+    if (signatureType === "draw") {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          initializeSignaturePad();
+        });
+      });
     }
+
+    // Handle window resize with debouncing
+    let resizeTimeout: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (signatureType === "draw") {
+          requestAnimationFrame(() => {
+            initializeSignaturePad();
+          });
+        }
+      }, 100);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (signaturePadRef.current) {
+        signaturePadRef.current.off();
+        signaturePadRef.current = null;
+      }
+    };
   }, [signatureType]);
 
   const clearSignature = () => {
-    if (signaturePadRef.current) {
+    if (signatureType === "draw" && signaturePadRef.current) {
       signaturePadRef.current.clear();
+    } else if (signatureType === "type") {
+      setTypedSignature("");
     }
-    setTypedSignature("");
   };
 
   const getSignatureData = () => {
@@ -51,6 +144,22 @@ export default function WaiverPage() {
     }
     return typedSignature.trim().length > 0;
   };
+
+  // Show loading state while session is loading
+  if (status === "loading") {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-royal-light"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Redirect to sign in if not authenticated
+  if (!session) {
+    return null; // This will be handled by the useEffect redirect
+  }
 
   return (
     <Layout>
@@ -81,9 +190,8 @@ export default function WaiverPage() {
             <p>
               In consideration for being permitted to participate in personal
               training services, fitness instruction, and related activities
-              provided by <strong>Gavin R. Stanifer</strong>, doing business as{" "}
-              <strong>"FL Best Trainer"</strong>, I acknowledge, understand, and
-              agree to the following:
+              provided by <strong>Gavin R Stanifer</strong>, I acknowledge,
+              understand, and agree to the following:
             </p>
 
             <h2>Terms and Conditions</h2>
@@ -116,9 +224,7 @@ export default function WaiverPage() {
                 <strong>
                   HEREBY RELEASE, WAIVE, DISCHARGE, AND COVENANT NOT TO SUE
                 </strong>{" "}
-                Gavin R. Stanifer, FL Best Trainer, and their respective
-                officers, directors, employees, agents, contractors, and
-                representatives from any and all liability, claims, demands,
+                Gavin R Stanifer from any and all liability, claims, demands,
                 losses, or damages on my account caused or alleged to be caused
                 in whole or in part by negligence or otherwise.
               </li>
@@ -245,6 +351,11 @@ export default function WaiverPage() {
                     setTimeout(() => {
                       window.location.href = redirectUrl;
                     }, 2000);
+                  } else {
+                    // Default redirect to classes page after waiver completion
+                    setTimeout(() => {
+                      window.location.href = "/classes";
+                    }, 2000);
                   }
                 } else {
                   // Track failed waiver submission
@@ -276,6 +387,7 @@ export default function WaiverPage() {
                 name="name"
                 id="name"
                 required
+                defaultValue={session?.user?.name || ""}
                 className="w-full rounded-md bg-white/10 border border-white/20 p-3 text-white placeholder-white/50 focus:border-royal focus:ring-1 focus:ring-royal"
                 placeholder="Enter your full legal name"
               />
@@ -293,7 +405,9 @@ export default function WaiverPage() {
                 name="email"
                 id="email"
                 required
-                className="w-full rounded-md bg-white/10 border border-white/20 p-3 text-white placeholder-white/50 focus:border-royal focus:ring-1 focus:ring-royal"
+                defaultValue={session?.user?.email || ""}
+                readOnly
+                className="w-full rounded-md bg-white/10 border border-white/20 p-3 text-white placeholder-white/50 focus:border-royal focus:ring-1 focus:ring-royal opacity-75"
                 placeholder="Enter your email address"
               />
             </div>
@@ -346,11 +460,11 @@ export default function WaiverPage() {
               </div>
 
               {signatureType === "draw" ? (
-                <div className="bg-white rounded-md p-4">
+                <div className="bg-white rounded-md p-4 max-w-full overflow-hidden">
                   <canvas
                     ref={canvasRef}
-                    className="w-full h-32 border border-gray-300 rounded cursor-crosshair"
-                    style={{ touchAction: "none" }}
+                    className="w-full h-32 border border-gray-300 rounded cursor-crosshair block"
+                    style={{ touchAction: "none", maxWidth: "100%" }}
                   />
                   <div className="mt-2 flex justify-between">
                     <p className="text-sm text-gray-600">

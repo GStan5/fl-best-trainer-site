@@ -87,10 +87,8 @@ export default function AdminClientsPage() {
     notes: "",
   });
 
-  // Check if user is admin (you can customize this logic)
-  const isAdmin =
-    session?.user?.email === "gavinstanifer@live.com" ||
-    session?.user?.email === "gavinstaniferengineering@gmail.com";
+  // Check if user is admin using database field
+  const isAdmin = session?.user?.isAdmin === true;
 
   useEffect(() => {
     if (session && isAdmin) {

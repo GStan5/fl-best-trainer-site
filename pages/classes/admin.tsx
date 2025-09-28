@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import Layout from "../../components/Layout";
 import SEO from "../../components/shared/SEO";
@@ -324,6 +325,7 @@ interface DashboardStats {
 }
 
 export default function ClassesAdmin() {
+  const { data: session, status } = useSession();
   const [classes, setClasses] = useState<Class[]>([]);
   const [completedClasses, setCompletedClasses] = useState<Class[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -355,6 +357,9 @@ export default function ClassesAdmin() {
   const [completionClassId, setCompletionClassId] = useState<string | null>(
     null
   );
+
+  // Check if user is admin using database field
+  const isAdmin = session?.user?.isAdmin === true;
 
   // Debug state changes
   useEffect(() => {
@@ -899,6 +904,33 @@ export default function ClassesAdmin() {
       </div>
     </motion.div>
   );
+
+  if (status === "loading") {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-royal-light"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!session || !isAdmin) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white mb-4">
+              Access Denied
+            </h1>
+            <p className="text-white/60">
+              You don't have permission to access this page.
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

@@ -1,4 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import {
   FaTimes,
   FaClock,
@@ -8,6 +10,9 @@ import {
   FaExclamationTriangle,
   FaCheck,
 } from "react-icons/fa";
+import StripeCheckoutButton, {
+  PACKAGE_CONFIGS,
+} from "../shared/StripeCheckoutButton";
 
 interface ClassData {
   id: string;
@@ -36,8 +41,8 @@ interface ClassModalProps {
   weightliftingClassesRemaining?: number;
   isAuthenticated?: boolean;
   source?: "calendar" | "upcoming";
-  topPosition?: number;
   currentlyBooked?: number;
+  weightliftingPackage?: any;
 }
 
 export default function ClassModal({
@@ -50,10 +55,16 @@ export default function ClassModal({
   weightliftingClassesRemaining = 0,
   isAuthenticated = false,
   source = "calendar",
-  topPosition,
   currentlyBooked = 0,
+  weightliftingPackage,
 }: ClassModalProps) {
-  if (!classData) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!classData || !mounted) return null;
 
   const totalSessions =
     (weightliftingClassesRemaining || 0) + (sessionsRemaining || 0);
@@ -110,19 +121,25 @@ export default function ClassModal({
   const isFull = spotsRemaining <= 0;
   const isAlmostFull = spotsRemaining <= 2 && spotsRemaining > 0;
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999999] flex justify-center px-2 md:px-4 overflow-y-auto"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999999]"
           onClick={onClose}
           style={{
-            paddingTop: `${topPosition || 100}px`,
-            paddingBottom: "120px", // Space for footer on all devices
-            alignItems: "flex-start",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999999,
           }}
         >
           <motion.div
@@ -130,11 +147,11 @@ export default function ClassModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: -20 }}
             transition={{ type: "spring", damping: 20 }}
-            className={`bg-gradient-to-br from-navy to-black border border-white/20 rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 w-full ${
+            className={`bg-gradient-to-br from-navy to-black border border-white/20 rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 w-[calc(100vw-1rem)] md:w-auto ${
               source === "upcoming"
                 ? "max-w-xs sm:max-w-lg md:max-w-3xl lg:max-w-4xl"
                 : "max-w-xs sm:max-w-md md:max-w-xl lg:max-w-2xl"
-            } my-4`}
+            } max-h-[90vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -199,17 +216,31 @@ export default function ClassModal({
                     Sign In to Book
                   </motion.button>
                 ) : hasNoSessions ? (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      console.log("Purchase sessions");
+                  <StripeCheckoutButton
+                    package={
+                      weightliftingPackage ||
+                      PACKAGE_CONFIGS.find(
+                        (pkg) => pkg.id === "weightlifting-10-class"
+                      )!
+                    }
+                    className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-emerald/20 flex items-center justify-center space-x-2"
+                    onSuccess={() => {
+                      setTimeout(() => window.location.reload(), 2000);
                     }}
-                    className="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-yellow/20 flex items-center justify-center space-x-2"
+                    onError={(error) => {
+                      console.error("Payment error:", error);
+                    }}
                   >
                     <FaDumbbell className="w-4 h-4" />
-                    <span>Purchase Sessions</span>
-                  </motion.button>
+                    <span>
+                      Purchase Sessions - $
+                      {weightliftingPackage?.price ||
+                        PACKAGE_CONFIGS.find(
+                          (pkg) => pkg.id === "weightlifting-10-class"
+                        )?.price ||
+                        400}
+                    </span>
+                  </StripeCheckoutButton>
                 ) : (
                   <div className="flex flex-col w-full sm:w-auto gap-2">
                     {/* Main booking button */}
@@ -465,4 +496,6 @@ export default function ClassModal({
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 }

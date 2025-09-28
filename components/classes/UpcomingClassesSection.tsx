@@ -27,7 +27,7 @@ interface ClassData {
 
 interface UpcomingClassesSectionProps {
   classes: ClassData[];
-  onClassSelect: (classItem: ClassData) => void;
+  onClassSelect: (classItem: ClassData, element?: HTMLElement) => void;
 }
 
 export default function UpcomingClassesSection({
@@ -208,7 +208,9 @@ export default function UpcomingClassesSection({
                         >
                           <ClassCard
                             classItem={classItem}
-                            onClick={onClassSelect}
+                            onClick={(classItem, element) =>
+                              onClassSelect(classItem, element)
+                            }
                           />
                         </motion.div>
                       ))}

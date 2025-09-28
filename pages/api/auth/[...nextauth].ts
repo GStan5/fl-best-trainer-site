@@ -107,6 +107,32 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
+    async redirect({ url, baseUrl }) {
+      // If there's a callbackUrl in the URL params, use it for existing users
+      const urlObj = new URL(url.startsWith("http") ? url : `${baseUrl}${url}`);
+      const callbackUrl = urlObj.searchParams.get("callbackUrl");
+
+      // For existing users with a specific callback URL, redirect there
+      if (callbackUrl && callbackUrl.startsWith("/") && callbackUrl !== "/") {
+        return `${baseUrl}${callbackUrl}`;
+      }
+
+      // For new sign-ins without a specific callback, go to onboarding
+      // This will be handled by the onboarding page to redirect completed users to classes
+      if (
+        url === baseUrl ||
+        url === `${baseUrl}/` ||
+        url.includes("/api/auth/callback")
+      ) {
+        return `${baseUrl}/onboarding`;
+      }
+
+      // Allow same origin redirects
+      if (url.startsWith(baseUrl)) return url;
+      // Allow relative callback urls
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      return baseUrl;
+    },
   },
   pages: {
     signIn: "/auth/signin",
