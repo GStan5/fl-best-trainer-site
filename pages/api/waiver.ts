@@ -718,7 +718,6 @@ export default async function handler(
 
         <p>Best regards,<br>
         Gavin R. Stanifer<br>
-        Gavin R Stanifer<br>
         www.FLBestTrainer.com</p>
 
         <hr>

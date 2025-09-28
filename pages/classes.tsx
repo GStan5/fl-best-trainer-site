@@ -10,6 +10,7 @@ import LocationsLegend from "../components/classes/LocationsLegend";
 import UpcomingClassesSection from "../components/classes/UpcomingClassesSection";
 import ClassStats from "../components/classes/ClassStats";
 import CancelBookingModal from "../components/classes/CancelBookingModal";
+import MyUpcomingClassesGrid from "../components/classes/MyUpcomingClassesGrid";
 import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
@@ -305,8 +306,7 @@ export default function Classes() {
         await fetchMyBookings();
         await fetchClasses(); // Refresh class data to update participant counts
 
-        // Close the modal
-        handleCloseModal();
+        // Don't close the modal immediately - let user see the updated state
       } else {
         console.error(`Failed to book class: ${data.error}`);
         alert(`❌ Booking failed: ${data.error}`);
@@ -771,172 +771,13 @@ export default function Classes() {
                         </div>
                       </div>
 
-                      {myBookings.length > 0 ? (
-                        <div className="space-y-3">
-                          {myBookings.slice(0, 5).map((booking, index) => (
-                            <motion.div
-                              key={`${booking.id}-${booking.date}-${booking.class_title}`}
-                              data-booking-id={booking.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{
-                                duration: 0.3,
-                                delay: index * 0.05,
-                              }}
-                              className="bg-gradient-to-r from-white/8 to-white/4 backdrop-blur-sm rounded-xl p-4 border border-white/15 hover:border-royal-light/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                            >
-                              {/* Header with Title and Status */}
-                              <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-white font-bold text-lg leading-tight">
-                                  {booking.class_title}
-                                </h4>
-                                <div className="flex items-center space-x-2">
-                                  {booking.status === "waitlist" && (
-                                    <div className="bg-amber-500/20 border border-amber-400/50 px-2 py-1 rounded-full flex items-center gap-1.5">
-                                      <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
-                                      <span className="text-amber-300 text-xs font-semibold uppercase tracking-wide">
-                                        Waitlist
-                                      </span>
-                                    </div>
-                                  )}
-                                  {booking.status === "confirmed" && (
-                                    <div className="bg-green-500/20 border border-green-400/50 px-2 py-1 rounded-full flex items-center gap-1.5">
-                                      <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                                      <span className="text-green-300 text-xs font-semibold uppercase tracking-wide">
-                                        Confirmed
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Waitlist Alert - Compact */}
-                              {booking.status === "waitlist" && (
-                                <div className="bg-amber-900/30 border border-amber-400/30 px-3 py-2 rounded-lg mb-3">
-                                  <p className="text-amber-200 text-sm">
-                                    ⏳ On waitlist - you'll be automatically
-                                    enrolled if a spot opens up
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* Compact Details Row */}
-                              <div className="flex flex-wrap items-center gap-4 text-sm mb-3">
-                                {/* Date */}
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-royal-light rounded-full"></div>
-                                  <span className="text-royal-light font-semibold">
-                                    {new Date(booking.date).toLocaleDateString(
-                                      "en-US",
-                                      {
-                                        weekday: "short",
-                                        month: "short",
-                                        day: "numeric",
-                                      }
-                                    )}
-                                  </span>
-                                </div>
-
-                                {/* Time */}
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                                  <span className="text-white/90 font-medium">
-                                    {new Date(
-                                      `2000-01-01 ${booking.start_time}`
-                                    ).toLocaleTimeString("en-US", {
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}{" "}
-                                    -{" "}
-                                    {new Date(
-                                      `2000-01-01 ${booking.end_time}`
-                                    ).toLocaleTimeString("en-US", {
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}
-                                  </span>
-                                </div>
-
-                                {/* Location */}
-                                <div className="flex items-center space-x-2 flex-1 min-w-0">
-                                  <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                                  <span className="text-purple-300 font-medium truncate">
-                                    {booking.location}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Bottom Row - Instructor and Cancel Button */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                                  <span className="text-white/70 text-sm">
-                                    with {booking.instructor}
-                                  </span>
-                                </div>
-
-                                {/* Cancel Button - Compact */}
-                                {cancellingBooking === booking.id ? (
-                                  <div className="flex items-center bg-red-500/20 px-3 py-2 rounded-lg border border-red-500/30">
-                                    <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-2"></div>
-                                    <span className="text-red-300 text-xs font-medium">
-                                      Cancelling...
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={(e) =>
-                                      handleCancelBooking(
-                                        booking,
-                                        e.currentTarget
-                                      )
-                                    }
-                                    className="px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-xs font-semibold rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg touch-manipulation"
-                                    title="Cancel this booking"
-                                  >
-                                    Cancel
-                                  </button>
-                                )}
-                              </div>
-                            </motion.div>
-                          ))}
-
-                          {myBookings.length > 5 && (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ duration: 0.5, delay: 0.3 }}
-                              className="text-center mt-4 p-4 bg-royal-light/10 rounded-xl border border-royal-light/20"
-                            >
-                              <p className="text-royal-light font-semibold text-sm sm:text-base">
-                                + {myBookings.length - 5} more upcoming classes
-                              </p>
-                              <p className="text-white/60 text-xs sm:text-sm mt-1">
-                                Check calendar below for full schedule
-                              </p>
-                            </motion.div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 sm:py-12">
-                          <div className="bg-white/5 rounded-full p-4 sm:p-6 w-16 sm:w-20 h-16 sm:h-20 mx-auto mb-4 flex items-center justify-center">
-                            <FaCalendarAlt className="text-white/40 text-xl sm:text-2xl" />
-                          </div>
-                          <h4 className="text-white font-semibold text-lg sm:text-xl mb-2">
-                            No upcoming classes
-                          </h4>
-                          <p className="text-white/70 text-sm sm:text-base mb-4 px-4">
-                            You haven't signed up for any classes yet
-                          </p>
-                          <div className="bg-royal-light/15 rounded-lg p-3 sm:p-4 max-w-sm mx-auto">
-                            <p className="text-royal-light font-medium text-sm sm:text-base">
-                              💡 Browse classes below to get started!
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      <MyUpcomingClassesGrid
+                        bookings={myBookings}
+                        classes={classes}
+                        onClassSelect={handleUpcomingClassSelect}
+                        onCancelBooking={handleCancelBooking}
+                        cancellingBooking={cancellingBooking}
+                      />
                     </div>
                   </motion.div>
                 </motion.div>
@@ -986,6 +827,7 @@ export default function Classes() {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onBook={handleBookClass}
+          onCancelBooking={handleCancelBooking}
           isBooking={isBooking}
           sessionsRemaining={0}
           weightliftingClassesRemaining={weightliftingClassesRemaining || 0}
@@ -993,6 +835,20 @@ export default function Classes() {
           source={modalSource}
           currentlyBooked={myBookings.length}
           weightliftingPackage={weightliftingPackage}
+          isAlreadyBooked={
+            selectedClass
+              ? myBookings.some(
+                  (booking) => booking.class_id === selectedClass.id
+                )
+              : false
+          }
+          currentBookings={
+            selectedClass
+              ? myBookings.filter(
+                  (booking) => booking.class_id === selectedClass.id
+                )
+              : []
+          }
         />
 
         {/* Cancel Booking Modal */}

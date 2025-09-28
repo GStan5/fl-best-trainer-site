@@ -36,6 +36,7 @@ interface ClassModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBook: (classId: string, joinWaitlist?: boolean) => void;
+  onCancelBooking?: (booking: any) => void;
   isBooking?: boolean;
   sessionsRemaining?: number;
   weightliftingClassesRemaining?: number;
@@ -43,6 +44,8 @@ interface ClassModalProps {
   source?: "calendar" | "upcoming";
   currentlyBooked?: number;
   weightliftingPackage?: any;
+  isAlreadyBooked?: boolean;
+  currentBookings?: any[];
 }
 
 export default function ClassModal({
@@ -50,6 +53,7 @@ export default function ClassModal({
   isOpen,
   onClose,
   onBook,
+  onCancelBooking,
   isBooking = false,
   sessionsRemaining = 0,
   weightliftingClassesRemaining = 0,
@@ -57,8 +61,11 @@ export default function ClassModal({
   source = "calendar",
   currentlyBooked = 0,
   weightliftingPackage,
+  isAlreadyBooked = false,
+  currentBookings = [],
 }: ClassModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -113,6 +120,29 @@ export default function ClassModal({
         return "text-red-400";
       default:
         return "text-blue-400";
+    }
+  };
+
+  const handleBookClick = () => {
+    if (isAlreadyBooked && currentBookings.length > 0) {
+      setShowConfirmation(true);
+    } else {
+      onBook(classData.id, false);
+    }
+  };
+
+  const handleConfirmBooking = () => {
+    setShowConfirmation(false);
+    onBook(classData.id, false);
+  };
+
+  const handleCancelConfirmation = () => {
+    setShowConfirmation(false);
+  };
+
+  const handleCancelBooking = () => {
+    if (onCancelBooking && currentBookings.length > 0) {
+      onCancelBooking(currentBookings[0]); // Cancel the first booking for this class
     }
   };
 
@@ -243,17 +273,32 @@ export default function ClassModal({
                   </StripeCheckoutButton>
                 ) : (
                   <div className="flex flex-col w-full sm:w-auto gap-2">
+                    {/* Show cancel button if already booked */}
+                    {isAlreadyBooked && currentBookings.length > 0 && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCancelBooking}
+                        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
+                      >
+                        <FaTimes className="w-4 h-4" />
+                        <span>Cancel Booking</span>
+                      </motion.button>
+                    )}
+
                     {/* Main booking button */}
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => onBook(classData.id, false)}
+                      onClick={handleBookClick}
                       disabled={isBooking}
                       className={`px-8 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
                         isBooking
                           ? "bg-royal-light/50 text-white cursor-wait"
                           : isFull
                           ? "bg-gray-600 text-gray-400"
+                          : isAlreadyBooked
+                          ? "bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg hover:shadow-amber/20"
                           : "bg-gradient-to-r from-royal to-royal-light text-white hover:shadow-lg hover:shadow-royal/20"
                       }`}
                     >
@@ -274,6 +319,13 @@ export default function ClassModal({
                         <>
                           <FaExclamationTriangle className="w-4 h-4" />
                           <span>Class Full</span>
+                        </>
+                      ) : isAlreadyBooked ? (
+                        <>
+                          <FaCheck className="w-4 h-4" />
+                          <span>
+                            Book Again ({currentBookings.length} booked)
+                          </span>
                         </>
                       ) : (
                         <>
@@ -497,5 +549,78 @@ export default function ClassModal({
     </AnimatePresence>
   );
 
-  return createPortal(modalContent, document.body);
+  // Confirmation Modal for duplicate bookings
+  const confirmationModal = (
+    <AnimatePresence>
+      {showConfirmation && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999999]"
+          onClick={handleCancelConfirmation}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000000,
+          }}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: -20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: -20 }}
+            transition={{ type: "spring", damping: 20 }}
+            className="bg-gradient-to-br from-navy to-black border border-white/20 rounded-xl p-6 w-[calc(100vw-2rem)] max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="mb-4">
+                <FaExclamationTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Already Booked
+                </h3>
+                <p className="text-white/80">
+                  You already have {currentBookings.length} booking
+                  {currentBookings.length !== 1 ? "s" : ""} for this class. Do
+                  you want to book again?
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleCancelConfirmation}
+                  className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleConfirmBooking}
+                  className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all"
+                >
+                  Book Again
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  return (
+    <>
+      {createPortal(modalContent, document.body)}
+      {createPortal(confirmationModal, document.body)}
+    </>
+  );
 }

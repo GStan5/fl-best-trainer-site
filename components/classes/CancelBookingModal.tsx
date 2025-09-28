@@ -62,7 +62,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9999]"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[99999999]"
           style={{
             position: "fixed",
             top: 0,
@@ -72,7 +72,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 9999,
+            zIndex: 99999999,
           }}
         >
           {/* Modal */}

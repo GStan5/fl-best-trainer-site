@@ -73,8 +73,7 @@ export default function Footer() {
     services: [
       { name: "In-Home Personal Training", href: "/training" },
       { name: "Custom Workout Plans", href: "/plans" },
-      { name: "Nutrition Coaching", href: "/training" },
-      { name: "Fitness Assessments", href: "/training" },
+      { name: "Classes", href: "/classes" },
     ],
     company: [
       { name: "About", href: "/about" },
@@ -88,7 +87,7 @@ export default function Footer() {
   };
 
   // Create a handler for testimonial navigation
-  const handleTestimonialsClick = (e) => {
+  const handleTestimonialsClick = (e: React.MouseEvent) => {
     e.preventDefault();
 
     if (router.pathname === "/") {
