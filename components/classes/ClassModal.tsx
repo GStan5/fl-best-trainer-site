@@ -66,10 +66,18 @@ export default function ClassModal({
 }: ClassModalProps) {
   const [mounted, setMounted] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [localCurrentParticipants, setLocalCurrentParticipants] = useState(classData?.current_participants || 0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Update local state when classData changes (e.g., modal opens with new class)
+  useEffect(() => {
+    if (classData) {
+      setLocalCurrentParticipants(classData.current_participants);
+    }
+  }, [classData?.current_participants]);
 
   if (!classData || !mounted) return null;
 
@@ -87,14 +95,14 @@ export default function ClassModal({
 
   const formatDate = (dateString: string) => {
     // Manual date parsing to avoid timezone issues
-    const dateStr = dateString.split('T')[0]; // Get "2025-10-07" from "2025-10-07T04:00:00.000Z"
-    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateStr = dateString.split("T")[0]; // Get "2025-10-07" from "2025-10-07T04:00:00.000Z"
+    const [year, month, day] = dateStr.split("-").map(Number);
     // Create date in local timezone (month is 0-based)
     const localDate = new Date(year, month - 1, day);
     return localDate.toLocaleDateString("en-US", {
       weekday: "long",
       year: "numeric",
-      month: "long", 
+      month: "long",
       day: "numeric",
     });
   };
@@ -131,12 +139,16 @@ export default function ClassModal({
     if (isAlreadyBooked && currentBookings.length > 0) {
       setShowConfirmation(true);
     } else {
+      // Optimistically update the participant count
+      setLocalCurrentParticipants(prev => prev + 1);
       onBook(classData.id, false);
     }
   };
 
   const handleConfirmBooking = () => {
     setShowConfirmation(false);
+    // Optimistically update the participant count
+    setLocalCurrentParticipants(prev => prev + 1);
     onBook(classData.id, false);
   };
 
@@ -144,14 +156,21 @@ export default function ClassModal({
     setShowConfirmation(false);
   };
 
+  const handleWaitlistJoin = () => {
+    // Note: Waitlist doesn't affect current participants count
+    onBook(classData.id, true);
+  };
+
   const handleCancelBooking = () => {
     if (onCancelBooking && currentBookings.length > 0) {
+      // Optimistically update the participant count
+      setLocalCurrentParticipants(prev => prev - 1);
       onCancelBooking(currentBookings[0]); // Cancel the first booking for this class
     }
   };
 
   const spotsRemaining =
-    classData.max_participants - classData.current_participants;
+    classData.max_participants - localCurrentParticipants;
   const isFull = spotsRemaining <= 0;
   const isAlmostFull = spotsRemaining <= 2 && spotsRemaining > 0;
 
@@ -344,7 +363,7 @@ export default function ClassModal({
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => onBook(classData.id, true)}
+                        onClick={handleWaitlistJoin}
                         disabled={isBooking}
                         className={`px-8 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
                           isBooking
@@ -377,7 +396,7 @@ export default function ClassModal({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white/80 text-sm">Class Capacity</span>
                   <span className="text-white font-medium">
-                    {classData.current_participants}/
+                    {localCurrentParticipants}/
                     {classData.max_participants}
                   </span>
                 </div>
@@ -392,7 +411,7 @@ export default function ClassModal({
                     }`}
                     style={{
                       width: `${
-                        (classData.current_participants /
+                        (localCurrentParticipants /
                           classData.max_participants) *
                         100
                       }%`,
@@ -456,7 +475,7 @@ export default function ClassModal({
                 <div className="text-white">
                   <div className="flex items-center space-x-2">
                     <span>
-                      {classData.current_participants} /{" "}
+                      {localCurrentParticipants} /{" "}
                       {classData.max_participants}
                     </span>
                     {isFull && (
