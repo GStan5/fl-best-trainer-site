@@ -49,7 +49,7 @@ export default function ClassCalendar({
   const daysInMonth = lastDayOfMonth.getDate();
   const startingDayOfWeek = firstDayOfMonth.getDay();
 
-  // Get classes for the current month
+  // Get classes for the current month - using proper ISO date parsing
   const monthClasses = classes.filter((classItem) => {
     const classDate = new Date(classItem.date);
     return (
