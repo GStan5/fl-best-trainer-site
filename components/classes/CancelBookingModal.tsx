@@ -40,8 +40,8 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
 
   const formatDate = (date: string) => {
     // Manual date parsing to avoid timezone issues
-    const dateStr = date.split('T')[0]; // Get "2025-10-07" from "2025-10-07T04:00:00.000Z"
-    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateStr = date.split("T")[0]; // Get "2025-10-07" from "2025-10-07T04:00:00.000Z"
+    const [year, month, day] = dateStr.split("-").map(Number);
     // Create date in local timezone (month is 0-based)
     const localDate = new Date(year, month - 1, day);
     return localDate.toLocaleDateString("en-US", {

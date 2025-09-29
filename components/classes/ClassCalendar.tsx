@@ -52,18 +52,18 @@ export default function ClassCalendar({
   // Get classes for the current month - manually parse date string to avoid timezone issues
   const monthClasses = classes.filter((classItem) => {
     // Extract date components directly from ISO string to avoid Date constructor timezone issues
-    const dateStr = classItem.date.split('T')[0]; // Get just the date part: "2025-10-07"
-    const [year, month, day] = dateStr.split('-').map(Number);
-    
+    const dateStr = classItem.date.split("T")[0]; // Get just the date part: "2025-10-07"
+    const [year, month, day] = dateStr.split("-").map(Number);
+
     // Month is 0-based in JavaScript, so subtract 1 from parsed month
-    return (month - 1) === currentMonth && year === currentYear;
+    return month - 1 === currentMonth && year === currentYear;
   });
 
   // Group classes by date and sort by start time
   const classesByDate = monthClasses.reduce((acc, classItem) => {
     // Extract day directly from ISO string to avoid any Date constructor issues
-    const dateStr = classItem.date.split('T')[0]; // Get just the date part: "2025-10-07"
-    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateStr = classItem.date.split("T")[0]; // Get just the date part: "2025-10-07"
+    const [year, month, day] = dateStr.split("-").map(Number);
     const dateKey = day.toString();
 
     if (!acc[dateKey]) {

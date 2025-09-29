@@ -66,7 +66,9 @@ export default function ClassModal({
 }: ClassModalProps) {
   const [mounted, setMounted] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [localCurrentParticipants, setLocalCurrentParticipants] = useState(classData?.current_participants || 0);
+  const [localCurrentParticipants, setLocalCurrentParticipants] = useState(
+    classData?.current_participants || 0
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -139,16 +141,14 @@ export default function ClassModal({
     if (isAlreadyBooked && currentBookings.length > 0) {
       setShowConfirmation(true);
     } else {
-      // Optimistically update the participant count
-      setLocalCurrentParticipants(prev => prev + 1);
+      // Let the parent component handle capacity updates via data refresh
       onBook(classData.id, false);
     }
   };
 
   const handleConfirmBooking = () => {
     setShowConfirmation(false);
-    // Optimistically update the participant count
-    setLocalCurrentParticipants(prev => prev + 1);
+    // Let the parent component handle capacity updates via data refresh
     onBook(classData.id, false);
   };
 
@@ -163,14 +163,11 @@ export default function ClassModal({
 
   const handleCancelBooking = () => {
     if (onCancelBooking && currentBookings.length > 0) {
-      // Optimistically update the participant count
-      setLocalCurrentParticipants(prev => prev - 1);
       onCancelBooking(currentBookings[0]); // Cancel the first booking for this class
     }
   };
 
-  const spotsRemaining =
-    classData.max_participants - localCurrentParticipants;
+  const spotsRemaining = classData.max_participants - localCurrentParticipants;
   const isFull = spotsRemaining <= 0;
   const isAlmostFull = spotsRemaining <= 2 && spotsRemaining > 0;
 
@@ -396,8 +393,7 @@ export default function ClassModal({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white/80 text-sm">Class Capacity</span>
                   <span className="text-white font-medium">
-                    {localCurrentParticipants}/
-                    {classData.max_participants}
+                    {localCurrentParticipants}/{classData.max_participants}
                   </span>
                 </div>
                 <div className="w-full bg-white/10 rounded-full h-2">
@@ -475,8 +471,7 @@ export default function ClassModal({
                 <div className="text-white">
                   <div className="flex items-center space-x-2">
                     <span>
-                      {localCurrentParticipants} /{" "}
-                      {classData.max_participants}
+                      {localCurrentParticipants} / {classData.max_participants}
                     </span>
                     {isFull && (
                       <FaExclamationTriangle className="text-red-400" />

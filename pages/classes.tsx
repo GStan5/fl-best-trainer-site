@@ -229,6 +229,16 @@ export default function Classes() {
 
       if (data.success) {
         setClasses(data.data);
+
+        // Update selectedClass if it exists to reflect new participant counts
+        if (selectedClass) {
+          const updatedSelectedClass = data.data.find(
+            (c: ClassData) => c.id === selectedClass.id
+          );
+          if (updatedSelectedClass) {
+            setSelectedClass(updatedSelectedClass);
+          }
+        }
       } else {
         console.error("Failed to fetch classes:", data.error);
       }
