@@ -49,26 +49,23 @@ export default function ClassCalendar({
   const daysInMonth = lastDayOfMonth.getDate();
   const startingDayOfWeek = firstDayOfMonth.getDay();
 
-  // Get classes for the current month - force timezone-safe date parsing
+  // Get classes for the current month - manually parse date string to avoid timezone issues
   const monthClasses = classes.filter((classItem) => {
-    // Parse the ISO date and convert to EST/local timezone for consistent display
-    const classDate = new Date(classItem.date);
-    // Force the date to be interpreted in local timezone by extracting components
-    const localDate = new Date(classDate.getFullYear(), classDate.getMonth(), classDate.getDate());
+    // Extract date components directly from ISO string to avoid Date constructor timezone issues
+    const dateStr = classItem.date.split('T')[0]; // Get just the date part: "2025-10-07"
+    const [year, month, day] = dateStr.split('-').map(Number);
     
-    return (
-      localDate.getMonth() === currentMonth &&
-      localDate.getFullYear() === currentYear
-    );
+    // Month is 0-based in JavaScript, so subtract 1 from parsed month
+    return (month - 1) === currentMonth && year === currentYear;
   });
 
   // Group classes by date and sort by start time
   const classesByDate = monthClasses.reduce((acc, classItem) => {
-    // Use the same timezone-safe approach for getting the day
-    const classDate = new Date(classItem.date);
-    const localDate = new Date(classDate.getFullYear(), classDate.getMonth(), classDate.getDate());
-    const dateKey = localDate.getDate().toString();
-    
+    // Extract day directly from ISO string to avoid any Date constructor issues
+    const dateStr = classItem.date.split('T')[0]; // Get just the date part: "2025-10-07"
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateKey = day.toString();
+
     if (!acc[dateKey]) {
       acc[dateKey] = [];
     }
