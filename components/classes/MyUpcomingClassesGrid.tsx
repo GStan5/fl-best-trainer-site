@@ -198,11 +198,18 @@ export default function MyUpcomingClassesGrid({
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-royal-light rounded-full"></div>
                   <span className="text-royal-light font-semibold text-sm">
-                    {new Date(booking.date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {(() => {
+                      // Manual date parsing to avoid timezone issues
+                      const dateStr = booking.date.split('T')[0]; // Get "2025-10-07" from "2025-10-07T04:00:00.000Z"
+                      const [year, month, day] = dateStr.split('-').map(Number);
+                      // Create date in local timezone (month is 0-based)
+                      const localDate = new Date(year, month - 1, day);
+                      return localDate.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "short",
+                        day: "numeric",
+                      });
+                    })()}
                   </span>
                 </div>
 

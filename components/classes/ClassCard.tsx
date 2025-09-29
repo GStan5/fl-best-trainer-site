@@ -108,11 +108,18 @@ export default function ClassCard({ classItem, onClick }: ClassCardProps) {
       {/* Date and Class Type */}
       <div className="flex justify-between items-center text-xs text-white/60">
         <span className="font-medium">
-          {new Date(classItem.date).toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-          })}
+          {(() => {
+            // Manual date parsing to avoid timezone issues
+            const dateStr = classItem.date.split('T')[0]; // Get "2025-10-07" from "2025-10-07T04:00:00.000Z"
+            const [year, month, day] = dateStr.split('-').map(Number);
+            // Create date in local timezone (month is 0-based)
+            const localDate = new Date(year, month - 1, day);
+            return localDate.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short", 
+              day: "numeric",
+            });
+          })()}
         </span>
         <span className="text-white/50 text-xs">{classItem.class_type}</span>
       </div>
