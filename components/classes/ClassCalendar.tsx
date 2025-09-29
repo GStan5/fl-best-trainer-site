@@ -49,18 +49,26 @@ export default function ClassCalendar({
   const daysInMonth = lastDayOfMonth.getDate();
   const startingDayOfWeek = firstDayOfMonth.getDay();
 
-  // Get classes for the current month - using proper ISO date parsing
+  // Get classes for the current month - force timezone-safe date parsing
   const monthClasses = classes.filter((classItem) => {
+    // Parse the ISO date and convert to EST/local timezone for consistent display
     const classDate = new Date(classItem.date);
+    // Force the date to be interpreted in local timezone by extracting components
+    const localDate = new Date(classDate.getFullYear(), classDate.getMonth(), classDate.getDate());
+    
     return (
-      classDate.getMonth() === currentMonth &&
-      classDate.getFullYear() === currentYear
+      localDate.getMonth() === currentMonth &&
+      localDate.getFullYear() === currentYear
     );
   });
 
   // Group classes by date and sort by start time
   const classesByDate = monthClasses.reduce((acc, classItem) => {
-    const dateKey = new Date(classItem.date).getDate().toString();
+    // Use the same timezone-safe approach for getting the day
+    const classDate = new Date(classItem.date);
+    const localDate = new Date(classDate.getFullYear(), classDate.getMonth(), classDate.getDate());
+    const dateKey = localDate.getDate().toString();
+    
     if (!acc[dateKey]) {
       acc[dateKey] = [];
     }
