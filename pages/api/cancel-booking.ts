@@ -159,10 +159,11 @@ export default async function handler(
       }
 
       // Update class participant count (only for confirmed bookings)
+      // Ensure participant count never goes below 0
       await sql`
         UPDATE classes 
         SET 
-          current_participants = current_participants - 1,
+          current_participants = GREATEST(current_participants - 1, 0),
           updated_at = NOW()
         WHERE id = ${booking.class_id}
       `;

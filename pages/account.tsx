@@ -198,10 +198,19 @@ export default function Account() {
         // Filter and sort upcoming group classes
         const upcomingGroup = groupClasses
           .filter((booking: any) => {
-            // Create a proper datetime by combining date and end_time
-            const classDate = new Date(booking.date);
+            // Create a proper datetime by combining date and end_time - timezone safe
+            const dateStr = booking.date.split("T")[0]; // Get "2025-10-09" from "2025-10-09T04:00:00.000Z"
+            const [year, month, day] = dateStr.split("-").map(Number);
             const [hours, minutes] = booking.end_time.split(":");
-            classDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            const classDate = new Date(
+              year,
+              month - 1,
+              day,
+              parseInt(hours),
+              parseInt(minutes),
+              0,
+              0
+            );
 
             console.log(
               "Class:",
@@ -217,8 +226,33 @@ export default function Account() {
             return classDate > now && booking.status !== "cancelled";
           })
           .sort((a: any, b: any) => {
-            const dateA = new Date(`${a.date} ${a.start_time}`);
-            const dateB = new Date(`${b.date} ${b.start_time}`);
+            // Timezone-safe date parsing for sorting
+            const dateStrA = a.date.split("T")[0];
+            const [yearA, monthA, dayA] = dateStrA.split("-").map(Number);
+            const [hoursA, minutesA] = a.start_time.split(":");
+            const dateA = new Date(
+              yearA,
+              monthA - 1,
+              dayA,
+              parseInt(hoursA),
+              parseInt(minutesA),
+              0,
+              0
+            );
+
+            const dateStrB = b.date.split("T")[0];
+            const [yearB, monthB, dayB] = dateStrB.split("-").map(Number);
+            const [hoursB, minutesB] = b.start_time.split(":");
+            const dateB = new Date(
+              yearB,
+              monthB - 1,
+              dayB,
+              parseInt(hoursB),
+              parseInt(minutesB),
+              0,
+              0
+            );
+
             return dateA.getTime() - dateB.getTime();
           });
         setUpcomingClasses(upcomingGroup);

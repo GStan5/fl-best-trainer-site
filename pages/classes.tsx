@@ -139,11 +139,15 @@ export default function Classes() {
               return false;
             }
 
-            // Create full datetime for the class
-            const classDate = new Date(booking.date);
+            // Create full datetime for the class - timezone safe parsing
+            const dateStr = booking.date.split("T")[0]; // Get "2025-10-09" from "2025-10-09T04:00:00.000Z"
+            const [year, month, day] = dateStr.split("-").map(Number);
             const timeComponents = booking.start_time.split(":");
-            const classDateTime = new Date(classDate);
-            classDateTime.setHours(
+            // Create date in local timezone (month is 0-based)
+            const classDateTime = new Date(
+              year,
+              month - 1,
+              day,
               parseInt(timeComponents[0]),
               parseInt(timeComponents[1]),
               0,

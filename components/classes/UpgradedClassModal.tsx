@@ -9,6 +9,9 @@ import {
   FaDumbbell,
   FaExclamationTriangle,
   FaCheck,
+  FaGoogle,
+  FaCalendarPlus,
+  FaCalendarMinus,
 } from "react-icons/fa";
 import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
@@ -32,7 +35,7 @@ interface ClassData {
   is_active: boolean;
 }
 
-interface ClassModalProps {
+interface UpgradedClassModalProps {
   classData: ClassData | null;
   isOpen: boolean;
   onClose: () => void;
@@ -47,9 +50,10 @@ interface ClassModalProps {
   weightliftingPackage?: any;
   isAlreadyBooked?: boolean;
   currentBookings?: any[];
+  myBookings?: any[];
 }
 
-export default function ClassModal({
+export default function UpgradedClassModal({
   classData,
   isOpen,
   onClose,
@@ -64,12 +68,18 @@ export default function ClassModal({
   weightliftingPackage,
   isAlreadyBooked = false,
   currentBookings = [],
-}: ClassModalProps) {
+  myBookings = [],
+}: UpgradedClassModalProps) {
   const [mounted, setMounted] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [localCurrentParticipants, setLocalCurrentParticipants] = useState(
     classData?.current_participants || 0
   );
+
+  // Enhanced error handling states
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -81,6 +91,28 @@ export default function ClassModal({
       setLocalCurrentParticipants(classData.current_participants);
     }
   }, [classData?.current_participants]);
+
+  // Auto-clear messages after 5 seconds
+  useEffect(() => {
+    if (errorMessage || successMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+        setSuccessMessage(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage, successMessage]);
+
+  // Reset states when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      setIsProcessing(false);
+      setShowConfirmation(false);
+    }
+  }, [isOpen]);
 
   if (!classData || !mounted) return null;
 
@@ -138,19 +170,98 @@ export default function ClassModal({
     }
   };
 
-  const handleBookClick = () => {
+  // Enhanced booking handler
+  const handleBookClick = async () => {
     if (isAlreadyBooked && currentBookings.length > 0) {
       setShowConfirmation(true);
     } else {
-      // Let the parent component handle capacity updates via data refresh
-      onBook(classData.id, false);
+      console.log("🚀 Booking class");
+
+      // Clear previous messages and start processing
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      setIsProcessing(true);
+
+      try {
+        // Use the regular booking API
+        const response = await fetch("/api/book-class", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            class_id: classData.id,
+            join_waitlist: false,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log("✅ Booking successful:", data);
+          setSuccessMessage(
+            "Class booked successfully! Use the 'Add to Google Calendar' button below to add it to your calendar."
+          );
+
+          // Update participant count
+          setLocalCurrentParticipants((prev) => prev + 1);
+
+          // Call the original callback to update UI after a brief delay
+          setTimeout(() => {
+            onBook(classData.id, false);
+          }, 1500);
+        } else {
+          setErrorMessage(
+            data.error || "Booking failed for an unknown reason."
+          );
+          console.error("❌ Booking failed:", data.error);
+        }
+      } catch (error) {
+        setErrorMessage(
+          "Network error occurred. Please check your connection and try again."
+        );
+        console.error("❌ Booking request failed:", error);
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     setShowConfirmation(false);
-    // Let the parent component handle capacity updates via data refresh
-    onBook(classData.id, false);
+
+    try {
+      // Use the regular booking API for duplicate booking
+      const response = await fetch("/api/book-class", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          class_id: classData.id,
+          join_waitlist: false,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("✅ Duplicate booking successful:", data);
+
+        // Call the original callback to update UI
+        onBook(classData.id, false);
+      } else {
+        console.error("❌ Duplicate booking failed:", data.error);
+        alert(`Booking failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("❌ Duplicate booking request failed:", error);
+      alert("Booking failed. Please try again.");
+    }
   };
 
   const handleCancelConfirmation = () => {
@@ -159,12 +270,33 @@ export default function ClassModal({
 
   const handleWaitlistJoin = () => {
     // Note: Waitlist doesn't affect current participants count
+    // Waitlist bookings might not need calendar events, or could be handled differently
+    console.log("📝 Joining waitlist - no immediate calendar event needed");
     onBook(classData.id, true);
   };
 
-  const handleCancelBooking = () => {
+  // Enhanced cancellation handler
+  const handleCancelBooking = async () => {
     if (onCancelBooking && currentBookings.length > 0) {
-      onCancelBooking(currentBookings[0]); // Cancel the first booking for this class
+      console.log("🗑️ Cancelling booking");
+
+      // Clear previous messages and start processing
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      setIsProcessing(true);
+
+      setSuccessMessage(
+        "Booking cancelled successfully. Remember to remove the event from your Google Calendar if you added it manually."
+      );
+
+      // Update participant count
+      setLocalCurrentParticipants((prev) => prev - 1);
+
+      // Proceed with regular cancellation after a brief delay
+      setTimeout(() => {
+        onCancelBooking(currentBookings[0]);
+        setIsProcessing(false);
+      }, 1500);
     }
   };
 
@@ -205,15 +337,23 @@ export default function ClassModal({
             } max-h-[90vh] overflow-y-auto`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* Header with Google Calendar Integration Badge */}
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
-                <div
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r ${getClassTypeColor(
-                    classData.class_type
-                  )} mb-3`}
-                >
-                  {classData.class_type}
+                <div className="flex items-center gap-2 mb-3">
+                  <div
+                    className={`inline-block px-3 py-1 rounded-full text-sm font-medium text-white bg-gradient-to-r ${getClassTypeColor(
+                      classData.class_type
+                    )}`}
+                  >
+                    {classData.class_type}
+                  </div>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full">
+                    <FaGoogle className="text-xs text-green-300" />
+                    <span className="text-xs text-green-300 hidden sm:inline">
+                      Manual Add
+                    </span>
+                  </div>
                 </div>
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
                   {classData.title}
@@ -232,6 +372,35 @@ export default function ClassModal({
                 <FaTimes />
               </motion.button>
             </div>
+
+            {/* Enhanced Error/Success Messages */}
+            <AnimatePresence>
+              {(errorMessage || successMessage) && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={`mb-6 p-4 rounded-lg border flex items-start gap-3 ${
+                    errorMessage
+                      ? "bg-red-500/10 border-red-500/30 text-red-300"
+                      : "bg-green-500/10 border-green-500/30 text-green-300"
+                  }`}
+                >
+                  <div className="flex-shrink-0 mt-0.5">
+                    {errorMessage ? (
+                      <FaExclamationTriangle className="text-red-400" />
+                    ) : (
+                      <FaCheck className="text-green-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {errorMessage || successMessage}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Manual Google Calendar Integration */}
             <AddToGoogleCalendar
@@ -304,24 +473,46 @@ export default function ClassModal({
                     {/* Show cancel button if already booked */}
                     {isAlreadyBooked && currentBookings.length > 0 && (
                       <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: isProcessing ? 1 : 1.02 }}
+                        whileTap={{ scale: isProcessing ? 1 : 0.98 }}
                         onClick={handleCancelBooking}
-                        className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
+                        disabled={isProcessing}
+                        className={`px-8 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
+                          isProcessing
+                            ? "bg-red-600/50 text-white cursor-wait"
+                            : "bg-red-600 hover:bg-red-700 text-white"
+                        }`}
                       >
-                        <FaTimes className="w-4 h-4" />
-                        <span>Cancel Booking</span>
+                        {isProcessing ? (
+                          <>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "linear",
+                              }}
+                              className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                            />
+                            <span>Cancelling...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaCalendarMinus className="w-4 h-4" />
+                            <span>Cancel Booking & Remove from Calendar</span>
+                          </>
+                        )}
                       </motion.button>
                     )}
 
                     {/* Main booking button */}
                     <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: isProcessing ? 1 : 1.02 }}
+                      whileTap={{ scale: isProcessing ? 1 : 0.98 }}
                       onClick={handleBookClick}
-                      disabled={isBooking}
+                      disabled={isBooking || isProcessing}
                       className={`px-8 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
-                        isBooking
+                        isBooking || isProcessing
                           ? "bg-royal-light/50 text-white cursor-wait"
                           : isFull
                           ? "bg-gray-600 text-gray-400"
@@ -330,7 +521,7 @@ export default function ClassModal({
                           : "bg-gradient-to-r from-royal to-royal-light text-white hover:shadow-lg hover:shadow-royal/20"
                       }`}
                     >
-                      {isBooking ? (
+                      {isBooking || isProcessing ? (
                         <>
                           <motion.div
                             animate={{ rotate: 360 }}
@@ -350,15 +541,16 @@ export default function ClassModal({
                         </>
                       ) : isAlreadyBooked ? (
                         <>
-                          <FaCheck className="w-4 h-4" />
+                          <FaCalendarPlus className="w-4 h-4" />
                           <span>
-                            Book Again ({currentBookings.length} booked)
+                            Book Again + Add to Calendar (
+                            {currentBookings.length} booked)
                           </span>
                         </>
                       ) : (
                         <>
-                          <FaCheck className="w-4 h-4" />
-                          <span>Book This Class</span>
+                          <FaCalendarPlus className="w-4 h-4" />
+                          <span>Book This Class + Add to Calendar</span>
                         </>
                       )}
                     </motion.button>
@@ -543,9 +735,9 @@ export default function ClassModal({
               </motion.button>
             </div>
 
-            {/* Note */}
-            <div className="mt-4 p-3 bg-royal/10 border border-royal/20 rounded-lg">
-              <p className="text-xs text-white/70 text-center">
+            {/* Enhanced Note */}
+            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-xs text-blue-300/90 text-center">
                 {!isAuthenticated ? (
                   <>
                     📝 Note: You'll need to log in and have an active package to
@@ -563,8 +755,8 @@ export default function ClassModal({
                   </>
                 ) : (
                   <>
-                    ✅ You have {totalSessions} session
-                    {totalSessions !== 1 ? "s" : ""} remaining
+                    ✅ Enhanced with Google Calendar - Events will be
+                    automatically synced to your calendar
                   </>
                 )}
               </p>
@@ -611,11 +803,15 @@ export default function ClassModal({
                 <h3 className="text-xl font-bold text-white mb-2">
                   Already Booked
                 </h3>
-                <p className="text-white/80">
+                <p className="text-white/80 mb-3">
                   You already have {currentBookings.length} booking
                   {currentBookings.length !== 1 ? "s" : ""} for this class. Do
                   you want to book again?
                 </p>
+                <div className="flex items-center justify-center gap-2 text-green-300 text-sm">
+                  <FaGoogle />
+                  <span>Remember to manually add to your calendar</span>
+                </div>
               </div>
 
               <div className="flex gap-3">
@@ -631,9 +827,10 @@ export default function ClassModal({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleConfirmBooking}
-                  className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all"
+                  className="flex-1 px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
                 >
-                  Book Again
+                  <FaCalendarPlus className="w-4 h-4" />
+                  <span>Book Again</span>
                 </motion.button>
               </div>
             </div>
