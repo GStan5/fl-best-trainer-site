@@ -29,17 +29,22 @@ export default function AddToGoogleCalendar({
   const generateGoogleCalendarLink = () => {
     if (!classData) return "";
 
-    // Parse date safely
+    // Parse date safely - use simple local time format for better mobile compatibility
     const dateStr = classData.date.split("T")[0]; // Get "2025-10-07"
     const [year, month, day] = dateStr.split("-").map(Number);
 
-    // Create start and end times in the format Google expects
-    const startTime = `${year}${month.toString().padStart(2, "0")}${day
+    // Format times for Google Calendar without timezone conversion
+    // This uses local time format which works better on mobile
+    const formatTime = (timeStr: string) => {
+      return timeStr.replace(":", "");
+    };
+
+    // Create the date/time strings in YYYYMMDDTHHMMSS format (local time)
+    const dateFormatted = `${year}${month.toString().padStart(2, "0")}${day
       .toString()
-      .padStart(2, "0")}T${classData.start_time.replace(":", "")}00`;
-    const endTime = `${year}${month.toString().padStart(2, "0")}${day
-      .toString()
-      .padStart(2, "0")}T${classData.end_time.replace(":", "")}00`;
+      .padStart(2, "0")}`;
+    const startTime = `${dateFormatted}T${formatTime(classData.start_time)}00`;
+    const endTime = `${dateFormatted}T${formatTime(classData.end_time)}00`;
 
     const params = new URLSearchParams({
       action: "TEMPLATE",
