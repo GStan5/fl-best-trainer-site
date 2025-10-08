@@ -29,22 +29,33 @@ export default function AddToGoogleCalendar({
   const generateGoogleCalendarLink = () => {
     if (!classData) return "";
 
-    // Parse date safely - use simple local time format for better mobile compatibility
+    // Parse date and create proper Date objects
     const dateStr = classData.date.split("T")[0]; // Get "2025-10-07"
     const [year, month, day] = dateStr.split("-").map(Number);
+    const [startHour, startMinute] = classData.start_time
+      .split(":")
+      .map(Number);
+    const [endHour, endMinute] = classData.end_time.split(":").map(Number);
 
-    // Format times for Google Calendar without timezone conversion
-    // This uses local time format which works better on mobile
-    const formatTime = (timeStr: string) => {
-      return timeStr.replace(":", "");
+    // Create Date objects - this ensures proper timezone handling
+    const startDate = new Date(year, month - 1, day, startHour, startMinute);
+    const endDate = new Date(year, month - 1, day, endHour, endMinute);
+
+    // Format for Google Calendar in UTC format with proper conversion
+    const formatDateForGoogle = (date: Date) => {
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const day = date.getDate().toString().padStart(2, "0");
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      const seconds = "00";
+
+      // Return in local time format without timezone suffix
+      return `${year}${month}${day}T${hours}${minutes}${seconds}`;
     };
 
-    // Create the date/time strings in YYYYMMDDTHHMMSS format (local time)
-    const dateFormatted = `${year}${month.toString().padStart(2, "0")}${day
-      .toString()
-      .padStart(2, "0")}`;
-    const startTime = `${dateFormatted}T${formatTime(classData.start_time)}00`;
-    const endTime = `${dateFormatted}T${formatTime(classData.end_time)}00`;
+    const startTime = formatDateForGoogle(startDate);
+    const endTime = formatDateForGoogle(endDate);
 
     const params = new URLSearchParams({
       action: "TEMPLATE",
