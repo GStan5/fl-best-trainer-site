@@ -1,455 +1,906 @@
-import React from 'react';export default function ClassDetailsModal({ classData, isOpen, onClose, onAddParticipant, onRemoveParticipant }) {import React from "react";import React from "react";import { motion, AnimatePresence } from "framer-motion";
+import React from "react";import React from 'react';export default function ClassDetailsModal({ classData, isOpen, onClose, onAddParticipant, onRemoveParticipant }) {import React from "react";import React from "react";import { motion, AnimatePresence } from "framer-motion";
+
+import { motion, AnimatePresence } from "framer-motion";
+
+import {
+
+  FaTimes,
+
+  FaCalendarAlt,interface Class {  if (!isOpen || !classData) return null;
+
+  FaClock,
+
+  FaMapMarkerAlt,  id?: string;
+
+  FaUsers,
+
+  FaDollarSign,  title: string;
+
+  FaInfo,
+
+  FaEdit,  description: string;
+
+  FaTrash,
+
+  FaUserPlus,  instructor: string;  const currentParticipants = classData.current_participants || 0;
+
+  FaUserMinus,
+
+  FaDumbbell,  date: string;
+
+  FaExclamationTriangle,
+
+} from "react-icons/fa";  start_time: string;  const pricePerSession = Number(classData.price_per_session) || 0;interface Class {import {
 
 
 
-interface Class {  if (!isOpen || !classData) return null;
+interface Class {  end_time: string;
 
   id?: string;
 
-  title: string;
+  title: string;  max_participants: number;
 
   description: string;
 
-  instructor: string;  const currentParticipants = classData.current_participants || 0;
+  instructor: string;  current_participants?: number;
 
   date: string;
 
-  start_time: string;  const pricePerSession = Number(classData.price_per_session) || 0;interface Class {import {
+  start_time: string;  location: string;  return (  id?: string;
 
   end_time: string;
 
-  max_participants: number;
+  max_participants: number;  class_type: string;
 
   current_participants?: number;
 
-  location: string;  return (  id?: string;
+  location: string;  difficulty_level?: string;    <div 
 
   class_type: string;
 
-  difficulty_level?: string;    <div 
+  difficulty_level?: string;  equipment_needed?: string;
 
   equipment_needed?: string;
 
-  prerequisites?: string;      style={{   title: string;interface Class {  FaTimes,
+  prerequisites?: string;  prerequisites?: string;      style={{   title: string;interface Class {  FaTimes,
 
   price_per_session?: number;
 
-  is_active?: boolean;        position: 'fixed',
+  is_active?: boolean;  price_per_session?: number;
 
   is_recurring?: boolean;
 
-  recurring_days?: string[];        top: 0,  description: string;
+  recurring_days?: string[];  is_active?: boolean;        position: 'fixed',
+
+  class_goals?: string;
+
+  intensity_level?: string;  is_recurring?: boolean;
+
+  waitlist_enabled?: boolean;
+
+  waitlist_capacity?: number;  recurring_days?: string[];        top: 0,  description: string;
+
+  auto_confirm_booking?: boolean;
+
+  cancellation_deadline_hours?: number;}
+
+  safety_requirements?: string;
+
+  age_restrictions?: string;        left: 0,
+
+  modifications_available?: string;
+
+  credits_required?: number;interface ClassDetailsModalProps {
+
+  duration_minutes?: number;
+
+}  isOpen: boolean;        right: 0,  instructor: string;  id?: string;  FaUsers,
+
+
+
+interface ClassDetailsModalProps {  onClose: () => void;
+
+  isOpen: boolean;
+
+  onClose: () => void;  classData: Class | null;        bottom: 0,
+
+  classData: Class | null;
+
+  onAddParticipant?: (classId: string) => void;}
+
+  onRemoveParticipant?: (classId: string) => void;
+
+  onEditClass?: (classData: Class) => void;        backgroundColor: 'rgba(0, 0, 0, 0.8)',  date: string;
+
+  onDeleteClass?: (classId: string) => void;
+
+  isAdmin?: boolean;export default function ClassDetailsModal({ classData, isOpen, onClose }: ClassDetailsModalProps) {
 
 }
-
-        left: 0,
-
-interface ClassDetailsModalProps {
-
-  isOpen: boolean;        right: 0,  instructor: string;  id?: string;  FaUsers,
-
-  onClose: () => void;
-
-  classData: Class | null;        bottom: 0,
-
-}
-
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',  date: string;
-
-export default function ClassDetailsModal({ classData, isOpen, onClose }: ClassDetailsModalProps) {
 
   if (!isOpen || !classData) return null;        zIndex: 99999,
 
+export default function ClassDetailsModal({ 
 
+  classData, 
 
-  const currentParticipants = classData.current_participants || 0;        display: 'flex',  start_time: string;  title: string;  FaCalendarAlt,
+  isOpen, 
 
-  const pricePerSession = Number(classData.price_per_session) || 0;
+  onClose,  const currentParticipants = classData.current_participants || 0;        display: 'flex',  start_time: string;  title: string;  FaCalendarAlt,
 
-        alignItems: 'center',
+  onAddParticipant,
 
-  return (
+  onRemoveParticipant,  const pricePerSession = Number(classData.price_per_session) || 0;
+
+  onEditClass,
+
+  onDeleteClass,        alignItems: 'center',
+
+  isAdmin = false
+
+}: ClassDetailsModalProps) {  return (
+
+  if (!isOpen || !classData) return null;
 
     <div         justifyContent: 'center',  end_time: string;
 
-      style={{ 
+  const currentParticipants = classData.current_participants || 0;
 
-        position: 'fixed',        padding: '1rem'
+  const pricePerSession = Number(classData.price_per_session) || 0;      style={{ 
 
-        top: 0,
 
-        left: 0,      }}  max_participants: number;  description: string;  FaClock,
 
-        right: 0,
+  // Parse date safely to avoid timezone issues        position: 'fixed',        padding: '1rem'
 
-        bottom: 0,      onClick={(e) => {
+  const formatDate = (dateString: string) => {
 
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    const dateStr = dateString.split("T")[0]; // Get "2025-10-09"        top: 0,
+
+    const [year, month, day] = dateStr.split("-").map(Number);
+
+    const localDate = new Date(year, month - 1, day);        left: 0,      }}  max_participants: number;  description: string;  FaClock,
+
+    return localDate.toLocaleDateString('en-US', {
+
+      weekday: 'long',        right: 0,
+
+      year: 'numeric',
+
+      month: 'long',        bottom: 0,      onClick={(e) => {
+
+      day: 'numeric'
+
+    });        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+
+  };
 
         zIndex: 99999,        if (e.target === e.currentTarget) {  current_participants?: number;
 
-        display: 'flex',
+  const getLocationColorClass = (location: string) => {
 
-        alignItems: 'center',          onClose();
+    switch (location.toLowerCase()) {        display: 'flex',
 
-        justifyContent: 'center',
+      case 'gym': return 'text-blue-400';
 
-        padding: '1rem'        }  location: string;  instructor: string;  FaMapMarkerAlt,
+      case 'studio': return 'text-purple-400';        alignItems: 'center',          onClose();
+
+      case 'outdoor': return 'text-green-400';
+
+      case 'pool': return 'text-cyan-400';        justifyContent: 'center',
+
+      default: return 'text-slate-300';
+
+    }        padding: '1rem'        }  location: string;  instructor: string;  FaMapMarkerAlt,
+
+  };
 
       }}
 
-      onClick={(e) => {      }}
+  const getDifficultyColor = (difficulty?: string) => {
 
-        if (e.target === e.currentTarget) {
+    switch (difficulty?.toLowerCase()) {      onClick={(e) => {      }}
 
-          onClose();    >  class_type: string;
+      case 'beginner': return 'bg-green-500';
 
-        }
+      case 'intermediate': return 'bg-yellow-500';        if (e.target === e.currentTarget) {
 
-      }}      <div 
+      case 'advanced': return 'bg-red-500';
 
-    >
+      default: return 'bg-gray-500';          onClose();    >  class_type: string;
 
-      <div         style={{   difficulty_level?: string;  date: string;  FaDollarSign,
+    }
 
-        style={{ 
+  };        }
 
-          backgroundColor: 'white',          backgroundColor: 'white',
 
-          color: 'black',
 
-          padding: '2rem',          color: 'black',  equipment_needed?: string;
+  const handlePrintDetails = () => {      }}      <div 
 
-          borderRadius: '8px',
+    const printWindow = window.open('', '_blank');
 
-          maxWidth: '500px',          padding: '2rem',
+    if (printWindow) {    >
 
-          width: '100%',
+      printWindow.document.write(`
 
-          maxHeight: '80vh',          borderRadius: '8px',  prerequisites?: string;  start_time: string;  FaUserPlus,
+        <html>      <div         style={{   difficulty_level?: string;  date: string;  FaDollarSign,
 
-          overflowY: 'auto'
+        <head>
 
-        }}          maxWidth: '500px',
+          <title>${classData.title} - Class Details</title>        style={{ 
 
-        onClick={(e) => e.stopPropagation()}
+          <style>
 
-      >          width: '100%',  price_per_session?: number;
+            body { font-family: Arial, sans-serif; margin: 20px; }          backgroundColor: 'white',          backgroundColor: 'white',
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            .header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
 
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Class Details</h2>          maxHeight: '80vh',
+            .detail { margin: 10px 0; }          color: 'black',
 
-          <button 
+            .label { font-weight: bold; }
 
-            onClick={onClose}          overflowY: 'auto'  is_active?: boolean;  end_time: string;  FaUserMinus,
+            .close-btn {           padding: '2rem',          color: 'black',  equipment_needed?: string;
 
-            style={{ 
+              position: fixed; top: 10px; right: 10px; 
 
-              backgroundColor: '#ef4444',        }}
+              background: #f44336; color: white; border: none;           borderRadius: '8px',
 
-              color: 'white',
+              padding: 10px 15px; border-radius: 5px; cursor: pointer; 
 
-              padding: '0.5rem 1rem',        onClick={(e) => e.stopPropagation()}  is_recurring?: boolean;
+            }          maxWidth: '500px',          padding: '2rem',
+
+          </style>
+
+        </head>          width: '100%',
+
+        <body>
+
+          <button class="close-btn" onclick="window.close()">✕ Close</button>          maxHeight: '80vh',          borderRadius: '8px',  prerequisites?: string;  start_time: string;  FaUserPlus,
+
+          <div class="header">
+
+            <h1>${classData.title}</h1>          overflowY: 'auto'
+
+            <h3>with ${classData.instructor}</h3>
+
+          </div>        }}          maxWidth: '500px',
+
+          <div class="detail"><span class="label">Date:</span> ${formatDate(classData.date)}</div>
+
+          <div class="detail"><span class="label">Time:</span> ${classData.start_time} - ${classData.end_time}</div>        onClick={(e) => e.stopPropagation()}
+
+          <div class="detail"><span class="label">Location:</span> ${classData.location}</div>
+
+          <div class="detail"><span class="label">Type:</span> ${classData.class_type}</div>      >          width: '100%',  price_per_session?: number;
+
+          <div class="detail"><span class="label">Difficulty:</span> ${classData.difficulty_level || 'Not specified'}</div>
+
+          <div class="detail"><span class="label">Participants:</span> ${currentParticipants} / ${classData.max_participants}</div>        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+
+          <div class="detail"><span class="label">Price:</span> $${pricePerSession.toFixed(2)} per session</div>
+
+          ${classData.description ? `<div class="detail"><span class="label">Description:</span> ${classData.description}</div>` : ''}          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Class Details</h2>          maxHeight: '80vh',
+
+          ${classData.equipment_needed ? `<div class="detail"><span class="label">Equipment:</span> ${classData.equipment_needed}</div>` : ''}
+
+          ${classData.prerequisites ? `<div class="detail"><span class="label">Prerequisites:</span> ${classData.prerequisites}</div>` : ''}          <button 
+
+          ${classData.class_goals ? `<div class="detail"><span class="label">Goals:</span> ${classData.class_goals}</div>` : ''}
+
+          ${classData.safety_requirements ? `<div class="detail"><span class="label">Safety:</span> ${classData.safety_requirements}</div>` : ''}            onClick={onClose}          overflowY: 'auto'  is_active?: boolean;  end_time: string;  FaUserMinus,
+
+          ${classData.age_restrictions ? `<div class="detail"><span class="label">Age Restrictions:</span> ${classData.age_restrictions}</div>` : ''}
+
+          ${classData.is_recurring && classData.recurring_days ? `<div class="detail"><span class="label">Recurring Days:</span> ${classData.recurring_days.join(', ')}</div>` : ''}            style={{ 
+
+        </body>
+
+        </html>              backgroundColor: '#ef4444',        }}
+
+      `);
+
+      printWindow.document.close();              color: 'white',
+
+      printWindow.focus();
+
+    }              padding: '0.5rem 1rem',        onClick={(e) => e.stopPropagation()}  is_recurring?: boolean;
+
+  };
 
               border: 'none',
 
-              borderRadius: '4px',      >
+  return (
 
-              cursor: 'pointer',
+    <AnimatePresence>              borderRadius: '4px',      >
 
-              fontSize: '0.875rem'        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>  recurring_days?: string[];  max_participants: number;  FaInfo,
+      {isOpen && (
 
-            }}
+        <div              cursor: 'pointer',
 
-          >          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Class Details</h2>
+          style={{
 
-            ✕
+            position: 'fixed',              fontSize: '0.875rem'        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>  recurring_days?: string[];  max_participants: number;  FaInfo,
 
-          </button>          <button }
+            top: 0,
 
-        </div>
+            left: 0,            }}
 
-            onClick={onClose}
+            right: 0,
 
-        <div style={{ display: 'grid', gap: '1rem' }}>
+            bottom: 0,          >          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Class Details</h2>
 
-          <div>            style={{   current_participants?: number;  FaExclamationTriangle,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
 
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+            zIndex: 99999,            ✕
 
-              {classData.title}              backgroundColor: '#ef4444',
+            display: 'flex',
 
-            </h3>
+            alignItems: 'center',          </button>          <button }
 
-            <p style={{ color: '#666', marginBottom: '1rem' }}>              color: 'white',interface ClassDetailsModalProps {
+            justifyContent: 'center',
 
-              {classData.description}
+            padding: '1rem'        </div>
 
-            </p>              padding: '0.5rem 1rem',
+          }}
 
-          </div>
+          onClick={(e) => {            onClick={onClose}
 
-              border: 'none',  classData: Class | null;  location: string;} from "react-icons/fa";
+            if (e.target === e.currentTarget) {
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              onClose();        <div style={{ display: 'grid', gap: '1rem' }}>
 
-            <div>              borderRadius: '4px',
+            }
 
-              <strong>Instructor:</strong> {classData.instructor}
+          }}          <div>            style={{   current_participants?: number;  FaExclamationTriangle,
 
-            </div>              cursor: 'pointer'  isOpen: boolean;
+        >
+
+          <motion.div            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+
+            initial={{ scale: 0.9, opacity: 0 }}
+
+            animate={{ scale: 1, opacity: 1 }}              {classData.title}              backgroundColor: '#ef4444',
+
+            exit={{ scale: 0.9, opacity: 0 }}
+
+            className="bg-slate-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-y-auto"            </h3>
+
+          >
+
+            {/* Header */}            <p style={{ color: '#666', marginBottom: '1rem' }}>              color: 'white',interface ClassDetailsModalProps {
+
+            <div className="bg-slate-900 px-6 py-4 flex items-center justify-between border-b border-slate-700">
+
+              <div className="flex-1">              {classData.description}
+
+                <div className="flex items-center gap-3 mb-2">
+
+                  <h2 className="text-xl font-bold text-white">{classData.title}</h2>            </p>              padding: '0.5rem 1rem',
+
+                  {classData.difficulty_level && (
+
+                    <span className={`px-2 py-1 text-xs text-white rounded-full ${getDifficultyColor(classData.difficulty_level)}`}>          </div>
+
+                      {classData.difficulty_level}
+
+                    </span>              border: 'none',  classData: Class | null;  location: string;} from "react-icons/fa";
+
+                  )}
+
+                  {classData.is_recurring && (          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+
+                    <span className="px-2 py-1 text-xs bg-purple-500 text-white rounded-full">
+
+                      Recurring            <div>              borderRadius: '4px',
+
+                    </span>
+
+                  )}              <strong>Instructor:</strong> {classData.instructor}
+
+                </div>
+
+                <p className="text-slate-400">with {classData.instructor}</p>            </div>              cursor: 'pointer'  isOpen: boolean;
+
+              </div>
+
+              <button            <div>
+
+                onClick={onClose}
+
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"              <strong>Location:</strong> {classData.location}            }}
+
+              >
+
+                <FaTimes />            </div>
+
+              </button>
+
+            </div>            <div>          >  onClose: () => void;  class_type: string;
+
+
+
+            {/* Content */}              <strong>Date:</strong> {classData.date}
+
+            <div className="p-6 space-y-6">
+
+              {/* Basic Info Grid */}            </div>            ✕
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                {/* Date & Time */}            <div>
+
+                <div className="space-y-2">
+
+                  <div className="flex items-center text-slate-400">              <strong>Time:</strong> {classData.start_time} - {classData.end_time}          </button>  onAddParticipant: (classId: string) => void;
+
+                    <FaCalendarAlt className="mr-2" />
+
+                    <span className="font-medium">Date</span>            </div>
+
+                  </div>
+
+                  <div className="text-white">            <div>        </div>
+
+                    <div className="font-medium">
+
+                      {formatDate(classData.date)}              <strong>Class Type:</strong> {classData.class_type}
+
+                    </div>
+
+                  </div>            </div>          onRemoveParticipant: (classId: string) => void;  difficulty_level?: string;interface Class {
+
+                </div>
 
             <div>
 
-              <strong>Location:</strong> {classData.location}            }}
+                {/* Time */}
 
-            </div>
+                <div className="space-y-2">              <strong>Difficulty:</strong> {classData.difficulty_level || 'Not specified'}        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
 
-            <div>          >  onClose: () => void;  class_type: string;
+                  <div className="flex items-center text-slate-400">
 
-              <strong>Date:</strong> {classData.date}
+                    <FaClock className="mr-2" />            </div>
 
-            </div>            ✕
+                    <span className="font-medium">Time</span>
 
-            <div>
+                  </div>          </div>          <p><strong>Title:</strong> {classData.title}</p>}
 
-              <strong>Time:</strong> {classData.start_time} - {classData.end_time}          </button>  onAddParticipant: (classId: string) => void;
+                  <div className="text-white font-medium">
 
-            </div>
+                    {classData.start_time} - {classData.end_time}
 
-            <div>        </div>
+                    {classData.duration_minutes && (
 
-              <strong>Class Type:</strong> {classData.class_type}
+                      <span className="text-slate-400 text-sm ml-2">          <div style={{ borderTop: '1px solid #e5e5e5', paddingTop: '1rem' }}>          <p><strong>Type:</strong> {classData.class_type}</p>
 
-            </div>          onRemoveParticipant: (classId: string) => void;  difficulty_level?: string;interface Class {
+                        ({classData.duration_minutes} min)
 
-            <div>
+                      </span>            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
 
-              <strong>Difficulty:</strong> {classData.difficulty_level || 'Not specified'}        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    )}
 
-            </div>
+                  </div>              <div>          <p><strong>Date:</strong> {classData.date}</p>  equipment_needed?: string;  id?: string;
 
-          </div>          <p><strong>Title:</strong> {classData.title}</p>}
-
-
-
-          <div style={{ borderTop: '1px solid #e5e5e5', paddingTop: '1rem' }}>          <p><strong>Type:</strong> {classData.class_type}</p>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-
-              <div>          <p><strong>Date:</strong> {classData.date}</p>  equipment_needed?: string;  id?: string;
+                </div>
 
                 <strong>Participants:</strong> {currentParticipants} / {classData.max_participants}
 
-              </div>          <p><strong>Time:</strong> {classData.start_time} - {classData.end_time}</p>
+                {/* Location */}
 
-              <div>
+                <div className="space-y-2">              </div>          <p><strong>Time:</strong> {classData.start_time} - {classData.end_time}</p>
 
-                <strong>Price:</strong> ${pricePerSession.toFixed(2)}          <p><strong>Location:</strong> {classData.location}</p>export default function ClassDetailsModal({
+                  <div className="flex items-center text-slate-400">
+
+                    <FaMapMarkerAlt className="mr-2" />              <div>
+
+                    <span className="font-medium">Location</span>
+
+                  </div>                <strong>Price:</strong> ${pricePerSession.toFixed(2)}          <p><strong>Location:</strong> {classData.location}</p>export default function ClassDetailsModal({
+
+                  <div className={`font-medium ${getLocationColorClass(classData.location)}`}>
+
+                    {classData.location}              </div>
+
+                  </div>
+
+                </div>            </div>          <p><strong>Participants:</strong> {currentParticipants} / {classData.max_participants}</p>
+
+
+
+                {/* Price */}
+
+                <div className="space-y-2">
+
+                  <div className="flex items-center text-slate-400">            {classData.equipment_needed && (          <p><strong>Price:</strong> ${pricePerSession.toFixed(2)}</p>  classData,  prerequisites?: string;  title: string;
+
+                    <FaDollarSign className="mr-2" />
+
+                    <span className="font-medium">Price</span>              <div style={{ marginBottom: '1rem' }}>
+
+                  </div>
+
+                  <div className="text-white font-medium">                <strong>Equipment Needed:</strong> {classData.equipment_needed}          
+
+                    ${pricePerSession.toFixed(2)} per session
+
+                    {classData.credits_required && (              </div>
+
+                      <div className="text-slate-400 text-sm">
+
+                        or {classData.credits_required} credits            )}          {classData.description && (  isOpen,
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                </div>            {classData.prerequisites && (            <div>
 
               </div>
-
-            </div>          <p><strong>Participants:</strong> {currentParticipants} / {classData.max_participants}</p>
-
-
-
-            {classData.equipment_needed && (          <p><strong>Price:</strong> ${pricePerSession.toFixed(2)}</p>  classData,  prerequisites?: string;  title: string;
 
               <div style={{ marginBottom: '1rem' }}>
 
-                <strong>Equipment Needed:</strong> {classData.equipment_needed}          
+              {/* Description */}
 
-              </div>
+              {classData.description && (                <strong>Prerequisites:</strong> {classData.prerequisites}              <strong>Description:</strong>  onClose,  price_per_session?: number;  description: string;
 
-            )}          {classData.description && (  isOpen,
+                <div className="space-y-2">
+
+                  <div className="flex items-center text-slate-400">              </div>
+
+                    <FaInfo className="mr-2" />
+
+                    <span className="font-medium">Description</span>            )}              <p style={{ marginTop: '0.25rem' }}>{classData.description}</p>
+
+                  </div>
+
+                  <p className="text-slate-300 leading-relaxed">{classData.description}</p>
+
+                </div>
+
+              )}            {classData.is_recurring && classData.recurring_days && (            </div>  onAddParticipant,
 
 
 
-            {classData.prerequisites && (            <div>
+              {/* Class Goals */}              <div>
 
-              <div style={{ marginBottom: '1rem' }}>
+              {classData.class_goals && (
 
-                <strong>Prerequisites:</strong> {classData.prerequisites}              <strong>Description:</strong>  onClose,  price_per_session?: number;  description: string;
+                <div className="space-y-2">                <strong>Recurring Days:</strong> {classData.recurring_days.join(', ')}          )}
 
-              </div>
+                  <div className="flex items-center text-slate-400">
 
-            )}              <p style={{ marginTop: '0.25rem' }}>{classData.description}</p>
+                    <FaDumbbell className="mr-2" />              </div>
 
+                    <span className="font-medium">Class Goals</span>
 
+                  </div>            )}            onRemoveParticipant,  is_active?: boolean;  instructor: string;
 
-            {classData.is_recurring && classData.recurring_days && (            </div>  onAddParticipant,
+                  <p className="text-slate-300 leading-relaxed">{classData.class_goals}</p>
 
-              <div>
+                </div>          </div>
 
-                <strong>Recurring Days:</strong> {classData.recurring_days.join(', ')}          )}
-
-              </div>
-
-            )}            onRemoveParticipant,  is_active?: boolean;  instructor: string;
-
-          </div>
+              )}
 
         </div>          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.5rem' }}>
 
-      </div>
+              {/* Participants */}
 
-    </div>            {classData.id && (}: ClassDetailsModalProps) {
+              <div className="space-y-2">      </div>
 
-  );
+                <div className="flex items-center text-slate-400">
 
-}              <>
+                  <FaUsers className="mr-2" />    </div>            {classData.id && (}: ClassDetailsModalProps) {
 
-                <button  console.log("🎭 Modal Debug:", { isOpen, hasClassData: !!classData, classDataTitle: classData?.title });  is_recurring?: boolean;  date: string;
+                  <span className="font-medium">Participants</span>
 
-                  onClick={() => onAddParticipant(classData.id)}
+                </div>  );
 
-                  disabled={currentParticipants >= classData.max_participants}
+                <div className="text-white">
 
-                  style={{ 
+                  {currentParticipants} / {classData.max_participants} participants}              <>
 
-                    backgroundColor: currentParticipants >= classData.max_participants ? '#9ca3af' : '#10b981',  if (!isOpen) {  recurring_days?: string[];  start_time: string;
+                  {classData.waitlist_enabled && classData.waitlist_capacity && (
 
-                    color: 'white',
+                    <span className="text-slate-400 text-sm ml-2">                <button  console.log("🎭 Modal Debug:", { isOpen, hasClassData: !!classData, classDataTitle: classData?.title });  is_recurring?: boolean;  date: string;
 
-                    padding: '0.5rem 1rem',    console.log("🚨 Not showing - isOpen is false");
+                      (Waitlist: {classData.waitlist_capacity})
 
-                    border: 'none',
+                    </span>                  onClick={() => onAddParticipant(classData.id)}
 
-                    borderRadius: '4px',    return null;}  end_time: string;
+                  )}
+
+                </div>                  disabled={currentParticipants >= classData.max_participants}
+
+                <div className="w-full bg-slate-700 rounded-full h-2">
+
+                  <div                   style={{ 
+
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+
+                    style={{ width: `${Math.min((currentParticipants / classData.max_participants) * 100, 100)}%` }}                    backgroundColor: currentParticipants >= classData.max_participants ? '#9ca3af' : '#10b981',  if (!isOpen) {  recurring_days?: string[];  start_time: string;
+
+                  />
+
+                </div>                    color: 'white',
+
+                {currentParticipants >= classData.max_participants && (
+
+                  <div className="flex items-center text-red-400 text-sm">                    padding: '0.5rem 1rem',    console.log("🚨 Not showing - isOpen is false");
+
+                    <FaExclamationTriangle className="mr-1" />
+
+                    Class is full                    border: 'none',
+
+                  </div>
+
+                )}                    borderRadius: '4px',    return null;}  end_time: string;
+
+              </div>
 
                     cursor: currentParticipants >= classData.max_participants ? 'not-allowed' : 'pointer'
 
-                  }}  }
+              {/* Additional Details */}
 
-                >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">                  }}  }
 
-                  Add Participant  max_participants: number;
+                {classData.class_type && (
 
-                </button>
+                  <div>                >
 
-                <button  if (!classData) {
+                    <span className="text-slate-400">Type:</span>
 
-                  onClick={() => onRemoveParticipant(classData.id)}
+                    <span className="text-white ml-2">{classData.class_type}</span>                  Add Participant  max_participants: number;
 
-                  disabled={currentParticipants <= 0}    console.log("🚨 Not showing - no classData");interface ClassDetailsModalProps {  current_participants?: number;
+                  </div>
 
-                  style={{ 
+                )}                </button>
 
-                    backgroundColor: currentParticipants <= 0 ? '#9ca3af' : '#f97316',    return null;
+                {classData.intensity_level && (
 
-                    color: 'white',
+                  <div>                <button  if (!classData) {
 
-                    padding: '0.5rem 1rem',  }  classData: Class | null;  location: string;
+                    <span className="text-slate-400">Intensity:</span>
 
-                    border: 'none',
+                    <span className="text-white ml-2">{classData.intensity_level}</span>                  onClick={() => onRemoveParticipant(classData.id)}
 
-                    borderRadius: '4px',
+                  </div>
 
-                    cursor: currentParticipants <= 0 ? 'not-allowed' : 'pointer'
+                )}                  disabled={currentParticipants <= 0}    console.log("🚨 Not showing - no classData");interface ClassDetailsModalProps {  current_participants?: number;
 
-                  }}  console.log("✅ Rendering modal with data:", classData.title);  isOpen: boolean;  class_type: string;
+                {classData.equipment_needed && (
 
-                >
+                  <div>                  style={{ 
 
-                  Remove Participant
+                    <span className="text-slate-400">Equipment:</span>
 
-                </button>
+                    <span className="text-white ml-2">{classData.equipment_needed}</span>                    backgroundColor: currentParticipants <= 0 ? '#9ca3af' : '#f97316',    return null;
 
-              </>  const currentParticipants = classData.current_participants || 0;  onClose: () => void;  difficulty_level?: string;
+                  </div>
 
-            )}
+                )}                    color: 'white',
 
-          </div>  const pricePerSession = Number(classData.price_per_session) || 0;
+                {classData.prerequisites && (
 
-        </div>
+                  <div>                    padding: '0.5rem 1rem',  }  classData: Class | null;  location: string;
 
-      </div>  onAddParticipant: (classId: string) => void;  equipment_needed?: string;
+                    <span className="text-slate-400">Prerequisites:</span>
 
-    </div>
+                    <span className="text-white ml-2">{classData.prerequisites}</span>                    border: 'none',
 
-  );  return (
+                  </div>
+
+                )}                    borderRadius: '4px',
+
+                {classData.age_restrictions && (
+
+                  <div>                    cursor: currentParticipants <= 0 ? 'not-allowed' : 'pointer'
+
+                    <span className="text-slate-400">Age Restrictions:</span>
+
+                    <span className="text-white ml-2">{classData.age_restrictions}</span>                  }}  console.log("✅ Rendering modal with data:", classData.title);  isOpen: boolean;  class_type: string;
+
+                  </div>
+
+                )}                >
+
+                {classData.modifications_available && (
+
+                  <div>                  Remove Participant
+
+                    <span className="text-slate-400">Modifications:</span>
+
+                    <span className="text-white ml-2">{classData.modifications_available}</span>                </button>
+
+                  </div>
+
+                )}              </>  const currentParticipants = classData.current_participants || 0;  onClose: () => void;  difficulty_level?: string;
+
+                {classData.safety_requirements && (
+
+                  <div>            )}
+
+                    <span className="text-slate-400">Safety Requirements:</span>
+
+                    <span className="text-white ml-2">{classData.safety_requirements}</span>          </div>  const pricePerSession = Number(classData.price_per_session) || 0;
+
+                  </div>
+
+                )}        </div>
+
+                {classData.cancellation_deadline_hours && (
+
+                  <div>      </div>  onAddParticipant: (classId: string) => void;  equipment_needed?: string;
+
+                    <span className="text-slate-400">Cancellation Deadline:</span>
+
+                    <span className="text-white ml-2">{classData.cancellation_deadline_hours} hours before</span>    </div>
+
+                  </div>
+
+                )}  );  return (
+
+              </div>
 
 }
-    <div   onRemoveParticipant: (classId: string) => void;  prerequisites?: string;
 
-      className="fixed inset-0 flex items-center justify-center p-4"
+              {/* Recurring Information */}    <div   onRemoveParticipant: (classId: string) => void;  prerequisites?: string;
 
-      style={{ }  price_per_session?: number;
+              {classData.is_recurring && classData.recurring_days && classData.recurring_days.length > 0 && (
 
-        backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+                <div className="space-y-2">      className="fixed inset-0 flex items-center justify-center p-4"
 
-        zIndex: 99999,  is_active?: boolean;
+                  <div className="flex items-center text-slate-400">
 
-        position: 'fixed',
+                    <FaCalendarAlt className="mr-2" />      style={{ }  price_per_session?: number;
 
-        top: 0,export default function ClassDetailsModal({  is_recurring?: boolean;
+                    <span className="font-medium">Recurring Schedule</span>
+
+                  </div>        backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+
+                  <div className="text-white">
+
+                    Every {classData.recurring_days.map(day =>         zIndex: 99999,  is_active?: boolean;
+
+                      day.charAt(0).toUpperCase() + day.slice(1)
+
+                    ).join(', ')}        position: 'fixed',
+
+                  </div>
+
+                </div>        top: 0,export default function ClassDetailsModal({  is_recurring?: boolean;
+
+              )}
 
         left: 0,
 
-        right: 0,  classData,  recurring_days?: string[];
+              {/* Action Buttons */}
 
-        bottom: 0
+              <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-700">        right: 0,  classData,  recurring_days?: string[];
 
-      }}  isOpen,}
+                {/* Print Details */}
 
-      onClick={(e) => {
+                <button        bottom: 0
+
+                  onClick={handlePrintDetails}
+
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm font-medium transition-colors"      }}  isOpen,}
+
+                >
+
+                  Print Details      onClick={(e) => {
+
+                </button>
 
         if (e.target === e.currentTarget) {  onClose,
 
-          onClose();
+                {/* Admin Actions */}
 
-        }  onAddParticipant,interface ClassDetailsModalProps {
+                {isAdmin && classData.id && (          onClose();
 
-      }}
+                  <>
 
-    >  onRemoveParticipant,  classData: Class | null;
+                    {onEditClass && (        }  onAddParticipant,interface ClassDetailsModalProps {
 
-      <div 
+                      <button
 
-        className="bg-white text-black p-8 rounded-lg shadow-2xl max-w-md w-full"}: ClassDetailsModalProps) {  isOpen: boolean;
+                        onClick={() => onEditClass(classData)}      }}
 
-        style={{ 
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
 
-          backgroundColor: 'white',  console.log("🎭 Modal Debug:", { isOpen, hasClassData: !!classData, classDataTitle: classData?.title });  onClose: () => void;
+                      >    >  onRemoveParticipant,  classData: Class | null;
 
-          color: 'black',
+                        <FaEdit />
 
-          padding: '2rem',  onAddParticipant: (classId: string) => void;
+                        Edit Class      <div 
 
-          borderRadius: '8px',
+                      </button>
 
-          maxWidth: '500px',  if (!isOpen) {  onRemoveParticipant: (classId: string) => void;
+                    )}        className="bg-white text-black p-8 rounded-lg shadow-2xl max-w-md w-full"}: ClassDetailsModalProps) {  isOpen: boolean;
 
-          width: '100%',
+                    {onDeleteClass && (
 
-          maxHeight: '80vh',    console.log("🚨 Not showing - isOpen is false");}
+                      <button        style={{ 
 
-          overflowY: 'auto'
+                        onClick={() => {
 
-        }}    return null;
+                          if (confirm('Are you sure you want to delete this class? This action cannot be undone.')) {          backgroundColor: 'white',  console.log("🎭 Modal Debug:", { isOpen, hasClassData: !!classData, classDataTitle: classData?.title });  onClose: () => void;
 
-        onClick={(e) => e.stopPropagation()}
+                            onDeleteClass(classData.id!);
 
-      >  }// Helper function for location-based colors
+                            onClose();          color: 'black',
 
-        <div className="flex justify-between items-center mb-4">
+                          }
 
-          <h2 className="text-2xl font-bold">Class Details</h2>const getLocationColorClass = (location: string) => {
+                        }}          padding: '2rem',  onAddParticipant: (classId: string) => void;
 
-          <button 
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
 
-            onClick={onClose}  if (!classData) {  const locationLower = location.toLowerCase();
+                      >          borderRadius: '8px',
 
-            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                        <FaTrash />
 
-          >    console.log("🚨 Not showing - no classData");  if (locationLower.includes('fl best trainer studio')) return 'text-blue-400';
+                        Delete Class          maxWidth: '500px',  if (!isOpen) {  onRemoveParticipant: (classId: string) => void;
 
-            ✕
+                      </button>
 
-          </button>    return null;  if (locationLower.includes('bayfront park')) return 'text-green-400';
+                    )}          width: '100%',
 
-        </div>
+                    {onAddParticipant && (
+
+                      <button          maxHeight: '80vh',    console.log("🚨 Not showing - isOpen is false");}
+
+                        onClick={() => onAddParticipant(classData.id!)}
+
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"          overflowY: 'auto'
+
+                      >
+
+                        <FaUserPlus />        }}    return null;
+
+                        Add Participant
+
+                      </button>        onClick={(e) => e.stopPropagation()}
+
+                    )}
+
+                    {onRemoveParticipant && currentParticipants > 0 && (      >  }// Helper function for location-based colors
+
+                      <button
+
+                        onClick={() => onRemoveParticipant(classData.id!)}        <div className="flex justify-between items-center mb-4">
+
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+
+                      >          <h2 className="text-2xl font-bold">Class Details</h2>const getLocationColorClass = (location: string) => {
+
+                        <FaUserMinus />
+
+                        Remove Participant          <button 
+
+                      </button>
+
+                    )}            onClick={onClose}  if (!classData) {  const locationLower = location.toLowerCase();
+
+                  </>
+
+                )}            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+
+              </div>
+
+            </div>          >    console.log("🚨 Not showing - no classData");  if (locationLower.includes('fl best trainer studio')) return 'text-blue-400';
+
+          </motion.div>
+
+        </div>            ✕
+
+      )}
+
+    </AnimatePresence>          </button>    return null;  if (locationLower.includes('bayfront park')) return 'text-green-400';
+
+  );
+
+}        </div>
 
           }  if (locationLower.includes('selby gardens')) return 'text-purple-400';
 

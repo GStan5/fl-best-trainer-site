@@ -1,6 +1,6 @@
 import { useState } from "react";
 import ClassInstanceRow from "./ClassInstanceRow";
-import EnhancedModal from "./EnhancedModal";
+import UpgradedClassDetailsModal from "./UpgradedClassDetailsModal";
 import { motion } from "framer-motion";
 
 interface Class {
@@ -336,14 +336,14 @@ export default function ClassInstancesTable({
       </div>
 
       {/* Class Details Modal */}
-      <EnhancedModal
+      <UpgradedClassDetailsModal
         classData={selectedClass}
         isOpen={showDetailsModal}
         onClose={handleCloseDetails}
         onAddParticipant={onAddParticipant}
         onRemoveParticipant={onRemoveParticipant}
         onEditClass={onEditClass}
-        onRefreshClasses={onRefreshClasses}
+        isAdmin={true}
       />
     </>
   );

@@ -231,11 +231,17 @@ export default function ClassInstanceRow({
       <td className="px-6 py-4 text-sm text-white">
         <div className="flex items-center mb-1">
           <FaCalendarAlt className="mr-2 text-slate-400" />
-          {new Date(classData.date).toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-          })}
+          {(() => {
+            // Parse date safely to avoid timezone issues
+            const dateStr = classData.date.split("T")[0]; // Get "2025-10-09"
+            const [year, month, day] = dateStr.split("-").map(Number);
+            const localDate = new Date(year, month - 1, day);
+            return localDate.toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            });
+          })()}
         </div>
         <div className="flex items-center text-slate-400">
           <FaClock className="mr-2" />

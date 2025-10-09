@@ -40,6 +40,10 @@ interface Client {
   created_at: string;
   weightlifting_classes_remaining?: number;
   personal_training_sessions_remaining?: number;
+  total_bookings?: number;
+  confirmed_bookings?: number;
+  cancelled_bookings?: number;
+  waitlist_bookings?: number;
 }
 
 export default function AdminClientsPage() {
@@ -520,6 +524,9 @@ export default function AdminClientsPage() {
                           Sessions
                         </th>
                         <th className="px-6 py-4 text-left text-white font-semibold">
+                          Bookings
+                        </th>
+                        <th className="px-6 py-4 text-left text-white font-semibold">
                           Status
                         </th>
                         <th className="px-6 py-4 text-left text-white font-semibold">
@@ -595,6 +602,40 @@ export default function AdminClientsPage() {
                                 <FaEdit className="mr-1" />
                                 Edit
                               </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-1">
+                              <div className="text-white/80 text-sm flex items-center justify-between">
+                                <span className="text-green-400 font-medium">
+                                  Confirmed:
+                                </span>
+                                <span className="text-green-400 font-semibold">
+                                  {client.confirmed_bookings || 0}
+                                </span>
+                              </div>
+                              <div className="text-white/80 text-sm flex items-center justify-between">
+                                <span className="text-yellow-400 font-medium">
+                                  Waitlist:
+                                </span>
+                                <span className="text-yellow-400 font-semibold">
+                                  {client.waitlist_bookings || 0}
+                                </span>
+                              </div>
+                              <div className="text-white/80 text-sm flex items-center justify-between">
+                                <span className="text-red-400 font-medium">
+                                  Cancelled:
+                                </span>
+                                <span className="text-red-400 font-semibold">
+                                  {client.cancelled_bookings || 0}
+                                </span>
+                              </div>
+                              <div className="text-white/60 text-xs flex items-center justify-between border-t border-white/10 pt-1">
+                                <span>Total:</span>
+                                <span className="font-semibold">
+                                  {client.total_bookings || 0}
+                                </span>
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -788,6 +829,45 @@ export default function AdminClientsPage() {
                                     0}
                                 </div>
                               </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Class Bookings */}
+                      <div className="mb-3">
+                        <div className="text-white/80 text-sm font-medium mb-2">
+                          Class Bookings
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-green-600/20 rounded-lg p-2">
+                            <div className="text-white/60 text-xs">
+                              Confirmed
+                            </div>
+                            <div className="text-green-400 font-semibold">
+                              {client.confirmed_bookings || 0}
+                            </div>
+                          </div>
+                          <div className="bg-yellow-600/20 rounded-lg p-2">
+                            <div className="text-white/60 text-xs">
+                              Waitlist
+                            </div>
+                            <div className="text-yellow-400 font-semibold">
+                              {client.waitlist_bookings || 0}
+                            </div>
+                          </div>
+                          <div className="bg-red-600/20 rounded-lg p-2">
+                            <div className="text-white/60 text-xs">
+                              Cancelled
+                            </div>
+                            <div className="text-red-400 font-semibold">
+                              {client.cancelled_bookings || 0}
+                            </div>
+                          </div>
+                          <div className="bg-slate-600/20 rounded-lg p-2">
+                            <div className="text-white/60 text-xs">Total</div>
+                            <div className="text-slate-400 font-semibold">
+                              {client.total_bookings || 0}
                             </div>
                           </div>
                         </div>

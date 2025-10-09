@@ -56,22 +56,80 @@ export default async function handler(
     }
   } else if (req.method === "POST") {
     try {
-      const { userId, isAdminOverride } = req.body;
+      const { userId, userEmail, isAdminOverride } = req.body;
 
-      if (!userId) {
+      let finalUserId = userId;
+
+      // If email is provided instead of userId, look up the user
+      if (!userId && userEmail) {
+        const userLookup = await sql`
+          SELECT id FROM users WHERE email = ${userEmail.toLowerCase()}
+        `;
+
+        if (userLookup.length === 0) {
+          return res.status(404).json({
+            success: false,
+            error: "User not found with that email address",
+          });
+        }
+
+        finalUserId = userLookup[0].id;
+      }
+
+      if (!finalUserId) {
         return res.status(400).json({
           success: false,
-          error: "User ID is required",
+          error: "User ID or email is required",
         });
       }
 
       // Check if user is already booked for this class
       const existingBooking = await sql`
         SELECT id, status FROM bookings 
-        WHERE user_id = ${userId} AND class_id = ${classId}
+        WHERE user_id = ${finalUserId} AND class_id = ${classId}
       `;
 
       if (existingBooking.length > 0) {
+        // If admin override and status is cancelled, allow re-booking by updating existing record
+        if (isAdminOverride && existingBooking[0].status === "cancelled") {
+          // Update the cancelled booking to confirmed
+          await sql`
+            UPDATE bookings 
+            SET status = 'confirmed', booking_date = NOW()
+            WHERE id = ${existingBooking[0].id}
+          `;
+
+          // Update participant count
+          await sql`
+            UPDATE classes 
+            SET current_participants = (
+              SELECT COUNT(*) 
+              FROM bookings 
+              WHERE class_id = ${classId} AND status = 'confirmed'
+            )
+            WHERE id = ${classId}
+          `;
+
+          // Get the user info for the response
+          const userInfo = await sql`
+            SELECT id, name, email FROM users WHERE id = ${finalUserId}
+          `;
+
+          return res.status(200).json({
+            success: true,
+            data: {
+              booking_id: existingBooking[0].id,
+              booking_date: new Date().toISOString(),
+              user_id: userInfo[0].id,
+              name: userInfo[0].name,
+              email: userInfo[0].email,
+              status: "confirmed",
+            },
+            message: "Participant re-added successfully",
+          });
+        }
+
+        // For other statuses (confirmed, waitlist), show error
         return res.status(409).json({
           success: false,
           error: `User is already ${existingBooking[0].status} for this class`,
@@ -104,7 +162,7 @@ export default async function handler(
       // Add the participant
       const newBooking = await sql`
         INSERT INTO bookings (user_id, class_id, status)
-        VALUES (${userId}, ${classId}, ${bookingStatus})
+        VALUES (${finalUserId}, ${classId}, ${bookingStatus})
         RETURNING id, booking_date, status
       `;
 
@@ -121,7 +179,7 @@ export default async function handler(
 
       // Get the user info for the response
       const userInfo = await sql`
-        SELECT id, name, email FROM users WHERE id = ${userId}
+        SELECT id, name, email FROM users WHERE id = ${finalUserId}
       `;
 
       res.status(201).json({

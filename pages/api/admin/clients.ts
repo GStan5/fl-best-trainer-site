@@ -24,26 +24,40 @@ export default async function handler(
     }
 
     if (req.method === "GET") {
-      // Fetch all clients
+      // Fetch all clients with booking counts
       const clients = await sql`
         SELECT 
-          id,
-          name,
-          email,
-          first_name,
-          last_name,
-          phone,
-          address,
-          emergency_contact_name,
-          emergency_contact_phone,
-          waiver_signed,
-          waiver_signed_date,
-          onboarding_completed,
-          created_at,
-          weightlifting_classes_remaining,
-          personal_training_sessions_remaining
-        FROM users 
-        ORDER BY created_at DESC
+          u.id,
+          u.name,
+          u.email,
+          u.first_name,
+          u.last_name,
+          u.phone,
+          u.address,
+          u.emergency_contact_name,
+          u.emergency_contact_phone,
+          u.waiver_signed,
+          u.waiver_signed_date,
+          u.onboarding_completed,
+          u.created_at,
+          u.weightlifting_classes_remaining,
+          u.personal_training_sessions_remaining,
+          COALESCE(booking_stats.total_bookings, 0) as total_bookings,
+          COALESCE(booking_stats.confirmed_bookings, 0) as confirmed_bookings,
+          COALESCE(booking_stats.cancelled_bookings, 0) as cancelled_bookings,
+          COALESCE(booking_stats.waitlist_bookings, 0) as waitlist_bookings
+        FROM users u
+        LEFT JOIN (
+          SELECT 
+            user_id,
+            COUNT(*) as total_bookings,
+            COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed_bookings,
+            COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_bookings,
+            COUNT(CASE WHEN status = 'waitlist' THEN 1 END) as waitlist_bookings
+          FROM bookings 
+          GROUP BY user_id
+        ) booking_stats ON u.id = booking_stats.user_id
+        ORDER BY u.created_at DESC
       `;
 
       return res.status(200).json({

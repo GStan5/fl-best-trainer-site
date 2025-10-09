@@ -833,39 +833,10 @@ export default function ClassesAdmin() {
     }
   };
 
-  const handleEditClass = async (classData: Class) => {
-    try {
-      const response = await fetch("/api/classes", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(classData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update class");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update the classes in the local state
-        setClasses((prevClasses) =>
-          prevClasses.map((cls) =>
-            cls.id === classData.id ? result.data : cls
-          )
-        );
-
-        // Show success message
-        alert("Class updated successfully!");
-      } else {
-        throw new Error(result.error || "Failed to update class");
-      }
-    } catch (error) {
-      console.error("Error updating class:", error);
-      alert("Failed to update class. Please try again.");
-    }
+  const handleEditClass = (classData: Class) => {
+    // Open the edit modal with the selected class
+    setSelectedClass(classData);
+    setShowAddClass(true);
   };
 
   // Wrapper function to handle the type compatibility between our Class interface and component expectations
