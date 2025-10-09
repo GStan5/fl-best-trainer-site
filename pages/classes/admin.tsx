@@ -419,9 +419,13 @@ export default function ClassesAdmin() {
   useEffect(() => {
     if (classes.length > 0 || completedClasses.length > 0) {
       const today = new Date();
-      const upcoming = classes.filter(
-        (cls: Class) => new Date(cls.date) >= today
-      );
+      const upcoming = classes.filter((cls: Class) => {
+        // Parse date safely to avoid timezone issues
+        const dateStr = cls.date.split("T")[0]; // Get "2025-10-09"
+        const [year, month, day] = dateStr.split("-").map(Number);
+        const classDate = new Date(year, month - 1, day);
+        return classDate >= today;
+      });
       const totalParticipants = classes.reduce(
         (sum: number, cls: Class) => sum + (cls.current_participants || 0),
         0
