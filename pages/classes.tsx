@@ -14,7 +14,7 @@ import MyUpcomingClassesGrid from "../components/classes/MyUpcomingClassesGrid";
 import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
-import { useWeightliftingPackage } from "../hooks/usePackages";
+import { useWeightliftingPackage, useSingleSessionPackage } from "../hooks/usePackages";
 import {
   FaCalendarAlt,
   FaUsers,
@@ -46,6 +46,8 @@ export default function Classes() {
   const { data: session, status } = useSession();
   const { package: weightliftingPackage, loading: packageLoading } =
     useWeightliftingPackage();
+  const { package: singleSessionPackage, loading: singlePackageLoading } =
+    useSingleSessionPackage();
   const [classes, setClasses] = useState<ClassData[]>([]);
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -576,86 +578,140 @@ export default function Classes() {
                     transition={{ duration: 0.5, delay: 0.4 }}
                     className="mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-6xl mx-auto"
                   >
-                    {/* Purchase Package Card - LEFT */}
+                    {/* Purchase Packages Card - LEFT */}
                     <div className="bg-gradient-to-br from-royal-light/20 to-blue-500/20 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-royal-light/30 shadow-lg hover:shadow-xl transition-all duration-300">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-full">
-                        <div className="flex-1">
-                          <div className="flex items-start space-x-3 mb-4">
-                            <div className="bg-royal-light/30 p-2 rounded-lg">
-                              <FaDumbbell className="text-royal-light text-lg sm:text-xl" />
-                            </div>
-                            <div>
-                              <h3 className="text-white font-bold text-base sm:text-lg mb-1">
-                                Weightlifting Package
-                              </h3>
-                              <p className="text-white/70 text-sm leading-relaxed">
-                                10 Sessions • Small Group Training
-                                <br />
-                                <span className="text-royal-light font-medium">
-                                  4-Person Max • $
-                                  {weightliftingPackage?.price ||
-                                    PACKAGE_CONFIGS.find(
-                                      (pkg) =>
-                                        pkg.id === "weightlifting-10-class"
-                                    )?.price ||
-                                    400}
+                      <div className="flex flex-col h-full">
+                        {/* Header */}
+                        <div className="flex items-start space-x-3 mb-6">
+                          <div className="bg-royal-light/30 p-2 rounded-lg">
+                            <FaDumbbell className="text-royal-light text-lg sm:text-xl" />
+                          </div>
+                          <div>
+                            <h3 className="text-white font-bold text-base sm:text-lg mb-1">
+                              Weightlifting Packages
+                            </h3>
+                            <p className="text-white/70 text-sm">
+                              Choose your training package • Small Group Training • 4-Person Max
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Package Options */}
+                        <div className="space-y-4 flex-1">
+                          {/* 10-Session Package */}
+                          <div className="bg-white/5 rounded-lg p-4 border border-royal-light/20">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h4 className="text-white font-semibold text-sm">10-Class Package</h4>
+                                <p className="text-white/60 text-xs">Best value • Most popular</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-royal-light font-bold text-lg">
+                                  ${weightliftingPackage?.price || 430}
                                 </span>
+                                <p className="text-white/50 text-xs">
+                                  ${((weightliftingPackage?.price || 430) / 10).toFixed(0)}/session
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Payment Fee Warning for 10-session */}
+                            <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 mb-3">
+                              <p className="text-yellow-300 text-xs font-medium mb-1">
+                                💳 Payment Processing Notice
+                              </p>
+                              <p className="text-yellow-100 text-xs mb-2">
+                                <strong>
+                                  Online payments include a $30 processing fee.
+                                </strong>
+                              </p>
+                              <p className="text-white/80 text-xs">
+                                To avoid fees, pay with cash, check, or Zelle.
+                                Contact us to arrange.
                               </p>
                             </div>
+
+                            {session ? (
+                              <StripeCheckoutButton
+                                package={
+                                  weightliftingPackage ||
+                                  PACKAGE_CONFIGS.find(
+                                    (pkg) => pkg.id === "weightlifting-10-class"
+                                  )!
+                                }
+                                className="w-full from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light font-bold py-2 px-4 rounded-lg transform hover:scale-[1.02] text-sm"
+                                onSuccess={() => {
+                                  setTimeout(() => window.location.reload(), 2000);
+                                }}
+                                onError={(error) => {
+                                  console.error("Payment error:", error);
+                                }}
+                              >
+                                Buy 10-Class Package - ${weightliftingPackage?.price || 430}
+                              </StripeCheckoutButton>
+                            ) : (
+                              <button
+                                className="w-full bg-gradient-to-r from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] text-sm"
+                                onClick={() => {
+                                  window.location.href = "/auth/signin";
+                                }}
+                              >
+                                Sign In to Purchase
+                              </button>
+                            )}
                           </div>
 
-                          {/* Payment Fee Warning */}
-                          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 mb-4">
-                            <p className="text-yellow-300 text-xs font-medium mb-1">
-                              💳 Payment Processing Notice
-                            </p>
-                            <p className="text-yellow-100 text-xs mb-2">
-                              <strong>
-                                Online payments include a $30 processing fee.
-                              </strong>
-                            </p>
-                            <p className="text-white/80 text-xs">
-                              To avoid fees, pay with cash, check, or Zelle.
-                              Contact us to arrange.
-                            </p>
-                          </div>
+                          {/* Single Session Package */}
+                          <div className="bg-white/5 rounded-lg p-4 border border-green-500/20">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <h4 className="text-white font-semibold text-sm">Single Session Drop-In</h4>
+                                <p className="text-white/60 text-xs">Perfect for trying it out</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-green-400 font-bold text-lg">
+                                  ${singleSessionPackage?.price || 55}
+                                </span>
+                                <p className="text-white/50 text-xs">
+                                  1 session
+                                </p>
+                              </div>
+                            </div>
 
-                          {session ? (
-                            <StripeCheckoutButton
-                              package={
-                                weightliftingPackage ||
-                                PACKAGE_CONFIGS.find(
-                                  (pkg) => pkg.id === "weightlifting-10-class"
-                                )!
-                              }
-                              className="w-full from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light font-bold py-3 px-6 rounded-xl transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                              onSuccess={() => {
-                                setTimeout(
-                                  () => window.location.reload(),
-                                  2000
-                                );
-                              }}
-                              onError={(error) => {
-                                console.error("Payment error:", error);
-                              }}
-                            >
-                              Buy Package - $
-                              {weightliftingPackage?.price ||
-                                PACKAGE_CONFIGS.find(
-                                  (pkg) => pkg.id === "weightlifting-10-class"
-                                )?.price ||
-                                400}
-                            </StripeCheckoutButton>
-                          ) : (
-                            <button
-                              className="w-full bg-gradient-to-r from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                              onClick={() => {
-                                window.location.href = "/auth/signin";
-                              }}
-                            >
-                              Sign In to Purchase
-                            </button>
-                          )}
+                            {session ? (
+                              <StripeCheckoutButton
+                                package={
+                                  singleSessionPackage || {
+                                    id: "single-session-drop-in",
+                                    name: "Single Session Drop-In",
+                                    description: "Perfect for trying out our weightlifting classes • No commitment required",
+                                    sessions_included: 1,
+                                    price: 55,
+                                    duration_days: 3650,
+                                    is_active: true
+                                  }
+                                }
+                                className="w-full from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 font-bold py-2 px-4 rounded-lg transform hover:scale-[1.02] text-sm"
+                                onSuccess={() => {
+                                  setTimeout(() => window.location.reload(), 2000);
+                                }}
+                                onError={(error) => {
+                                  console.error("Payment error:", error);
+                                }}
+                              >
+                                Buy Single Session - ${singleSessionPackage?.price || 55}
+                              </StripeCheckoutButton>
+                            ) : (
+                              <button
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-[1.02] text-sm"
+                                onClick={() => {
+                                  window.location.href = "/auth/signin";
+                                }}
+                              >
+                                Sign In to Purchase
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -57,3 +57,21 @@ export function useWeightliftingPackage() {
     error,
   };
 }
+
+// Helper function to get the single-session package
+export function useSingleSessionPackage() {
+  const { packages, loading, error } = usePackages();
+
+  const singleSessionPackage = packages.find(
+    (pkg) =>
+      pkg.sessions_included === 1 &&
+      (pkg.name.toLowerCase().includes("single") || 
+       pkg.name.toLowerCase().includes("drop-in"))
+  );
+
+  return {
+    package: singleSessionPackage,
+    loading,
+    error,
+  };
+}

@@ -46,21 +46,33 @@ export default function ClassesList({
         return false;
       }
 
-      // Create full datetime for the class - using same approach as UpcomingClassesSection
-      const classDate = new Date(c.date);
-      const timeComponents = c.start_time.split(":");
-      const classDateTime = new Date(classDate);
-      classDateTime.setHours(
-        parseInt(timeComponents[0]),
-        parseInt(timeComponents[1]),
-        0,
-        0
-      );
+      // Handle date properly to avoid timezone issues
+      const dateStr = typeof c.date === 'string' 
+        ? c.date.split('T')[0] 
+        : new Date(c.date).toISOString().split('T')[0];
+      
+      const classDateTime = new Date(`${dateStr}T${c.start_time}`);
 
+      const now = new Date();
       // Only include classes that haven't started yet
-      const isUpcoming = classDateTime > new Date();
+      const isUpcoming = classDateTime > now;
+      
+      // Detailed debugging for October 15th
+      if (c.title.includes("Intro Weight Lifting") || dateStr.includes("2025-10-15")) {
+        console.log(`🔍 DEBUG Oct 15 ClassesList: ${c.title}`);
+        console.log(`   Raw date: ${c.date}`);
+        console.log(`   Parsed dateStr: ${dateStr}`);
+        console.log(`   Start time: ${c.start_time}`);
+        console.log(`   Final classDateTime: ${classDateTime.toString()}`);
+        console.log(`   Current time (now): ${now.toString()}`);
+        console.log(`   classDateTime > now: ${classDateTime > now}`);
+        console.log(`   Time difference (hours): ${(classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)}`);
+        console.log(`   Result: ${isUpcoming ? "✅ WILL SHOW" : "❌ WILL HIDE"}`);
+        console.log("   ---");
+      }
+      
       console.log(
-        `📅 ClassesList: ${c.title} on ${classDate.toDateString()} at ${c.start_time}: ${
+        `📅 ClassesList: ${c.title} on ${dateStr} at ${c.start_time}: ${
           isUpcoming ? "✅ upcoming" : "❌ past"
         }`
       );
