@@ -29,6 +29,13 @@ export default function ClassesList({
   onClassSelect,
 }: ClassesListProps) {
   console.log("🔍 ClassesList: Processing classes:", classes.length);
+  console.log("🔍 ClassesList: Raw classes data:", classes.map(c => ({
+    title: c.title,
+    date: c.date,
+    dateType: typeof c.date,
+    start_time: c.start_time,
+    id: c.id
+  })));
   const now = new Date();
   console.log("🕐 ClassesList: Current time:", now.toISOString());
 
@@ -70,6 +77,12 @@ export default function ClassesList({
     upcomingClasses.length,
     "upcoming classes"
   );
+  console.log("📊 ClassesList: Upcoming classes:", upcomingClasses.map(c => ({
+    title: c.title,
+    date: typeof c.date === "string" ? c.date : new Date(c.date).toISOString().split("T")[0],
+    start_time: c.start_time,
+    id: c.id
+  })));
 
   const classesToShow = upcomingClasses.slice(0, 6);
 
