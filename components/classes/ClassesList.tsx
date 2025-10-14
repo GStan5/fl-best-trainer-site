@@ -34,19 +34,34 @@ export default function ClassesList({
 
   const upcomingClasses = classes
     .filter((c) => {
+      // Handle both Date objects and date strings from the database
+      const dateStr =
+        typeof c.date === "string"
+          ? c.date
+          : new Date(c.date).toISOString().split("T")[0];
+
       // Include time in the comparison, not just date
-      const classDateTime = new Date(`${c.date}T${c.start_time}`);
+      const classDateTime = new Date(`${dateStr}T${c.start_time}`);
       const isUpcoming = classDateTime > new Date();
       console.log(
-        `📅 ClassesList: ${c.title} on ${c.date} at ${c.start_time}: ${
+        `📅 ClassesList: ${c.title} on ${dateStr} at ${c.start_time}: ${
           isUpcoming ? "✅ upcoming" : "❌ past"
         }`
       );
       return isUpcoming;
     })
     .sort((a, b) => {
-      const dateA = new Date(`${a.date}T${a.start_time}`);
-      const dateB = new Date(`${b.date}T${b.start_time}`);
+      const dateStrA =
+        typeof a.date === "string"
+          ? a.date
+          : new Date(a.date).toISOString().split("T")[0];
+      const dateStrB =
+        typeof b.date === "string"
+          ? b.date
+          : new Date(b.date).toISOString().split("T")[0];
+
+      const dateA = new Date(`${dateStrA}T${a.start_time}`);
+      const dateB = new Date(`${dateStrB}T${b.start_time}`);
       return dateA.getTime() - dateB.getTime();
     });
 

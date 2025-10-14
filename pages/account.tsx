@@ -199,7 +199,12 @@ export default function Account() {
         const upcomingGroup = groupClasses
           .filter((booking: any) => {
             // Create a proper datetime by combining date and end_time - timezone safe
-            const dateStr = booking.date.split("T")[0]; // Get "2025-10-09" from "2025-10-09T04:00:00.000Z"
+            // Handle both Date objects and date strings from the database
+            const dateStr =
+              typeof booking.date === "string"
+                ? booking.date.split("T")[0] // Get "2025-10-09" from "2025-10-09T04:00:00.000Z"
+                : new Date(booking.date).toISOString().split("T")[0]; // Convert Date object to string
+
             const [year, month, day] = dateStr.split("-").map(Number);
             const [hours, minutes] = booking.end_time.split(":");
             const classDate = new Date(
@@ -227,7 +232,10 @@ export default function Account() {
           })
           .sort((a: any, b: any) => {
             // Timezone-safe date parsing for sorting
-            const dateStrA = a.date.split("T")[0];
+            const dateStrA =
+              typeof a.date === "string"
+                ? a.date.split("T")[0]
+                : new Date(a.date).toISOString().split("T")[0];
             const [yearA, monthA, dayA] = dateStrA.split("-").map(Number);
             const [hoursA, minutesA] = a.start_time.split(":");
             const dateA = new Date(
@@ -240,7 +248,10 @@ export default function Account() {
               0
             );
 
-            const dateStrB = b.date.split("T")[0];
+            const dateStrB =
+              typeof b.date === "string"
+                ? b.date.split("T")[0]
+                : new Date(b.date).toISOString().split("T")[0];
             const [yearB, monthB, dayB] = dateStrB.split("-").map(Number);
             const [hoursB, minutesB] = b.start_time.split(":");
             const dateB = new Date(

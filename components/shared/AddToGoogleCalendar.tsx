@@ -30,7 +30,12 @@ export default function AddToGoogleCalendar({
     if (!classData) return "";
 
     // Parse date and create proper Date objects
-    const dateStr = classData.date.split("T")[0]; // Get "2025-10-07"
+    // Handle both Date objects and date strings from the database
+    const dateStr =
+      typeof classData.date === "string"
+        ? classData.date.split("T")[0] // Get "2025-10-07"
+        : new Date(classData.date).toISOString().split("T")[0]; // Convert Date object to string
+
     const [year, month, day] = dateStr.split("-").map(Number);
     const [startHour, startMinute] = classData.start_time
       .split(":")

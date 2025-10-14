@@ -9,7 +9,51 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Create Neon connection
 const sql = neon(process.env.DATABASE_URL || "");
+
+// Add retry wrapper for database operations
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      console.log(
+        `Database attempt ${attempt}/${maxRetries} failed:`,
+        error.message
+      );
+
+      // Don't retry on certain errors
+      if (
+        error.message?.includes("does not exist") ||
+        error.message?.includes("permission denied")
+      ) {
+        throw error;
+      }
+
+      if (attempt === maxRetries) {
+        console.error("All database retry attempts failed");
+        throw error;
+      }
+
+      // Wait before retrying with exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, delay * attempt));
+    }
+  }
+  throw new Error("Unexpected error in retry logic");
+}
+
+// Export the raw sql for direct use, and a wrapped version with retries
+export const sqlWithRetry = async (
+  query: TemplateStringsArray,
+  ...values: any[]
+) => {
+  return withRetry(() => sql(query, ...values));
+};
 
 export default sql;
 

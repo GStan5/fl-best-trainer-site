@@ -182,7 +182,7 @@ export default async function handler(
             u.first_name,
             u.last_name
           FROM bookings b
-          JOIN users u ON b.user_id = u.user_id
+          JOIN users u ON b.user_id = u.id
           WHERE b.class_id = ${booking.class_id} 
             AND b.status = 'waitlist'
           ORDER BY b.booking_date ASC

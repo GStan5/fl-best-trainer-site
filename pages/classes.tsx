@@ -140,7 +140,12 @@ export default function Classes() {
             }
 
             // Create full datetime for the class - timezone safe parsing
-            const dateStr = booking.date.split("T")[0]; // Get "2025-10-09" from "2025-10-09T04:00:00.000Z"
+            // Handle both Date objects and date strings from the database
+            const dateStr =
+              typeof booking.date === "string"
+                ? booking.date.split("T")[0] // Get "2025-10-09" from "2025-10-09T04:00:00.000Z"
+                : new Date(booking.date).toISOString().split("T")[0]; // Convert Date object to string
+
             const [year, month, day] = dateStr.split("-").map(Number);
             const timeComponents = booking.start_time.split(":");
             // Create date in local timezone (month is 0-based)
