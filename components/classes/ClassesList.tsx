@@ -41,35 +41,37 @@ export default function ClassesList({
 
   const upcomingClasses = classes
     .filter((c) => {
-      // Handle both Date objects and date strings from the database
-      const dateStr =
-        typeof c.date === "string"
-          ? c.date
-          : new Date(c.date).toISOString().split("T")[0];
+      // Must be active
+      if (!c.is_active) {
+        return false;
+      }
 
-      // Include time in the comparison, not just date
-      const classDateTime = new Date(`${dateStr}T${c.start_time}`);
+      // Create full datetime for the class - using same approach as UpcomingClassesSection
+      const classDate = new Date(c.date);
+      const timeComponents = c.start_time.split(":");
+      const classDateTime = new Date(classDate);
+      classDateTime.setHours(
+        parseInt(timeComponents[0]),
+        parseInt(timeComponents[1]),
+        0,
+        0
+      );
+
+      // Only include classes that haven't started yet
       const isUpcoming = classDateTime > new Date();
       console.log(
-        `📅 ClassesList: ${c.title} on ${dateStr} at ${c.start_time}: ${
+        `📅 ClassesList: ${c.title} on ${classDate.toDateString()} at ${c.start_time}: ${
           isUpcoming ? "✅ upcoming" : "❌ past"
         }`
       );
       return isUpcoming;
     })
     .sort((a, b) => {
-      const dateStrA =
-        typeof a.date === "string"
-          ? a.date
-          : new Date(a.date).toISOString().split("T")[0];
-      const dateStrB =
-        typeof b.date === "string"
-          ? b.date
-          : new Date(b.date).toISOString().split("T")[0];
-
-      const dateA = new Date(`${dateStrA}T${a.start_time}`);
-      const dateB = new Date(`${dateStrB}T${b.start_time}`);
-      return dateA.getTime() - dateB.getTime();
+      // Sort chronologically by date, then time - same as UpcomingClassesSection
+      if (a.date !== b.date) {
+        return a.date.toString().localeCompare(b.date.toString());
+      }
+      return a.start_time.localeCompare(b.start_time);
     });
 
   console.log(
