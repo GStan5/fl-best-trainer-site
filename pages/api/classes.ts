@@ -208,6 +208,19 @@ export default async function handler(
         }
       }
 
+      // Debug logging for October 15th issue
+      console.log(`📊 API Classes: Returning ${classes.length} classes`);
+      const oct15Classes = classes.filter(c => {
+        const dateStr = typeof c.date === 'string' ? c.date.split('T')[0] : new Date(c.date).toISOString().split('T')[0];
+        return dateStr === '2025-10-15';
+      });
+      console.log(`📊 API Classes: October 15th classes found: ${oct15Classes.length}`);
+      if (oct15Classes.length > 0) {
+        oct15Classes.forEach(c => {
+          console.log(`📊 API Classes: Oct 15 - ${c.title} at ${c.start_time} (ID: ${c.id})`);
+        });
+      }
+
       res.status(200).json({
         success: true,
         data: classes,
