@@ -91,6 +91,22 @@ export default function AdminClientsPage() {
     notes: "",
   });
 
+  // Purchase History State
+  const [activeTab, setActiveTab] = useState<"details" | "purchases">(
+    "details"
+  );
+  const [clientPurchases, setClientPurchases] = useState<any[]>([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
+  const [editingPurchase, setEditingPurchase] = useState<any | null>(null);
+  const [purchaseFormData, setPurchaseFormData] = useState({
+    package_type: "",
+    sessions_included: 0,
+    amount_paid: 0,
+    payment_method: "",
+    payment_status: "",
+    notes: "",
+  });
+
   // Check if user is admin using database field
   const isAdmin = session?.user?.isAdmin === true;
 
@@ -184,7 +200,109 @@ export default function AdminClientsPage() {
       onboarding_completed: client.onboarding_completed || false,
     });
     setEditingClient(client);
+    setActiveTab("details"); // Reset to details tab
+    fetchClientPurchases(client.email); // Fetch purchases when opening modal
     setShowAddModal(true);
+  };
+
+  const fetchClientPurchases = async (userEmail: string) => {
+    setLoadingPurchases(true);
+    try {
+      const response = await fetch(`/api/purchases?user_id=${userEmail}`);
+      const data = await response.json();
+      if (data.success) {
+        setClientPurchases(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching purchases:", error);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  };
+
+  const handleDeletePurchase = async (purchaseId: string) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this purchase? This will remove the sessions from the client's account."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/purchases/${purchaseId}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert(
+          `Purchase deleted successfully. ${data.sessions_removed} sessions removed from account.`
+        );
+        // Refresh purchases and clients list
+        if (editingClient) {
+          fetchClientPurchases(editingClient.email);
+        }
+        fetchClients();
+      } else {
+        alert(data.error || "Failed to delete purchase");
+      }
+    } catch (error) {
+      console.error("Error deleting purchase:", error);
+      alert("Error deleting purchase");
+    }
+  };
+
+  const handleEditPurchase = (purchase: any) => {
+    setEditingPurchase(purchase);
+    setPurchaseFormData({
+      package_type: purchase.package_type,
+      sessions_included: purchase.sessions_included,
+      amount_paid: purchase.amount_paid,
+      payment_method: purchase.payment_method || "",
+      payment_status: purchase.payment_status || "completed",
+      notes: purchase.notes || "",
+    });
+  };
+
+  const handleSavePurchaseEdit = async () => {
+    if (!editingPurchase) return;
+
+    const sessionsDifference =
+      purchaseFormData.sessions_included - editingPurchase.sessions_included;
+
+    try {
+      const response = await fetch(
+        `/api/admin/purchases/${editingPurchase.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...purchaseFormData,
+            sessions_difference: sessionsDifference,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("Purchase updated successfully");
+        setEditingPurchase(null);
+        if (editingClient) {
+          fetchClientPurchases(editingClient.email);
+        }
+        fetchClients();
+      } else {
+        alert(data.error || "Failed to update purchase");
+      }
+    } catch (error) {
+      console.error("Error updating purchase:", error);
+      alert("Error updating purchase");
+    }
   };
 
   const handleSaveClient = async () => {
@@ -945,6 +1063,7 @@ export default function AdminClientsPage() {
                 onClick={() => {
                   setShowAddModal(false);
                   setEditingClient(null);
+                  setActiveTab("details");
                   resetForm();
                 }}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors touch-manipulation"
@@ -953,218 +1072,470 @@ export default function AdminClientsPage() {
               </button>
             </div>
 
-            <div className="space-y-6">
-              {/* Basic Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Basic Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.first_name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, first_name: e.target.value })
-                      }
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
-                      placeholder="Enter first name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.last_name}
-                      onChange={(e) =>
-                        setFormData({ ...formData, last_name: e.target.value })
-                      }
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
-                      placeholder="Enter last name"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Email Address * {editingClient && "(Cannot be changed)"}
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                      disabled={!!editingClient}
-                      className={`w-full border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light ${
-                        editingClient
-                          ? "bg-white/5 cursor-not-allowed"
-                          : "bg-white/10"
-                      }`}
-                      placeholder="Enter email address"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) =>
-                        setFormData({ ...formData, address: e.target.value })
-                      }
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
-                      placeholder="Enter address"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Emergency Contact */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Emergency Contact
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Emergency Contact Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.emergency_contact_name}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          emergency_contact_name: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
-                      placeholder="Enter emergency contact name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Emergency Contact Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.emergency_contact_phone}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          emergency_contact_phone: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
-                      placeholder="Enter emergency contact phone"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Status */}
-              {editingClient && (
-                <div>
-                  <h3 className="text-lg font-semibold text-white mb-4">
-                    Status
-                  </h3>
-                  <div className="space-y-4">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.waiver_signed}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            waiver_signed: e.target.checked,
-                          })
-                        }
-                        className="mr-3 h-4 w-4 text-royal-light focus:ring-royal-light border-white/20 rounded"
-                      />
-                      <span className="text-white/80">Waiver Signed</span>
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.onboarding_completed}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            onboarding_completed: e.target.checked,
-                          })
-                        }
-                        className="mr-3 h-4 w-4 text-royal-light focus:ring-royal-light border-white/20 rounded"
-                      />
-                      <span className="text-white/80">
-                        Onboarding Completed
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+            {/* Tabs - only show when editing */}
+            {editingClient && (
+              <div className="flex border-b border-white/10 mb-6">
                 <button
-                  onClick={handleSaveClient}
-                  disabled={
-                    saving ||
-                    !formData.first_name ||
-                    !formData.last_name ||
-                    (!editingClient && !formData.email)
-                  }
-                  className={`flex-1 px-4 sm:px-6 py-3 font-semibold rounded-lg transition-all duration-300 flex items-center justify-center touch-manipulation ${
-                    saving ||
-                    !formData.first_name ||
-                    !formData.last_name ||
-                    (!editingClient && !formData.email)
-                      ? "bg-white/10 text-white/50 cursor-not-allowed"
-                      : "bg-royal-light text-royal-dark hover:bg-white"
+                  onClick={() => setActiveTab("details")}
+                  className={`px-4 py-2 font-medium transition-colors ${
+                    activeTab === "details"
+                      ? "text-royal-light border-b-2 border-royal-light"
+                      : "text-white/60 hover:text-white/80"
                   }`}
                 >
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-royal-dark mr-2"></div>
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <FaSave className="mr-2" />
-                      {editingClient ? "Update Client" : "Add Client"}
-                    </>
-                  )}
+                  Client Details
                 </button>
                 <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingClient(null);
-                    resetForm();
-                  }}
-                  className="px-4 sm:px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-all duration-300 touch-manipulation"
+                  onClick={() => setActiveTab("purchases")}
+                  className={`px-4 py-2 font-medium transition-colors ${
+                    activeTab === "purchases"
+                      ? "text-royal-light border-b-2 border-royal-light"
+                      : "text-white/60 hover:text-white/80"
+                  }`}
                 >
-                  Cancel
+                  Purchase History
                 </button>
               </div>
-            </div>
+            )}
+
+            {/* Details Tab Content */}
+            {activeTab === "details" && (
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        First Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.first_name}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            first_name: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
+                        placeholder="Enter first name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        Last Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.last_name}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            last_name: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
+                        placeholder="Enter last name"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        Email Address * {editingClient && "(Cannot be changed)"}
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
+                        disabled={!!editingClient}
+                        className={`w-full border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light ${
+                          editingClient
+                            ? "bg-white/5 cursor-not-allowed"
+                            : "bg-white/10"
+                        }`}
+                        placeholder="Enter email address"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) =>
+                          setFormData({ ...formData, address: e.target.value })
+                        }
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
+                        placeholder="Enter address"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Emergency Contact */}
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    Emergency Contact
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        Emergency Contact Name
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.emergency_contact_name}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            emergency_contact_name: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
+                        placeholder="Enter emergency contact name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-white/80 text-sm font-medium mb-2">
+                        Emergency Contact Phone
+                      </label>
+                      <input
+                        type="tel"
+                        value={formData.emergency_contact_phone}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            emergency_contact_phone: e.target.value,
+                          })
+                        }
+                        className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-royal-light"
+                        placeholder="Enter emergency contact phone"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status */}
+                {editingClient && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">
+                      Status
+                    </h3>
+                    <div className="space-y-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.waiver_signed}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              waiver_signed: e.target.checked,
+                            })
+                          }
+                          className="mr-3 h-4 w-4 text-royal-light focus:ring-royal-light border-white/20 rounded"
+                        />
+                        <span className="text-white/80">Waiver Signed</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.onboarding_completed}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              onboarding_completed: e.target.checked,
+                            })
+                          }
+                          className="mr-3 h-4 w-4 text-royal-light focus:ring-royal-light border-white/20 rounded"
+                        />
+                        <span className="text-white/80">
+                          Onboarding Completed
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
+                  <button
+                    onClick={handleSaveClient}
+                    disabled={
+                      saving ||
+                      !formData.first_name ||
+                      !formData.last_name ||
+                      (!editingClient && !formData.email)
+                    }
+                    className={`flex-1 px-4 sm:px-6 py-3 font-semibold rounded-lg transition-all duration-300 flex items-center justify-center touch-manipulation ${
+                      saving ||
+                      !formData.first_name ||
+                      !formData.last_name ||
+                      (!editingClient && !formData.email)
+                        ? "bg-white/10 text-white/50 cursor-not-allowed"
+                        : "bg-royal-light text-royal-dark hover:bg-white"
+                    }`}
+                  >
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-royal-dark mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="mr-2" />
+                        {editingClient ? "Update Client" : "Add Client"}
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setEditingClient(null);
+                      resetForm();
+                    }}
+                    className="px-4 sm:px-6 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-all duration-300 touch-manipulation"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Purchase History Tab Content */}
+            {activeTab === "purchases" && editingClient && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">
+                    Purchase History
+                  </h3>
+                  <span className="text-white/60 text-sm">
+                    {clientPurchases.length} purchase(s)
+                  </span>
+                </div>
+
+                {loadingPurchases ? (
+                  <div className="text-center py-8 text-white/60">
+                    Loading purchases...
+                  </div>
+                ) : clientPurchases.length === 0 ? (
+                  <div className="text-center py-8 text-white/60">
+                    No purchases found
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {clientPurchases.map((purchase) => (
+                      <div
+                        key={purchase.id}
+                        className="bg-white/5 border border-white/10 rounded-lg p-4"
+                      >
+                        {editingPurchase?.id === purchase.id ? (
+                          // Edit Mode
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-white/60 text-xs mb-1">
+                                  Package Type
+                                </label>
+                                <input
+                                  type="text"
+                                  value={purchaseFormData.package_type}
+                                  onChange={(e) =>
+                                    setPurchaseFormData({
+                                      ...purchaseFormData,
+                                      package_type: e.target.value,
+                                    })
+                                  }
+                                  className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-white/60 text-xs mb-1">
+                                  Sessions
+                                </label>
+                                <input
+                                  type="number"
+                                  value={purchaseFormData.sessions_included}
+                                  onChange={(e) =>
+                                    setPurchaseFormData({
+                                      ...purchaseFormData,
+                                      sessions_included: parseInt(
+                                        e.target.value
+                                      ),
+                                    })
+                                  }
+                                  className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-white/60 text-xs mb-1">
+                                  Amount Paid ($)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={purchaseFormData.amount_paid}
+                                  onChange={(e) =>
+                                    setPurchaseFormData({
+                                      ...purchaseFormData,
+                                      amount_paid: parseFloat(e.target.value),
+                                    })
+                                  }
+                                  className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-white/60 text-xs mb-1">
+                                  Payment Method
+                                </label>
+                                <select
+                                  value={purchaseFormData.payment_method}
+                                  onChange={(e) =>
+                                    setPurchaseFormData({
+                                      ...purchaseFormData,
+                                      payment_method: e.target.value,
+                                    })
+                                  }
+                                  className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm"
+                                >
+                                  <option value="stripe">Stripe</option>
+                                  <option value="cash">Cash</option>
+                                  <option value="bank_transfer">
+                                    Bank Transfer
+                                  </option>
+                                  <option value="other">Other</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-white/60 text-xs mb-1">
+                                Notes
+                              </label>
+                              <textarea
+                                value={purchaseFormData.notes}
+                                onChange={(e) =>
+                                  setPurchaseFormData({
+                                    ...purchaseFormData,
+                                    notes: e.target.value,
+                                  })
+                                }
+                                className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-white text-sm"
+                                rows={2}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={handleSavePurchaseEdit}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingPurchase(null)}
+                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          // View Mode
+                          <div>
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <div className="font-medium text-white">
+                                  {purchase.package_type}
+                                </div>
+                                <div className="text-white/60 text-sm">
+                                  {new Date(
+                                    purchase.purchase_date
+                                  ).toLocaleDateString()}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditPurchase(purchase)}
+                                  className="p-2 text-blue-400 hover:bg-white/10 rounded"
+                                  title="Edit Purchase"
+                                >
+                                  <FaEdit />
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleDeletePurchase(purchase.id)
+                                  }
+                                  className="p-2 text-red-400 hover:bg-white/10 rounded"
+                                  title="Delete Purchase"
+                                >
+                                  <FaTrash />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                              <div>
+                                <div className="text-white/60 text-xs">
+                                  Sessions
+                                </div>
+                                <div className="text-white">
+                                  {purchase.sessions_included}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-white/60 text-xs">
+                                  Amount
+                                </div>
+                                <div className="text-white">
+                                  ${purchase.amount_paid}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-white/60 text-xs">
+                                  Method
+                                </div>
+                                <div className="text-white capitalize">
+                                  {purchase.payment_method || "N/A"}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-white/60 text-xs">
+                                  Status
+                                </div>
+                                <div className="text-green-400 capitalize">
+                                  {purchase.payment_status}
+                                </div>
+                              </div>
+                            </div>
+                            {purchase.notes && (
+                              <div className="mt-2 text-white/60 text-xs">
+                                Note: {purchase.notes}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         </div>
       )}

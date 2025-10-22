@@ -318,16 +318,14 @@ export default function ClassInstancesTable({
                       </button>
                     )}
 
-                    {!isPastClass && (
-                      <button
-                        onClick={() => onDeleteClass(classData.id!)}
-                        className="flex-1 sm:flex-none px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation"
-                        title="Cancel Class"
-                      >
-                        <span className="mr-2">🗑️</span>
-                        Cancel
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onDeleteClass(classData.id!)}
+                      className="flex-1 sm:flex-none px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation"
+                      title="Cancel Class"
+                    >
+                      <span className="mr-2">🗑️</span>
+                      Cancel
+                    </button>
                   </div>
                 </motion.div>
               );

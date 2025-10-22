@@ -148,6 +148,24 @@ export default function ClassCalendar({
     );
   };
 
+  // Check if a specific class has passed (including time)
+  const isClassPast = (classItem: ClassData) => {
+    const dateStr = classItem.date.split("T")[0]; // Get "2025-10-22"
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const timeComponents = classItem.start_time.split(":");
+    // Create date in local timezone
+    const classDateTime = new Date(
+      year,
+      month - 1,
+      day,
+      parseInt(timeComponents[0]),
+      parseInt(timeComponents[1]),
+      0,
+      0
+    );
+    return classDateTime <= new Date();
+  };
+
   // Generate calendar days
   const calendarDays = [];
 
@@ -160,7 +178,9 @@ export default function ClassCalendar({
 
   // Add days of the month
   for (let day = 1; day <= daysInMonth; day++) {
-    const dayClasses = classesByDate[day.toString()] || [];
+    const allDayClasses = classesByDate[day.toString()] || [];
+    // Filter out classes that have already passed
+    const dayClasses = allDayClasses.filter((c) => !isClassPast(c));
     const hasClasses = dayClasses.length > 0;
     const isPast = isPastDate(day);
 

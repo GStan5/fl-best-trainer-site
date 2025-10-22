@@ -340,16 +340,14 @@ export default function ClassInstanceRow({
             </button>
           )}
 
-          {/* Delete/Cancel Class - only for future classes */}
-          {!isPastClass && (
-            <button
-              onClick={() => onDeleteClass(classData.id!)}
-              className="p-2 text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
-              title="Cancel Class"
-            >
-              <FaTrash />
-            </button>
-          )}
+          {/* Delete/Cancel Class - available for all classes (past and future) */}
+          <button
+            onClick={() => onDeleteClass(classData.id!)}
+            className="p-2 text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
+            title="Cancel Class"
+          >
+            <FaTrash />
+          </button>
         </div>
       </td>
     </motion.tr>
