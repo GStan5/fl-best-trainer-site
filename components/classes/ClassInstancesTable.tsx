@@ -33,6 +33,9 @@ interface ClassInstancesTableProps {
   onRemoveParticipant: (classId: string) => void;
   onRefreshClasses: () => void;
   onCompleteClass?: (classId: string) => void;
+  lastViewedClassId?: string | null;
+  onViewClass?: (classId: string) => void;
+  onRefreshData?: () => void;
 }
 
 export default function ClassInstancesTable({
@@ -44,13 +47,24 @@ export default function ClassInstancesTable({
   onRemoveParticipant,
   onRefreshClasses,
   onCompleteClass,
+  lastViewedClassId,
+  onViewClass,
+  onRefreshData,
 }: ClassInstancesTableProps) {
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const handleViewDetails = (classData: Class) => {
+    console.log("View Details clicked", {
+      classData: classData.id,
+      isMobile: window.innerWidth <= 768,
+    });
     setSelectedClass(classData);
     setShowDetailsModal(true);
+    // Notify parent component that this class was viewed
+    if (onViewClass && classData.id) {
+      onViewClass(classData.id);
+    }
   };
 
   const handleCloseDetails = () => {
@@ -117,6 +131,7 @@ export default function ClassInstancesTable({
                     onAddParticipant={onAddParticipant}
                     onRemoveParticipant={onRemoveParticipant}
                     onCompleteClass={onCompleteClass}
+                    isLastViewed={lastViewedClassId === classData.id}
                   />
                 ))
             )}
@@ -191,6 +206,10 @@ export default function ClassInstancesTable({
                   transition={{ delay: index * 0.1 }}
                   className={`bg-slate-800 rounded-xl p-4 border border-slate-700 ${
                     isPastClass ? "opacity-75" : ""
+                  } ${
+                    lastViewedClassId === classData.id
+                      ? "ring-2 ring-royal-light shadow-lg shadow-royal-light/20"
+                      : ""
                   }`}
                 >
                   {/* Class Header */}
@@ -300,7 +319,8 @@ export default function ClassInstancesTable({
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-700">
                     <button
                       onClick={() => handleViewDetails(classData)}
-                      className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation"
+                      onTouchStart={() => {}} // Improve touch responsiveness on mobile
+                      className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation select-none"
                       title="View Details"
                     >
                       <span className="mr-2">👁️</span>
@@ -342,6 +362,7 @@ export default function ClassInstancesTable({
         onRemoveParticipant={onRemoveParticipant}
         onEditClass={onEditClass}
         isAdmin={true}
+        onRefreshData={onRefreshData}
       />
     </>
   );

@@ -40,7 +40,7 @@ export default async function handler(
         AND b.status IN ('confirmed', 'waitlist')
         ORDER BY 
           CASE WHEN b.status = 'confirmed' THEN 1 ELSE 2 END,
-          u.name ASC
+          b.booking_date ASC
       `;
 
       res.status(200).json({
@@ -56,7 +56,36 @@ export default async function handler(
     }
   } else if (req.method === "POST") {
     try {
-      const { userId, userEmail, isAdminOverride } = req.body;
+      const { userId, userEmail, isAdminOverride, action } = req.body;
+
+      // Handle admin actions (add/remove without specific user)
+      if (action === "add") {
+        // Admin add: Increment participant count directly
+        await sql`
+          UPDATE fitness_classes 
+          SET current_participants = GREATEST(0, COALESCE(current_participants, 0) + 1)
+          WHERE id = ${classId}
+        `;
+
+        return res.status(200).json({
+          success: true,
+          message: "Participant count increased",
+        });
+      }
+
+      if (action === "remove") {
+        // Admin remove: Decrement participant count directly
+        await sql`
+          UPDATE fitness_classes 
+          SET current_participants = GREATEST(0, COALESCE(current_participants, 0) - 1)
+          WHERE id = ${classId}
+        `;
+
+        return res.status(200).json({
+          success: true,
+          message: "Participant count decreased",
+        });
+      }
 
       let finalUserId = userId;
 
@@ -99,15 +128,18 @@ export default async function handler(
             WHERE id = ${existingBooking[0].id}
           `;
 
-          // Update participant count
+          // Update participant count in classes table
           await sql`
             UPDATE classes 
-            SET current_participants = (
-              SELECT COUNT(*) 
-              FROM bookings 
-              WHERE class_id = ${classId} AND status = 'confirmed'
-            )
+            SET current_participants = COALESCE(current_participants, 0) + 1
             WHERE id = ${classId}
+          `;
+
+          // Update user's booking count
+          await sql`
+            UPDATE users 
+            SET weightlifting_classes_booked = COALESCE(weightlifting_classes_booked, 0) + 1
+            WHERE id = ${finalUserId}
           `;
 
           // Get the user info for the response
@@ -166,16 +198,23 @@ export default async function handler(
         RETURNING id, booking_date, status
       `;
 
-      // Update participant count (only count confirmed participants)
-      await sql`
-        UPDATE classes 
-        SET current_participants = (
-          SELECT COUNT(*) 
-          FROM bookings 
-          WHERE class_id = ${classId} AND status = 'confirmed'
-        )
-        WHERE id = ${classId}
-      `;
+      // Update participant count in classes table
+      if (bookingStatus === "confirmed") {
+        await sql`
+          UPDATE classes 
+          SET current_participants = COALESCE(current_participants, 0) + 1
+          WHERE id = ${classId}
+        `;
+      }
+
+      // Update user's booking count if it's a confirmed booking
+      if (bookingStatus === "confirmed") {
+        await sql`
+          UPDATE users 
+          SET weightlifting_classes_booked = COALESCE(weightlifting_classes_booked, 0) + 1
+          WHERE id = ${finalUserId}
+        `;
+      }
 
       // Get the user info for the response
       const userInfo = await sql`
@@ -219,7 +258,7 @@ export default async function handler(
       const result = await sql`
         DELETE FROM bookings 
         WHERE user_id = ${userId} AND class_id = ${classId}
-        RETURNING id, status
+        RETURNING id, status, user_id
       `;
 
       if (result.length === 0) {
@@ -229,8 +268,23 @@ export default async function handler(
         });
       }
 
-      // If we removed a confirmed participant, promote someone from waitlist
+      // Update user's booking count if it was a confirmed booking
       if (result[0].status === "confirmed") {
+        await sql`
+          UPDATE users 
+          SET weightlifting_classes_booked = GREATEST(0, COALESCE(weightlifting_classes_booked, 0) - 1)
+          WHERE id = ${result[0].user_id}
+        `;
+      }
+
+      // Update participant count in classes table
+      if (result[0].status === "confirmed") {
+        await sql`
+          UPDATE classes 
+          SET current_participants = GREATEST(0, COALESCE(current_participants, 0) - 1)
+          WHERE id = ${classId}
+        `;
+
         // Get the first person on the waitlist
         const waitlistParticipant = await sql`
           SELECT id, user_id 
@@ -241,7 +295,7 @@ export default async function handler(
         `;
 
         if (waitlistParticipant.length > 0) {
-          // Promote them to confirmed
+          // Promote them to confirmed (count stays the same since we're replacing one confirmed with another)
           await sql`
             UPDATE bookings 
             SET status = 'confirmed' 
@@ -249,17 +303,6 @@ export default async function handler(
           `;
         }
       }
-
-      // Update participant count (only count confirmed participants)
-      await sql`
-        UPDATE classes 
-        SET current_participants = (
-          SELECT COUNT(*) 
-          FROM bookings 
-          WHERE class_id = ${classId} AND status = 'confirmed'
-        )
-        WHERE id = ${classId}
-      `;
 
       res.status(200).json({
         success: true,

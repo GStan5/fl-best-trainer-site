@@ -6,8 +6,6 @@ import {
   FaMapMarkerAlt,
   FaEye,
   FaTrash,
-  FaUserPlus,
-  FaUserMinus,
   FaCheck,
 } from "react-icons/fa";
 
@@ -40,6 +38,7 @@ interface ClassInstanceRowProps {
   onAddParticipant: (classId: string) => void;
   onRemoveParticipant: (classId: string) => void;
   onCompleteClass?: (classId: string) => void;
+  isLastViewed?: boolean;
 }
 
 export default function ClassInstanceRow({
@@ -50,6 +49,7 @@ export default function ClassInstanceRow({
   onAddParticipant,
   onRemoveParticipant,
   onCompleteClass,
+  isLastViewed,
 }: ClassInstanceRowProps) {
   const openClassDetailsWindow = () => {
     const price = Number(classData.price_per_session) || 0;
@@ -200,6 +200,8 @@ export default function ClassInstanceRow({
       animate={{ opacity: 1 }}
       className={`border-b border-slate-700 hover:bg-slate-750 transition-colors ${
         isPastClass ? "opacity-75" : ""
+      } ${
+        isLastViewed ? "bg-royal-light/10 border-royal-light shadow-lg" : ""
       }`}
     >
       {/* Class Info */}
@@ -278,27 +280,7 @@ export default function ClassInstanceRow({
             />
           </div>
 
-          {/* Quick participant management */}
-          {!isPastClass && (
-            <div className="flex space-x-1">
-              <button
-                onClick={() => onAddParticipant(classData.id!)}
-                disabled={isClassFull}
-                className="p-1 text-green-400 hover:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed rounded transition-colors"
-                title="Add participant"
-              >
-                <FaUserPlus className="text-xs" />
-              </button>
-              <button
-                onClick={() => onRemoveParticipant(classData.id!)}
-                disabled={isEmpty}
-                className="p-1 text-red-400 hover:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed rounded transition-colors"
-                title="Remove participant"
-              >
-                <FaUserMinus className="text-xs" />
-              </button>
-            </div>
-          )}
+          {/* Participant management disabled - use portal for bookings */}
         </div>
       </td>
 

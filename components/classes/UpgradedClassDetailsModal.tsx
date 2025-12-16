@@ -60,6 +60,7 @@ interface Participant {
   email: string;
   booking_id?: string;
   status?: string;
+  booking_date?: string;
 }
 
 interface User {
@@ -79,6 +80,7 @@ interface UpgradedClassDetailsModalProps {
   isAdmin?: boolean;
   showBookingActions?: boolean;
   currentUserBooked?: boolean;
+  onRefreshData?: () => void;
 }
 
 export default function UpgradedClassDetailsModal({
@@ -92,6 +94,7 @@ export default function UpgradedClassDetailsModal({
   isAdmin = false,
   showBookingActions = false,
   currentUserBooked = false,
+  onRefreshData,
 }: UpgradedClassDetailsModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedClass, setEditedClass] = useState<Class | null>(null);
@@ -102,6 +105,33 @@ export default function UpgradedClassDetailsModal({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingParticipants, setIsLoadingParticipants] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure component is mounted on client side
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Handle body scroll lock
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      // Prevent scroll on iOS
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+    } else {
+      document.body.style.overflow = "unset";
+      document.body.style.position = "unset";
+      document.body.style.width = "unset";
+    }
+
+    // Clean up on unmount
+    return () => {
+      document.body.style.overflow = "unset";
+      document.body.style.position = "unset";
+      document.body.style.width = "unset";
+    };
+  }, [isOpen]);
 
   // Initialize edited class data when modal opens
   useEffect(() => {
@@ -129,6 +159,7 @@ export default function UpgradedClassDetailsModal({
             email: p.email,
             booking_id: p.booking_id,
             status: p.status,
+            booking_date: p.booking_date,
           }));
           setParticipants(mappedParticipants);
         } else {
@@ -179,7 +210,7 @@ export default function UpgradedClassDetailsModal({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.id, action: "add" }),
+          body: JSON.stringify({ userId: user.id, isAdminOverride: true }),
         }
       );
 
@@ -200,6 +231,10 @@ export default function UpgradedClassDetailsModal({
             ...editedClass,
             current_participants: (editedClass.current_participants || 0) + 1,
           });
+        }
+        // Refresh parent component data
+        if (onRefreshData) {
+          onRefreshData();
         }
       }
     } catch (error) {
@@ -242,6 +277,10 @@ export default function UpgradedClassDetailsModal({
               (editedClass.current_participants || 0) - 1
             ),
           });
+        }
+        // Refresh parent component data
+        if (onRefreshData) {
+          onRefreshData();
         }
         alert("Participant removed successfully!");
       } else {
@@ -490,6 +529,21 @@ export default function UpgradedClassDetailsModal({
   const isFullyBooked = currentParticipants >= classData.max_participants;
   const isAlmostFull = capacityPercentage >= 80;
 
+  // Don't render on server side or before component is mounted
+  if (!isMounted || typeof window === "undefined") {
+    return null;
+  }
+
+  // Debug logging for mobile
+  if (isOpen) {
+    console.log("Modal opening", {
+      isMobile: window.innerWidth <= 768,
+      classData: classData?.id,
+      isMounted,
+      windowWidth: window.innerWidth,
+    });
+  }
+
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
@@ -501,6 +555,11 @@ export default function UpgradedClassDetailsModal({
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               onClose();
+            }
+          }}
+          onTouchStart={(e) => {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
             }
           }}
           style={{
@@ -520,8 +579,12 @@ export default function UpgradedClassDetailsModal({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden border border-white/10"
+            className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden border border-white/10 mx-4 sm:mx-0"
             onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "calc(100vw - 2rem)",
+              maxHeight: "calc(100vh - 2rem)",
+            }}
           >
             {/* Enhanced Header */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-6 relative">
@@ -900,9 +963,33 @@ export default function UpgradedClassDetailsModal({
 
                 {/* Current Participants List */}
                 <div>
-                  <h4 className="text-white font-medium mb-3">
-                    Enrolled Participants
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-white font-medium">
+                      Enrolled Participants
+                    </h4>
+                    <div className="flex items-center gap-2 text-xs">
+                      {participants.filter((p) => p.status === "confirmed")
+                        .length > 0 && (
+                        <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full">
+                          {
+                            participants.filter((p) => p.status === "confirmed")
+                              .length
+                          }{" "}
+                          Confirmed
+                        </span>
+                      )}
+                      {participants.filter((p) => p.status === "waitlist")
+                        .length > 0 && (
+                        <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded-full">
+                          {
+                            participants.filter((p) => p.status === "waitlist")
+                              .length
+                          }{" "}
+                          Waitlisted
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   {isLoadingParticipants ? (
                     <div className="text-slate-400 text-center py-4">
                       Loading participants...
@@ -912,34 +999,96 @@ export default function UpgradedClassDetailsModal({
                       No participants enrolled yet
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {participants.map((participant) => (
-                        <div
-                          key={participant.id}
-                          className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600/50"
-                        >
-                          <div>
-                            <p className="text-white font-medium">
-                              {participant.name}
-                            </p>
-                            <p className="text-slate-400 text-sm">
-                              {participant.email}
-                            </p>
+                    <div className="space-y-3 max-h-48 overflow-y-auto">
+                      {/* Confirmed Participants */}
+                      {participants
+                        .filter((p) => p.status === "confirmed")
+                        .map((participant) => (
+                          <div
+                            key={participant.id}
+                            className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600/50"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="text-white font-medium">
+                                  {participant.name}
+                                </p>
+                                <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-medium">
+                                  ✓ Confirmed
+                                </span>
+                              </div>
+                              <p className="text-slate-400 text-sm">
+                                {participant.email}
+                              </p>
+                            </div>
+                            {isAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveParticipant(participant);
+                                }}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors flex items-center gap-1"
+                              >
+                                <FaUserMinus />
+                                Remove
+                              </button>
+                            )}
                           </div>
-                          {isAdmin && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveParticipant(participant);
-                              }}
-                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors flex items-center gap-1"
-                            >
-                              <FaUserMinus />
-                              Remove
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                        ))}
+
+                      {/* Waitlisted Participants */}
+                      {participants
+                        .filter((p) => p.status === "waitlist")
+                        .map((participant, index) => (
+                          <div
+                            key={participant.id}
+                            className="flex items-center justify-between p-3 bg-orange-500/10 rounded-lg border border-orange-500/30"
+                          >
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-white font-medium">
+                                  {participant.name}
+                                </p>
+                                <span className="px-2 py-1 bg-orange-500/30 text-orange-300 rounded-full text-xs font-medium flex items-center gap-1">
+                                  <FaClock size={10} />
+                                  Waitlist #{index + 1}
+                                </span>
+                              </div>
+                              <div className="flex flex-col gap-1 mt-1">
+                                <p className="text-slate-400 text-sm">
+                                  {participant.email}
+                                </p>
+                                {participant.booking_date && (
+                                  <p className="text-slate-500 text-xs">
+                                    Joined waitlist:{" "}
+                                    {new Date(
+                                      participant.booking_date
+                                    ).toLocaleDateString()}{" "}
+                                    at{" "}
+                                    {new Date(
+                                      participant.booking_date
+                                    ).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            {isAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveParticipant(participant);
+                                }}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors flex items-center gap-1"
+                              >
+                                <FaUserMinus />
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>

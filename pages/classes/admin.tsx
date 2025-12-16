@@ -27,6 +27,8 @@ import {
   FaCalendarWeek,
   FaCheck,
   FaHashtag,
+  FaSearch,
+  FaTimes,
 } from "react-icons/fa";
 
 interface RecurringTemplate {
@@ -357,6 +359,10 @@ export default function ClassesAdmin() {
   const [completionClassId, setCompletionClassId] = useState<string | null>(
     null
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [lastViewedClassId, setLastViewedClassId] = useState<string | null>(
+    null
+  );
 
   // Check if user is admin using database field
   const isAdmin = session?.user?.isAdmin === true;
@@ -457,13 +463,74 @@ export default function ClassesAdmin() {
     }
   }, [classes, completedClasses]);
 
+  // Helper function to get day of week from date
+  const getDayOfWeek = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      const days = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
+      return days[date.getDay()];
+    } catch {
+      return "";
+    }
+  };
+
+  // Filter classes based on search query
+  const filteredClasses = classes.filter((classItem) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const dayOfWeek = getDayOfWeek(classItem.date);
+    return (
+      classItem.title.toLowerCase().includes(query) ||
+      classItem.instructor.toLowerCase().includes(query) ||
+      classItem.location.toLowerCase().includes(query) ||
+      classItem.class_type.toLowerCase().includes(query) ||
+      dayOfWeek.includes(query) ||
+      (classItem.description &&
+        classItem.description.toLowerCase().includes(query))
+    );
+  });
+
+  // Filter completed classes based on search query
+  const filteredCompletedClasses = completedClasses.filter((classItem) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const dayOfWeek = getDayOfWeek(classItem.date);
+    return (
+      classItem.title.toLowerCase().includes(query) ||
+      classItem.instructor.toLowerCase().includes(query) ||
+      classItem.location.toLowerCase().includes(query) ||
+      classItem.class_type.toLowerCase().includes(query) ||
+      dayOfWeek.includes(query) ||
+      (classItem.description &&
+        classItem.description.toLowerCase().includes(query))
+    );
+  });
+
   // Simple refresh functions for manual updates
   const fetchClasses = async () => {
     try {
-      const response = await fetch("/api/classes");
-      const data = await response.json();
-      if (data.success) {
-        setClasses(data.data);
+      // Fetch both active and completed classes to ensure all data is up to date
+      const [activeResponse, completedResponse] = await Promise.all([
+        fetch("/api/classes"),
+        fetch("/api/classes?completed=true"),
+      ]);
+
+      const activeData = await activeResponse.json();
+      const completedData = await completedResponse.json();
+
+      if (activeData.success) {
+        setClasses(activeData.data);
+      }
+      if (completedData.success) {
+        setCompletedClasses(completedData.data);
       }
     } catch (error) {
       console.error("Error fetching classes:", error);
@@ -729,63 +796,11 @@ export default function ClassesAdmin() {
     }
   };
 
-  // Participant management functions
-  const handleAddParticipant = async (classId: string) => {
-    try {
-      const response = await fetch(`/api/classes/${classId}/participants`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "add" }),
-      });
-
-      if (response.ok) {
-        // Refresh the classes data to show updated participant count
-        const response = await fetch("/api/classes");
-        const data = await response.json();
-        if (data.success) {
-          setClasses(data.data);
-        }
-        console.log("✅ Participant added successfully");
-      } else {
-        const data = await response.json();
-        console.error("❌ Failed to add participant:", data.error);
-        alert("Failed to add participant: " + data.error);
-      }
-    } catch (error) {
-      console.error("Error adding participant:", error);
-      alert("Error adding participant. Please try again.");
-    }
-  };
-
-  const handleRemoveParticipant = async (classId: string) => {
-    try {
-      const response = await fetch(`/api/classes/${classId}/participants`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: "remove" }),
-      });
-
-      if (response.ok) {
-        // Refresh the classes data to show updated participant count
-        const response = await fetch("/api/classes");
-        const data = await response.json();
-        if (data.success) {
-          setClasses(data.data);
-        }
-        console.log("✅ Participant removed successfully");
-      } else {
-        const data = await response.json();
-        console.error("❌ Failed to remove participant:", data.error);
-        alert("Failed to remove participant: " + data.error);
-      }
-    } catch (error) {
-      console.error("Error removing participant:", error);
-      alert("Error removing participant. Please try again.");
-    }
+  // Manual refresh function for user-triggered updates
+  const handleManualRefresh = async () => {
+    setIsLoading(true);
+    await fetchClasses();
+    setIsLoading(false);
   };
 
   const handleCompleteClass = (classId: string) => {
@@ -1188,30 +1203,96 @@ export default function ClassesAdmin() {
 
               {/* Class Instances View */}
               {viewMode === "instances" && (
-                <ClassInstancesTable
-                  classes={classes}
-                  isLoading={isLoading}
-                  onEditClass={handleEditClassWrapper}
-                  onDeleteClass={handleDeleteClass}
-                  onAddParticipant={handleAddParticipant}
-                  onRemoveParticipant={handleRemoveParticipant}
-                  onRefreshClasses={fetchClasses}
-                  onCompleteClass={handleCompleteClass}
-                />
+                <div>
+                  {/* Search Bar */}
+                  <div className="mb-6 px-6 pt-6">
+                    <div className="relative">
+                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search classes by title, instructor, location, type..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-light focus:border-transparent"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          <FaTimes />
+                        </button>
+                      )}
+                    </div>
+                    {searchQuery && (
+                      <p className="text-sm text-slate-400 mt-2">
+                        Showing {filteredClasses.length} of {classes.length}{" "}
+                        classes
+                      </p>
+                    )}
+                  </div>
+
+                  <ClassInstancesTable
+                    classes={filteredClasses}
+                    isLoading={isLoading}
+                    onEditClass={handleEditClassWrapper}
+                    onDeleteClass={handleDeleteClass}
+                    onAddParticipant={() => {}} // Disabled - use portal for bookings
+                    onRemoveParticipant={() => {}} // Disabled - use portal for bookings
+                    onRefreshClasses={handleManualRefresh}
+                    onCompleteClass={handleCompleteClass}
+                    lastViewedClassId={lastViewedClassId}
+                    onViewClass={setLastViewedClassId}
+                    onRefreshData={fetchClasses}
+                  />
+                </div>
               )}
 
               {/* Completed Classes View */}
               {viewMode === "completed" && (
-                <ClassInstancesTable
-                  classes={completedClasses}
-                  isLoading={isLoading}
-                  onEditClass={() => {}} // Completed classes can't be edited
-                  onDeleteClass={() => {}} // Completed classes can't be deleted
-                  onAddParticipant={() => {}} // Can't modify participants on completed classes
-                  onRemoveParticipant={() => {}} // Can't modify participants on completed classes
-                  onRefreshClasses={() => {}} // No need to refresh completed classes
-                  onCompleteClass={undefined} // Already completed
-                />
+                <div>
+                  {/* Search Bar */}
+                  <div className="mb-6 px-6 pt-6">
+                    <div className="relative">
+                      <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search completed classes..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-royal-light focus:border-transparent"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          <FaTimes />
+                        </button>
+                      )}
+                    </div>
+                    {searchQuery && (
+                      <p className="text-sm text-slate-400 mt-2">
+                        Showing {filteredCompletedClasses.length} of{" "}
+                        {completedClasses.length} completed classes
+                      </p>
+                    )}
+                  </div>
+
+                  <ClassInstancesTable
+                    classes={filteredCompletedClasses}
+                    isLoading={isLoading}
+                    onEditClass={() => {}} // Completed classes can't be edited
+                    onDeleteClass={() => {}} // Completed classes can't be deleted
+                    onAddParticipant={() => {}} // Disabled - use portal for bookings
+                    onRemoveParticipant={() => {}} // Disabled - use portal for bookings
+                    onRefreshClasses={handleManualRefresh}
+                    onCompleteClass={undefined} // Already completed
+                    lastViewedClassId={lastViewedClassId}
+                    onViewClass={setLastViewedClassId}
+                    onRefreshData={fetchClasses}
+                  />
+                </div>
               )}
 
               {/* Recurring Templates View */}
