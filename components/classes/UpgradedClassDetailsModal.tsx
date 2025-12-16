@@ -234,6 +234,7 @@ export default function UpgradedClassDetailsModal({
         }
         // Refresh parent component data
         if (onRefreshData) {
+          console.log("Modal: calling onRefreshData after adding participant");
           onRefreshData();
         }
       }
@@ -280,6 +281,9 @@ export default function UpgradedClassDetailsModal({
         }
         // Refresh parent component data
         if (onRefreshData) {
+          console.log(
+            "Modal: calling onRefreshData after removing participant"
+          );
           onRefreshData();
         }
         alert("Participant removed successfully!");

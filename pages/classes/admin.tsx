@@ -515,7 +515,8 @@ export default function ClassesAdmin() {
   });
 
   // Simple refresh functions for manual updates
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
+    console.log("fetchClasses called - refreshing admin data");
     try {
       // Fetch both active and completed classes to ensure all data is up to date
       const [activeResponse, completedResponse] = await Promise.all([
@@ -535,7 +536,7 @@ export default function ClassesAdmin() {
     } catch (error) {
       console.error("Error fetching classes:", error);
     }
-  };
+  }, []);
 
   const fetchRecurringTemplates = async () => {
     try {

@@ -9,14 +9,20 @@ const withPWA = require("next-pwa")({
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["react-icons"],
+  // Add empty turbopack config to silence the warning
+  turbopack: {},
   typescript: {
     // This will ignore TypeScript errors during build
     // This is not ideal for code quality, but will help you deploy now
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ["images.unsplash.com"],
-    // Add more domains as needed for external images
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
   },
   async redirects() {
     return [
