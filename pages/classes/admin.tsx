@@ -516,7 +516,7 @@ export default function ClassesAdmin() {
 
   // Simple refresh functions for manual updates
   const fetchClasses = useCallback(async () => {
-    console.log("fetchClasses called - refreshing admin data");
+    console.log("🔄 fetchClasses called - refreshing admin data");
     try {
       // Fetch both active and completed classes to ensure all data is up to date
       const [activeResponse, completedResponse] = await Promise.all([
@@ -528,9 +528,17 @@ export default function ClassesAdmin() {
       const completedData = await completedResponse.json();
 
       if (activeData.success) {
+        console.log(
+          "✅ Successfully updated active classes:",
+          activeData.data.length
+        );
         setClasses(activeData.data);
       }
       if (completedData.success) {
+        console.log(
+          "✅ Successfully updated completed classes:",
+          completedData.data.length
+        );
         setCompletedClasses(completedData.data);
       }
     } catch (error) {

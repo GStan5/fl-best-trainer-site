@@ -214,15 +214,13 @@ export default function UpgradedClassDetailsModal({
         }
       );
 
+      console.log("Add API Response status:", response.status);
+      const responseData = await response.json();
+      console.log("Add API Response data:", responseData);
+
       if (response.ok) {
-        setParticipants((prev) => [
-          ...prev,
-          {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          },
-        ]);
+        // Reload participants to get the updated list
+        loadParticipants();
         setSearchQuery("");
         setSearchResults([]);
         // Update class participant count
@@ -237,6 +235,11 @@ export default function UpgradedClassDetailsModal({
           console.log("Modal: calling onRefreshData after adding participant");
           onRefreshData();
         }
+        alert("Participant added successfully!");
+      } else {
+        alert(
+          `Failed to add participant: ${responseData.error || "Unknown error"}`
+        );
       }
     } catch (error) {
       console.error("Error adding participant:", error);
@@ -358,6 +361,11 @@ export default function UpgradedClassDetailsModal({
             current_participants: (editedClass.current_participants || 0) + 1,
           });
         }
+        // Refresh parent component data
+        if (onRefreshData) {
+          console.log("Modal: calling onRefreshData after adding user");
+          onRefreshData();
+        }
         alert("Participant added successfully!");
       } else {
         alert(
@@ -407,6 +415,11 @@ export default function UpgradedClassDetailsModal({
             ...editedClass,
             current_participants: (editedClass.current_participants || 0) + 1,
           });
+        }
+        // Refresh parent component data
+        if (onRefreshData) {
+          console.log("Modal: calling onRefreshData after direct add by email");
+          onRefreshData();
         }
         alert("Participant added successfully!");
       } else {
