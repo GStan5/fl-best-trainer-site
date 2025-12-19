@@ -420,9 +420,15 @@ export default function Classes() {
         class_title: booking.class_title,
       });
 
-      // Create date with explicit Eastern timezone to match backend
+      // Create date with proper Eastern timezone handling (accounts for DST)
       const dateStr = booking.date.split("T")[0]; // Get "2025-12-20"
-      const classDateTime = new Date(`${dateStr}T${booking.start_time}-05:00`);
+      const tempDate = new Date(`${dateStr}T${booking.start_time}`);
+      const easternDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+      const utcDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "UTC"}));
+      const timezoneOffset = (utcDate.getTime() - easternDate.getTime());
+      
+      const classDateTime = new Date(`${dateStr}T${booking.start_time}`);
+      classDateTime.setTime(classDateTime.getTime() - timezoneOffset);
 
       return CANCELLATION_POLICY.isRefundable(classDateTime);
     } catch (error) {

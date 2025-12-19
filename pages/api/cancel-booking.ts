@@ -98,17 +98,24 @@ export default async function handler(
 
     const [year, month, day] = dateStr.split("-").map(Number);
     const timeComponents = booking.start_time.split(":");
-// Create date in Eastern timezone explicitly to ensure consistency
-    // Parse the date string and time, then create a date that represents the actual Eastern time
-    const easternOffset = -5; // EST is UTC-5 (during standard time)
-    const classDateTime = new Date(`${dateStr}T${booking.start_time}-05:00`);
+// Create date with proper Eastern timezone handling (accounts for DST)
+    // Use system timezone detection to get correct EST/EDT offset
+    const tempDate = new Date(`${dateStr}T${booking.start_time}`);
+    const easternDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const utcDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "UTC"}));
+    const timezoneOffset = (utcDate.getTime() - easternDate.getTime());
     
-    console.warn("🚨 API CANCEL: Date parsing completed with Eastern timezone", {
+    // Create the class date/time in Eastern timezone accounting for DST
+    const classDateTime = new Date(`${dateStr}T${booking.start_time}`);
+    classDateTime.setTime(classDateTime.getTime() - timezoneOffset);
+    
+    console.warn("🚨 API CANCEL: Date parsing with DST handling", {
       originalDate: booking.date,
       dateStr,
       startTime: booking.start_time,
+      timezoneOffset: timezoneOffset / (1000 * 60 * 60), // hours
       classDateTime: classDateTime.toISOString(),
-      classDateTimeLocal: classDateTime.toString(),
+      classDateTimeEastern: classDateTime.toLocaleString("en-US", {timeZone: "America/New_York"}),
     });
 
     const now = new Date();
