@@ -420,17 +420,47 @@ export default function Classes() {
         class_title: booking.class_title,
       });
 
-      // Create date with proper Eastern timezone handling (accounts for DST)
+      // Use the EXACT same logic as calendar components - no timezone complications
       const dateStr = booking.date.split("T")[0]; // Get "2025-12-20"
-      const tempDate = new Date(`${dateStr}T${booking.start_time}`);
-      const easternDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-      const utcDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "UTC"}));
-      const timezoneOffset = (utcDate.getTime() - easternDate.getTime());
-      
-      const classDateTime = new Date(`${dateStr}T${booking.start_time}`);
-      classDateTime.setTime(classDateTime.getTime() - timezoneOffset);
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const timeComponents = booking.start_time.split(":");
 
-      return CANCELLATION_POLICY.isRefundable(classDateTime);
+      // Create date in local timezone (month is 0-based) - EXACT same logic as frontend calendar
+      const classDateTime = new Date(
+        year,
+        month - 1,
+        day,
+        parseInt(timeComponents[0]),
+        parseInt(timeComponents[1]),
+        0,
+        0
+      );
+
+      const now = new Date();
+      const hoursUntilClass =
+        (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+      const isRefundable = hoursUntilClass > 12;
+
+      console.warn("🚨 FIXED TIMING CHECK:", {
+        dateStr,
+        startTime: booking.start_time,
+        parsedComponents: {
+          year,
+          month: month - 1,
+          day,
+          hour: parseInt(timeComponents[0]),
+          minute: parseInt(timeComponents[1]),
+        },
+        classDateTime: classDateTime.toISOString(),
+        classDateTimeLocal: classDateTime.toString(),
+        now: now.toISOString(),
+        nowLocal: now.toString(),
+        hoursUntilClass: hoursUntilClass.toFixed(2),
+        isMoreThan12Hours: hoursUntilClass > 12,
+        isRefundable,
+      });
+
+      return isRefundable;
     } catch (error) {
       console.error("Error calculating cancellation timing:", error, booking);
       return false;

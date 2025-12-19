@@ -98,24 +98,35 @@ export default async function handler(
 
     const [year, month, day] = dateStr.split("-").map(Number);
     const timeComponents = booking.start_time.split(":");
-// Create date with proper Eastern timezone handling (accounts for DST)
-    // Use system timezone detection to get correct EST/EDT offset
-    const tempDate = new Date(`${dateStr}T${booking.start_time}`);
-    const easternDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "America/New_York"}));
-    const utcDate = new Date(tempDate.toLocaleString("en-US", {timeZone: "UTC"}));
-    const timezoneOffset = (utcDate.getTime() - easternDate.getTime());
     
-    // Create the class date/time in Eastern timezone accounting for DST
-    const classDateTime = new Date(`${dateStr}T${booking.start_time}`);
-    classDateTime.setTime(classDateTime.getTime() - timezoneOffset);
+    // Backend must explicitly handle Eastern timezone since Vercel runs in UTC
+    // Create date string in Eastern timezone format for consistent parsing
+    const easternTimeString = `${dateStr}T${booking.start_time}-05:00`; // EST offset
+    const classDateTime = new Date(easternTimeString);
     
-    console.warn("🚨 API CANCEL: Date parsing with DST handling", {
+    console.warn("🚨 API CANCEL: Server-safe Eastern timezone", {
       originalDate: booking.date,
       dateStr,
       startTime: booking.start_time,
-      timezoneOffset: timezoneOffset / (1000 * 60 * 60), // hours
+      easternTimeString,
       classDateTime: classDateTime.toISOString(),
-      classDateTimeEastern: classDateTime.toLocaleString("en-US", {timeZone: "America/New_York"}),
+      classDateTimeLocal: classDateTime.toString(),
+      serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    });
+
+    console.warn("🚨 API CANCEL: Using calendar component logic", {
+      originalDate: booking.date,
+      dateStr,
+      startTime: booking.start_time,
+      parsedComponents: {
+        year,
+        month: month - 1,
+        day,
+        hour: parseInt(timeComponents[0]),
+        minute: parseInt(timeComponents[1]),
+      },
+      classDateTime: classDateTime.toISOString(),
+      classDateTimeLocal: classDateTime.toString(),
     });
 
     const now = new Date();
