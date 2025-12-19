@@ -347,12 +347,27 @@ export default function Classes() {
     booking: any,
     buttonElement?: HTMLElement
   ) => {
+    console.log("🔍 DEBUG handleCancelBooking: Received booking to cancel", {
+      bookingId: booking.id,
+      classTitle: booking.class_title,
+      date: booking.date,
+      startTime: booking.start_time,
+      fullBookingObject: booking
+    });
     setBookingToCancel(booking);
     setShowCancelModal(true);
   };
 
   const confirmCancelBooking = async () => {
     if (!bookingToCancel) return;
+
+    console.log("🔍 DEBUG confirmCancelBooking: About to cancel booking", {
+      bookingId: bookingToCancel.id,
+      classTitle: bookingToCancel.class_title,
+      date: bookingToCancel.date,
+      startTime: bookingToCancel.start_time,
+      fullBookingObject: bookingToCancel
+    });
 
     setCancellingBooking(bookingToCancel.id);
     try {

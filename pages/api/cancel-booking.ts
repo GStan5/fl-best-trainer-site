@@ -29,6 +29,11 @@ export default async function handler(
 
     const { booking_id } = req.body;
 
+    console.log("🔍 DEBUG API: Received cancel request", {
+      bookingId: booking_id,
+      userEmail: session.user.email
+    });
+
     if (!booking_id) {
       return res.status(400).json({
         success: false,
@@ -63,6 +68,13 @@ export default async function handler(
       WHERE b.id = ${booking_id} AND b.user_id = ${user.id} AND b.status IN ('confirmed', 'waitlist')
     `;
 
+    console.log("🔍 DEBUG API: Database query results", {
+      bookingId: booking_id,
+      userId: user.id,
+      resultsCount: bookingResult.length,
+      results: bookingResult
+    });
+
     if (bookingResult.length === 0) {
       return res.status(404).json({
         success: false,
@@ -71,6 +83,15 @@ export default async function handler(
     }
 
     const booking = bookingResult[0];
+
+    console.log("🔍 DEBUG API: Retrieved booking from database", {
+      bookingId: booking.id,
+      classTitle: booking.class_title,
+      classId: booking.class_id,
+      date: booking.date,
+      startTime: booking.start_time,
+      fullBookingObject: booking
+    });
 
     // Parse date exactly like the frontend calendar components do
     const dateStr =
@@ -94,20 +115,26 @@ export default async function handler(
       originalBookingDate: booking.date,
       dateStr,
       startTime: booking.start_time,
-      parsedComponents: { year, month: month - 1, day, hour: parseInt(timeComponents[0]), minute: parseInt(timeComponents[1]) },
+      parsedComponents: {
+        year,
+        month: month - 1,
+        day,
+        hour: parseInt(timeComponents[0]),
+        minute: parseInt(timeComponents[1]),
+      },
       classDateTime: classDateTime.toISOString(),
-      classDateTimeLocal: classDateTime.toLocaleString()
+      classDateTimeLocal: classDateTime.toLocaleString(),
     });
 
     const now = new Date();
-    
+
     console.log("🔍 DEBUG: Time comparison (frontend-matched)", {
       classDateTime: classDateTime.toISOString(),
       classDateTimeLocal: classDateTime.toString(),
-      now: now.toISOString(), 
+      now: now.toISOString(),
       nowLocal: now.toString(),
       serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      serverOffset: new Date().getTimezoneOffset()
+      serverOffset: new Date().getTimezoneOffset(),
     });
 
     // Validate the date is valid
@@ -145,7 +172,7 @@ export default async function handler(
       hoursUntilClass,
       cancellationPolicyHours: CANCELLATION_POLICY.HOURS,
       isRefundable,
-      shouldPenalize: !isRefundable
+      shouldPenalize: !isRefundable,
     });
 
     console.log("Backend cancellation timing check:", {
