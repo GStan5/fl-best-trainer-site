@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "./auth/[...nextauth]";
 import sql from "../../lib/database";
+import { CANCELLATION_POLICY } from "../../config/cancellation";
 
 export default async function handler(
   req: NextApiRequest,
@@ -104,10 +105,10 @@ export default async function handler(
       });
     }
 
-    // Check if cancellation is more than 24 hours before class
+    // Check if cancellation is more than the cancellation policy hours before class
     const hoursUntilClass =
       (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-    const isMoreThan24Hours = hoursUntilClass > 24;
+    const isRefundable = CANCELLATION_POLICY.isRefundable(classDateTime);
 
     console.log("Backend cancellation timing check:", {
       bookingId: booking_id,
@@ -118,7 +119,8 @@ export default async function handler(
       classDateTime: classDateTime.toISOString(),
       now: now.toISOString(),
       hoursUntilClass,
-      isMoreThan24Hours,
+      isRefundable,
+      cancellationPolicyHours: CANCELLATION_POLICY.HOURS,
       userEmail: session.user.email,
     });
 
@@ -145,8 +147,8 @@ export default async function handler(
         WHERE id = ${user.id}
       `;
 
-      // Apply penalty (remove a session) if cancelled less than 24 hours in advance
-      if (!isMoreThan24Hours) {
+      // Apply penalty (remove a session) if cancelled less than the policy hours in advance
+      if (!isRefundable) {
         // Penalize by removing one available session for late cancellation
         await sql`
           UPDATE users 
@@ -242,7 +244,7 @@ export default async function handler(
       message: isWaitlistCancellation
         ? "Removed from waitlist successfully"
         : penalized
-        ? "Booking cancelled - 1 session deducted for late cancellation (less than 24 hours notice)"
+        ? CANCELLATION_POLICY.getAPIMessage()
         : "Booking cancelled successfully",
       penalized: penalized,
       promoted_from_waitlist: promotedFromWaitlist,

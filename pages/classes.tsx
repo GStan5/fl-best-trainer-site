@@ -14,7 +14,11 @@ import MyUpcomingClassesGrid from "../components/classes/MyUpcomingClassesGrid";
 import StripeCheckoutButton, {
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
-import { useWeightliftingPackage, useSingleSessionPackage } from "../hooks/usePackages";
+import {
+  useWeightliftingPackage,
+  useSingleSessionPackage,
+} from "../hooks/usePackages";
+import { CANCELLATION_POLICY } from "../config/cancellation";
 import {
   FaCalendarAlt,
   FaUsers,
@@ -388,8 +392,8 @@ export default function Classes() {
     setBookingToCancel(null);
   };
 
-  // Helper function to calculate if cancellation is more than 24 hours before class (EST)
-  const isMoreThan24HoursBeforeClass = (booking: any): boolean => {
+  // Helper function to calculate if cancellation allows refund
+  const isMoreThanCancellationHours = (booking: any): boolean => {
     if (!booking || !booking.date || !booking.start_time) {
       console.log("Missing booking data:", booking);
       return false;
@@ -416,22 +420,7 @@ export default function Classes() {
         parseInt(timeParts[2] || "0") // second (optional)
       );
 
-      // Get current time
-      const now = new Date();
-
-      // Calculate hours difference
-      const hoursUntilClass =
-        (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-      // Debug logging for cancellation timing
-      console.log("Cancellation timing check:", {
-        classDate: booking.date,
-        classTime: booking.start_time,
-        hoursUntilClass: hoursUntilClass.toFixed(2),
-        shouldGetRefund: hoursUntilClass > 24 ? "YES" : "NO",
-      });
-
-      return hoursUntilClass > 24;
+      return CANCELLATION_POLICY.isRefundable(classDateTime);
     } catch (error) {
       console.error("Error calculating cancellation timing:", error, booking);
       return false;
@@ -591,7 +580,8 @@ export default function Classes() {
                               Weightlifting Packages
                             </h3>
                             <p className="text-white/70 text-sm">
-                              Choose your training package • Small Group Training • 4-Person Max
+                              Choose your training package • Small Group
+                              Training • 4-Person Max
                             </p>
                           </div>
                         </div>
@@ -602,19 +592,27 @@ export default function Classes() {
                           <div className="bg-white/5 rounded-lg p-4 border border-royal-light/20">
                             <div className="flex justify-between items-start mb-3">
                               <div>
-                                <h4 className="text-white font-semibold text-sm">10-Class Package</h4>
-                                <p className="text-white/60 text-xs">Best value • Most popular</p>
+                                <h4 className="text-white font-semibold text-sm">
+                                  10-Class Package
+                                </h4>
+                                <p className="text-white/60 text-xs">
+                                  Best value • Most popular
+                                </p>
                               </div>
                               <div className="text-right">
                                 <span className="text-royal-light font-bold text-lg">
                                   ${weightliftingPackage?.price || 430}
                                 </span>
                                 <p className="text-white/50 text-xs">
-                                  ${((weightliftingPackage?.price || 430) / 10).toFixed(0)}/session
+                                  $
+                                  {(
+                                    (weightliftingPackage?.price || 430) / 10
+                                  ).toFixed(0)}
+                                  /session
                                 </p>
                               </div>
                             </div>
-                            
+
                             {/* Payment Fee Warning for 10-session */}
                             <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-3 mb-3">
                               <p className="text-yellow-300 text-xs font-medium mb-1">
@@ -641,13 +639,17 @@ export default function Classes() {
                                 }
                                 className="w-full from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light font-bold py-2 px-4 rounded-lg transform hover:scale-[1.02] text-sm"
                                 onSuccess={() => {
-                                  setTimeout(() => window.location.reload(), 2000);
+                                  setTimeout(
+                                    () => window.location.reload(),
+                                    2000
+                                  );
                                 }}
                                 onError={(error) => {
                                   console.error("Payment error:", error);
                                 }}
                               >
-                                Buy 10-Class Package - ${weightliftingPackage?.price || 430}
+                                Buy 10-Class Package - $
+                                {weightliftingPackage?.price || 430}
                               </StripeCheckoutButton>
                             ) : (
                               <button
@@ -665,8 +667,12 @@ export default function Classes() {
                           <div className="bg-white/5 rounded-lg p-4 border border-green-500/20">
                             <div className="flex justify-between items-start mb-3">
                               <div>
-                                <h4 className="text-white font-semibold text-sm">Single Session Drop-In</h4>
-                                <p className="text-white/60 text-xs">Perfect for trying it out</p>
+                                <h4 className="text-white font-semibold text-sm">
+                                  Single Session Drop-In
+                                </h4>
+                                <p className="text-white/60 text-xs">
+                                  Perfect for trying it out
+                                </p>
                               </div>
                               <div className="text-right">
                                 <span className="text-green-400 font-bold text-lg">
@@ -684,22 +690,27 @@ export default function Classes() {
                                   singleSessionPackage || {
                                     id: "single-session-drop-in",
                                     name: "Single Session Drop-In",
-                                    description: "Perfect for trying out our weightlifting classes • No commitment required",
+                                    description:
+                                      "Perfect for trying out our weightlifting classes • No commitment required",
                                     sessions_included: 1,
                                     price: 55,
                                     duration_days: 3650,
-                                    is_active: true
+                                    is_active: true,
                                   }
                                 }
                                 className="w-full from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 font-bold py-2 px-4 rounded-lg transform hover:scale-[1.02] text-sm"
                                 onSuccess={() => {
-                                  setTimeout(() => window.location.reload(), 2000);
+                                  setTimeout(
+                                    () => window.location.reload(),
+                                    2000
+                                  );
                                 }}
                                 onError={(error) => {
                                   console.error("Payment error:", error);
                                 }}
                               >
-                                Buy Single Session - ${singleSessionPackage?.price || 55}
+                                Buy Single Session - $
+                                {singleSessionPackage?.price || 55}
                               </StripeCheckoutButton>
                             ) : (
                               <button
@@ -840,7 +851,7 @@ export default function Classes() {
                               Cancellation Policy
                             </p>
                             <p className="text-amber-100 text-xs leading-tight">
-                              24+ hrs: Full refund • &lt;24 hrs: No refund
+                              {CANCELLATION_POLICY.getMessage()}
                             </p>
                           </div>
                         </div>
@@ -932,7 +943,9 @@ export default function Classes() {
           onClose={handleCloseCancelModal}
           onConfirm={confirmCancelBooking}
           booking={bookingToCancel}
-          isMoreThan24Hours={isMoreThan24HoursBeforeClass(bookingToCancel)}
+          isMoreThanCancellationHours={isMoreThanCancellationHours(
+            bookingToCancel
+          )}
           isLoading={cancellingBooking === bookingToCancel?.id}
         />
       </div>

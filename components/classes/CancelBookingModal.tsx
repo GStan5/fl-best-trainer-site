@@ -8,6 +8,8 @@ import {
   FaClock,
 } from "react-icons/fa";
 
+import { CANCELLATION_POLICY } from "../../config/cancellation";
+
 interface CancelBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,7 +20,7 @@ interface CancelBookingModalProps {
     date: string;
     start_time: string;
   } | null;
-  isMoreThan24Hours: boolean;
+  isMoreThanCancellationHours: boolean;
   isLoading: boolean;
 }
 
@@ -27,7 +29,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
   onClose,
   onConfirm,
   booking,
-  isMoreThan24Hours,
+  isMoreThanCancellationHours,
   isLoading,
 }) => {
   const [mounted, setMounted] = useState(false);
@@ -100,7 +102,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
             <div className="flex items-center mb-6">
               <div
                 className={`p-3 rounded-full mr-4 ${
-                  isMoreThan24Hours
+                  isMoreThanCancellationHours
                     ? "bg-amber-500/20 text-amber-400"
                     : "bg-red-500/20 text-red-400"
                 }`}
@@ -135,7 +137,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
             {/* Refund Policy Notice */}
             <div
               className={`rounded-lg p-4 mb-6 border ${
-                isMoreThan24Hours
+                isMoreThanCancellationHours
                   ? "bg-green-500/10 border-green-500/30 text-green-100"
                   : "bg-red-500/10 border-red-500/30 text-red-100"
               }`}
@@ -143,21 +145,23 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
               <div className="flex items-start">
                 <div
                   className={`p-1 rounded-full mr-3 mt-0.5 ${
-                    isMoreThan24Hours ? "text-green-400" : "text-red-400"
+                    isMoreThanCancellationHours
+                      ? "text-green-400"
+                      : "text-red-400"
                   }`}
                 >
-                  {isMoreThan24Hours ? "✅" : "⚠️"}
+                  {isMoreThanCancellationHours ? "✅" : "⚠️"}
                 </div>
                 <div>
                   <p className="font-medium mb-1">
-                    {isMoreThan24Hours
+                    {isMoreThanCancellationHours
                       ? "Full Refund Available"
                       : "No Refund Available"}
                   </p>
                   <p className="text-sm opacity-90">
-                    {isMoreThan24Hours
-                      ? "Your session will be refunded to your account since you're cancelling more than 24 hours in advance."
-                      : "No session will be refunded as you're cancelling less than 24 hours before the class."}
+                    {isMoreThanCancellationHours
+                      ? CANCELLATION_POLICY.getFullMessage()
+                      : CANCELLATION_POLICY.getNoRefundMessage()}
                   </p>
                 </div>
               </div>
@@ -176,7 +180,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                 onClick={onConfirm}
                 disabled={isLoading}
                 className={`flex-1 py-3 px-4 font-medium rounded-lg transition-all duration-200 disabled:opacity-50 ${
-                  isMoreThan24Hours
+                  isMoreThanCancellationHours
                     ? "bg-amber-600 hover:bg-amber-700 text-white"
                     : "bg-red-600 hover:bg-red-700 text-white"
                 }`}
@@ -188,7 +192,9 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
                   </div>
                 ) : (
                   `${
-                    isMoreThan24Hours ? "Cancel & Refund" : "Cancel (No Refund)"
+                    isMoreThanCancellationHours
+                      ? "Cancel & Refund"
+                      : "Cancel (No Refund)"
                   }`
                 )}
               </button>

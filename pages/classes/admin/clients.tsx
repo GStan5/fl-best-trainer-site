@@ -82,6 +82,7 @@ export default function AdminClientsPage() {
   const [showManualPurchaseModal, setShowManualPurchaseModal] = useState(false);
   const [selectedClientForPurchase, setSelectedClientForPurchase] =
     useState<Client | null>(null);
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
   const [manualPurchaseData, setManualPurchaseData] = useState({
     client_email: "",
     package_type: "",
@@ -106,6 +107,20 @@ export default function AdminClientsPage() {
     payment_status: "",
     notes: "",
   });
+
+  // Predefined package options
+  const packageOptions = [
+    {
+      name: "Weightlifting 10 pack",
+      sessions: 10,
+      price: 400,
+    },
+    {
+      name: "Weightlifting Single Session",
+      sessions: 1,
+      price: 55,
+    },
+  ];
 
   // Check if user is admin using database field
   const isAdmin = session?.user?.isAdmin === true;
@@ -503,6 +518,21 @@ export default function AdminClientsPage() {
       notes: "",
     });
     setSelectedClientForPurchase(null);
+    setClientSearchTerm("");
+  };
+
+  const handleSelectClient = (client: Client) => {
+    console.log(
+      "Selecting client:",
+      client.email,
+      client.first_name,
+      client.last_name
+    );
+    setManualPurchaseData((prev) => ({
+      ...prev,
+      client_email: client.email,
+    }));
+    setSelectedClientForPurchase(client);
   };
 
   if (status === "loading") {
@@ -1804,125 +1834,313 @@ export default function AdminClientsPage() {
               {/* Client Selection */}
               <div>
                 <label className="block text-white/80 font-medium mb-2">
-                  Client Email *
+                  Select Client *
+                </label>
+
+                {/* Search Input */}
+                <div className="relative mb-3">
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="Search clients by name or email..."
+                    value={clientSearchTerm}
+                    onChange={(e) => setClientSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
+                  />
+                </div>
+
+                {/* Client List */}
+                <div className="max-h-48 overflow-y-auto border border-white/10 rounded-lg bg-white/5">
+                  {clients
+                    .filter(
+                      (client) =>
+                        clientSearchTerm === "" ||
+                        client.first_name
+                          .toLowerCase()
+                          .includes(clientSearchTerm.toLowerCase()) ||
+                        client.last_name
+                          .toLowerCase()
+                          .includes(clientSearchTerm.toLowerCase()) ||
+                        client.email
+                          .toLowerCase()
+                          .includes(clientSearchTerm.toLowerCase())
+                    )
+                    .map((client) => (
+                      <div
+                        key={client.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleSelectClient(client);
+                        }}
+                        className={`p-3 border-b border-white/5 cursor-pointer hover:bg-white/10 transition-colors ${
+                          manualPurchaseData.client_email === client.email
+                            ? "bg-royal-light/20 border-royal-light/30"
+                            : ""
+                        }`}
+                        style={{ userSelect: "none" }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-white">
+                              {client.first_name} {client.last_name}
+                            </div>
+                            <div className="text-white/60 text-sm">
+                              {client.email}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-royal-light font-semibold">
+                              {client.weightlifting_classes_remaining || 0}{" "}
+                              sessions
+                            </div>
+                            <div className="text-white/60 text-xs">
+                              remaining
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  {clients.filter(
+                    (client) =>
+                      clientSearchTerm === "" ||
+                      client.first_name
+                        .toLowerCase()
+                        .includes(clientSearchTerm.toLowerCase()) ||
+                      client.last_name
+                        .toLowerCase()
+                        .includes(clientSearchTerm.toLowerCase()) ||
+                      client.email
+                        .toLowerCase()
+                        .includes(clientSearchTerm.toLowerCase())
+                  ).length === 0 && (
+                    <div className="p-3 text-white/60 text-center">
+                      No clients found matching "{clientSearchTerm}"
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Selected Client Confirmation */}
+              {selectedClientForPurchase && (
+                <div className="p-4 bg-royal-light/10 border border-royal-light/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-white font-medium">
+                        ✅ Selected: {selectedClientForPurchase.first_name}{" "}
+                        {selectedClientForPurchase.last_name}
+                      </div>
+                      <div className="text-white/60 text-sm">
+                        {selectedClientForPurchase.email}
+                      </div>
+                    </div>
+                    <div className="text-royal-light font-semibold">
+                      {selectedClientForPurchase.weightlifting_classes_remaining ||
+                        0}{" "}
+                      sessions remaining
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Package Selection */}
+              <div>
+                <label className="block text-white/80 font-medium mb-2">
+                  Package Type *
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  {packageOptions.map((packageOption, index) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        setManualPurchaseData({
+                          ...manualPurchaseData,
+                          package_type: packageOption.name,
+                          sessions_included: packageOption.sessions.toString(),
+                          amount_paid: packageOption.price.toString(),
+                        });
+                      }}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        manualPurchaseData.package_type === packageOption.name
+                          ? "border-royal-light bg-royal-light/10"
+                          : "border-white/20 hover:border-white/40 bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-white">
+                            {packageOption.name}
+                          </div>
+                          <div className="text-white/60 text-sm">
+                            {packageOption.sessions} sessions
+                          </div>
+                        </div>
+                        <div className="text-royal-light font-bold text-lg">
+                          ${packageOption.price}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Custom Package Option */}
+                  <div
+                    onClick={() => {
+                      setManualPurchaseData({
+                        ...manualPurchaseData,
+                        package_type: "Custom Package",
+                        sessions_included: "",
+                        amount_paid: "",
+                      });
+                    }}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      manualPurchaseData.package_type === "Custom Package"
+                        ? "border-amber-500 bg-amber-500/10"
+                        : "border-white/20 hover:border-white/40 bg-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-white">
+                          Custom Package
+                        </div>
+                        <div className="text-white/60 text-sm">
+                          Set your own sessions and price
+                        </div>
+                      </div>
+                      <div className="text-amber-400 font-bold">
+                        <FaEdit />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Package Fields - Only show when Custom Package is selected */}
+              {manualPurchaseData.package_type === "Custom Package" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Custom Package Name
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        manualPurchaseData.package_type === "Custom Package"
+                          ? ""
+                          : manualPurchaseData.package_type
+                      }
+                      onChange={(e) =>
+                        setManualPurchaseData({
+                          ...manualPurchaseData,
+                          package_type: e.target.value,
+                        })
+                      }
+                      placeholder="e.g., Special 15-Class Package"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Sessions Included *
+                    </label>
+                    <input
+                      type="number"
+                      value={manualPurchaseData.sessions_included}
+                      onChange={(e) =>
+                        setManualPurchaseData({
+                          ...manualPurchaseData,
+                          sessions_included: e.target.value,
+                        })
+                      }
+                      placeholder="15"
+                      min="1"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white/80 font-medium mb-2">
+                      Amount Paid *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={manualPurchaseData.amount_paid}
+                      onChange={(e) =>
+                        setManualPurchaseData({
+                          ...manualPurchaseData,
+                          amount_paid: e.target.value,
+                        })
+                      }
+                      placeholder="600.00"
+                      min="0"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Details - Only show for predefined packages */}
+              {manualPurchaseData.package_type !== "Custom Package" &&
+                manualPurchaseData.package_type !== "" && (
+                  <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                    <h3 className="text-white font-medium mb-2">
+                      Package Summary
+                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white/80">Package:</span>
+                      <span className="text-white font-semibold">
+                        {manualPurchaseData.package_type}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white/80">Sessions:</span>
+                      <span className="text-white font-semibold">
+                        {manualPurchaseData.sessions_included}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-white/80">Amount:</span>
+                      <span className="text-green-400 font-bold text-lg">
+                        ${manualPurchaseData.amount_paid}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              {/* Payment Method */}
+              <div>
+                <label className="block text-white/80 font-medium mb-2">
+                  Payment Method *
                 </label>
                 <select
-                  value={manualPurchaseData.client_email}
+                  value={manualPurchaseData.payment_method}
                   onChange={(e) =>
                     setManualPurchaseData({
                       ...manualPurchaseData,
-                      client_email: e.target.value,
+                      payment_method: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:border-royal-light focus:outline-none"
                 >
-                  <option value="">Select a client...</option>
-                  {clients.map((client) => (
-                    <option
-                      key={client.id}
-                      value={client.email}
-                      className="bg-royal-dark"
-                    >
-                      {client.first_name} {client.last_name} ({client.email})
-                    </option>
-                  ))}
+                  <option value="cash" className="bg-royal-dark">
+                    Cash
+                  </option>
+                  <option value="check" className="bg-royal-dark">
+                    Check
+                  </option>
+                  <option value="venmo" className="bg-royal-dark">
+                    Venmo
+                  </option>
+                  <option value="zelle" className="bg-royal-dark">
+                    Zelle
+                  </option>
+                  <option value="bank_transfer" className="bg-royal-dark">
+                    Bank Transfer
+                  </option>
+                  <option value="other" className="bg-royal-dark">
+                    Other
+                  </option>
                 </select>
-              </div>
-
-              {/* Package Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white/80 font-medium mb-2">
-                    Package Type *
-                  </label>
-                  <input
-                    type="text"
-                    value={manualPurchaseData.package_type}
-                    onChange={(e) =>
-                      setManualPurchaseData({
-                        ...manualPurchaseData,
-                        package_type: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., 8-Class Package"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/80 font-medium mb-2">
-                    Sessions Included *
-                  </label>
-                  <input
-                    type="number"
-                    value={manualPurchaseData.sessions_included}
-                    onChange={(e) =>
-                      setManualPurchaseData({
-                        ...manualPurchaseData,
-                        sessions_included: e.target.value,
-                      })
-                    }
-                    placeholder="8"
-                    min="1"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-white/80 font-medium mb-2">
-                    Amount Paid *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={manualPurchaseData.amount_paid}
-                    onChange={(e) =>
-                      setManualPurchaseData({
-                        ...manualPurchaseData,
-                        amount_paid: e.target.value,
-                      })
-                    }
-                    placeholder="160.00"
-                    min="0"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:border-royal-light focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-white/80 font-medium mb-2">
-                    Payment Method *
-                  </label>
-                  <select
-                    value={manualPurchaseData.payment_method}
-                    onChange={(e) =>
-                      setManualPurchaseData({
-                        ...manualPurchaseData,
-                        payment_method: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white focus:border-royal-light focus:outline-none"
-                  >
-                    <option value="cash" className="bg-royal-dark">
-                      Cash
-                    </option>
-                    <option value="check" className="bg-royal-dark">
-                      Check
-                    </option>
-                    <option value="venmo" className="bg-royal-dark">
-                      Venmo
-                    </option>
-                    <option value="zelle" className="bg-royal-dark">
-                      Zelle
-                    </option>
-                    <option value="bank_transfer" className="bg-royal-dark">
-                      Bank Transfer
-                    </option>
-                    <option value="other" className="bg-royal-dark">
-                      Other
-                    </option>
-                  </select>
-                </div>
               </div>
 
               {/* Notes */}
