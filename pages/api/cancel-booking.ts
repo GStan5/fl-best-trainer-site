@@ -29,9 +29,9 @@ export default async function handler(
 
     const { booking_id } = req.body;
 
-    console.log("🔍 DEBUG API: Received cancel request", {
+    console.warn("🚨 API CANCEL: Received cancel request", {
       bookingId: booking_id,
-      userEmail: session.user.email
+      userEmail: session.user.email,
     });
 
     if (!booking_id) {
@@ -68,11 +68,10 @@ export default async function handler(
       WHERE b.id = ${booking_id} AND b.user_id = ${user.id} AND b.status IN ('confirmed', 'waitlist')
     `;
 
-    console.log("🔍 DEBUG API: Database query results", {
+    console.warn("🚨 API CANCEL: Database query results", {
       bookingId: booking_id,
       userId: user.id,
       resultsCount: bookingResult.length,
-      results: bookingResult
     });
 
     if (bookingResult.length === 0) {
@@ -84,13 +83,11 @@ export default async function handler(
 
     const booking = bookingResult[0];
 
-    console.log("🔍 DEBUG API: Retrieved booking from database", {
+    console.warn("🚨 API CANCEL: Retrieved booking from database", {
       bookingId: booking.id,
       classTitle: booking.class_title,
-      classId: booking.class_id,
       date: booking.date,
       startTime: booking.start_time,
-      fullBookingObject: booking
     });
 
     // Parse date exactly like the frontend calendar components do
@@ -111,19 +108,10 @@ export default async function handler(
       0,
       0
     );
-    console.log("🔍 DEBUG: Frontend-matching date parsing", {
-      originalBookingDate: booking.date,
-      dateStr,
-      startTime: booking.start_time,
-      parsedComponents: {
-        year,
-        month: month - 1,
-        day,
-        hour: parseInt(timeComponents[0]),
-        minute: parseInt(timeComponents[1]),
-      },
-      classDateTime: classDateTime.toISOString(),
-      classDateTimeLocal: classDateTime.toLocaleString(),
+
+    console.warn("🚨 API CANCEL: Date parsing completed successfully", {
+      originalDate: booking.date,
+      parsedClassDateTime: classDateTime.toISOString(),
     });
 
     const now = new Date();
@@ -143,7 +131,7 @@ export default async function handler(
         bookingId: booking_id,
         date: booking.date,
         time: booking.start_time,
-        dateString: dateString,
+        dateStr: dateStr,
         parsedDateTime: classDateTime.toString(),
       });
       return res.status(400).json({
@@ -179,7 +167,7 @@ export default async function handler(
       bookingId: booking_id,
       classDate: booking.date,
       classTime: booking.start_time,
-      dateString: dateString,
+      dateStr: dateStr,
       classDateTime: classDateTime.toISOString(),
       classDateTimeLocal: classDateTime.toString(),
       now: now.toISOString(),
@@ -321,7 +309,11 @@ export default async function handler(
       },
     });
   } catch (error) {
-    console.error("Error cancelling booking:", error);
+    console.error("🚨 API CANCEL ERROR:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : "No stack trace",
+    });
     res.status(500).json({
       success: false,
       error: "Failed to cancel booking",

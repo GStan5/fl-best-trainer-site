@@ -49,27 +49,14 @@ export default function UpcomingClassesSection({
       }
 
       // Handle date properly to avoid timezone issues
-      const dateStr = typeof classItem.date === 'string' 
-        ? classItem.date.split('T')[0] 
-        : new Date(classItem.date).toISOString().split('T')[0];
-      
+      const dateStr =
+        typeof classItem.date === "string"
+          ? classItem.date.split("T")[0]
+          : new Date(classItem.date).toISOString().split("T")[0];
+
       const classDateTime = new Date(`${dateStr}T${classItem.start_time}`);
 
       const isUpcoming = classDateTime > now;
-      
-      // Detailed debugging for October 15th
-      if (classItem.title.includes("Intro Weight Lifting") || dateStr.includes("2025-10-15")) {
-        console.log(`🔍 DEBUG Oct 15 UpcomingClassesSection: ${classItem.title}`);
-        console.log(`   Raw date: ${classItem.date}`);
-        console.log(`   Parsed dateStr: ${dateStr}`);
-        console.log(`   Start time: ${classItem.start_time}`);
-        console.log(`   Final classDateTime: ${classDateTime.toString()}`);
-        console.log(`   Current time (now): ${now.toString()}`);
-        console.log(`   classDateTime > now: ${classDateTime > now}`);
-        console.log(`   Time difference (hours): ${(classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)}`);
-        console.log(`   Result: ${isUpcoming ? "✅ WILL SHOW" : "❌ WILL HIDE"}`);
-        console.log("   ---");
-      }
 
       // Only include classes that haven't started yet
       return isUpcoming;

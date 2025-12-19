@@ -29,13 +29,16 @@ export default function ClassesList({
   onClassSelect,
 }: ClassesListProps) {
   console.log("🔍 ClassesList: Processing classes:", classes.length);
-  console.log("🔍 ClassesList: Raw classes data:", classes.map(c => ({
-    title: c.title,
-    date: c.date,
-    dateType: typeof c.date,
-    start_time: c.start_time,
-    id: c.id
-  })));
+  console.log(
+    "🔍 ClassesList: Raw classes data:",
+    classes.map((c) => ({
+      title: c.title,
+      date: c.date,
+      dateType: typeof c.date,
+      start_time: c.start_time,
+      id: c.id,
+    }))
+  );
   const now = new Date();
   console.log("🕐 ClassesList: Current time:", now.toISOString());
 
@@ -47,35 +50,17 @@ export default function ClassesList({
       }
 
       // Handle date properly to avoid timezone issues
-      const dateStr = typeof c.date === 'string' 
-        ? c.date.split('T')[0] 
-        : new Date(c.date).toISOString().split('T')[0];
-      
+      const dateStr =
+        typeof c.date === "string"
+          ? c.date.split("T")[0]
+          : new Date(c.date).toISOString().split("T")[0];
+
       const classDateTime = new Date(`${dateStr}T${c.start_time}`);
 
       const now = new Date();
       // Only include classes that haven't started yet
       const isUpcoming = classDateTime > now;
-      
-      // Detailed debugging for October 15th
-      if (c.title.includes("Intro Weight Lifting") || dateStr.includes("2025-10-15")) {
-        console.log(`🔍 DEBUG Oct 15 ClassesList: ${c.title}`);
-        console.log(`   Raw date: ${c.date}`);
-        console.log(`   Parsed dateStr: ${dateStr}`);
-        console.log(`   Start time: ${c.start_time}`);
-        console.log(`   Final classDateTime: ${classDateTime.toString()}`);
-        console.log(`   Current time (now): ${now.toString()}`);
-        console.log(`   classDateTime > now: ${classDateTime > now}`);
-        console.log(`   Time difference (hours): ${(classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60)}`);
-        console.log(`   Result: ${isUpcoming ? "✅ WILL SHOW" : "❌ WILL HIDE"}`);
-        console.log("   ---");
-      }
-      
-      console.log(
-        `📅 ClassesList: ${c.title} on ${dateStr} at ${c.start_time}: ${
-          isUpcoming ? "✅ upcoming" : "❌ past"
-        }`
-      );
+
       return isUpcoming;
     })
     .sort((a, b) => {
@@ -91,12 +76,18 @@ export default function ClassesList({
     upcomingClasses.length,
     "upcoming classes"
   );
-  console.log("📊 ClassesList: Upcoming classes:", upcomingClasses.map(c => ({
-    title: c.title,
-    date: typeof c.date === "string" ? c.date : new Date(c.date).toISOString().split("T")[0],
-    start_time: c.start_time,
-    id: c.id
-  })));
+  console.log(
+    "📊 ClassesList: Upcoming classes:",
+    upcomingClasses.map((c) => ({
+      title: c.title,
+      date:
+        typeof c.date === "string"
+          ? c.date
+          : new Date(c.date).toISOString().split("T")[0],
+      start_time: c.start_time,
+      id: c.id,
+    }))
+  );
 
   const classesToShow = upcomingClasses.slice(0, 6);
 
