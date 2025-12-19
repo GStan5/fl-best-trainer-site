@@ -72,14 +72,36 @@ export default async function handler(
 
     const booking = bookingResult[0];
 
-    // Setup date/time calculations (assuming class times are stored in EST)
+    // Setup date/time calculations with explicit timezone handling for EST/EDT
     // Format the date properly - booking.date is already a Date object
     const dateString =
       booking.date instanceof Date
         ? booking.date.toISOString().split("T")[0]
         : booking.date.toString().split("T")[0];
-    const classDateTimeString = `${dateString}T${booking.start_time}`;
+    
+    // Parse class time and create date object
+    const [hours, minutes] = booking.start_time.split(":").map(Number);
+    const [year, month, day] = dateString.split("-").map(Number);
+    
+    // Create date in Eastern Time Zone (EST/EDT) since that's where the business operates
+    // This avoids timezone discrepancies between local development and Vercel production
+    const classDateTimeString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    
+    // Parse as local time and then adjust for Eastern timezone
+    // This ensures consistent behavior regardless of server timezone
     const classDateTime = new Date(classDateTimeString);
+    
+    // If the server is in UTC (like Vercel), we need to account for EST offset
+    // EST is UTC-5, EDT is UTC-4. For safety, we'll use a more direct approach:
+    // Check if we're likely on a UTC server and adjust accordingly
+    const serverOffset = new Date().getTimezoneOffset();
+    const easternOffset = 5 * 60; // EST is UTC-5 (300 minutes)
+    
+    // If server is UTC (offset 0) and class times are in Eastern, adjust
+    if (Math.abs(serverOffset) < 60) { // Server is likely UTC
+      classDateTime.setMinutes(classDateTime.getMinutes() - easternOffset);
+    }
+    
     const now = new Date();
 
     // Validate the date is valid
@@ -89,7 +111,7 @@ export default async function handler(
         date: booking.date,
         time: booking.start_time,
         dateString: dateString,
-        dateTimeString: classDateTimeString,
+        parsedDateTime: classDateTime.toString(),
       });
       return res.status(400).json({
         success: false,
@@ -115,9 +137,11 @@ export default async function handler(
       classDate: booking.date,
       classTime: booking.start_time,
       dateString: dateString,
-      classDateTimeString,
       classDateTime: classDateTime.toISOString(),
+      classDateTimeLocal: classDateTime.toString(),
       now: now.toISOString(),
+      nowLocal: now.toString(),
+      serverTimezoneOffset: new Date().getTimezoneOffset(),
       hoursUntilClass,
       isRefundable,
       cancellationPolicyHours: CANCELLATION_POLICY.HOURS,
