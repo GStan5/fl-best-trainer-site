@@ -98,20 +98,17 @@ export default async function handler(
 
     const [year, month, day] = dateStr.split("-").map(Number);
     const timeComponents = booking.start_time.split(":");
-    // Create date in local timezone (month is 0-based) - EXACT same logic as frontend
-    const classDateTime = new Date(
-      year,
-      month - 1,
-      day,
-      parseInt(timeComponents[0]),
-      parseInt(timeComponents[1]),
-      0,
-      0
-    );
-
-    console.warn("🚨 API CANCEL: Date parsing completed successfully", {
+// Create date in Eastern timezone explicitly to ensure consistency
+    // Parse the date string and time, then create a date that represents the actual Eastern time
+    const easternOffset = -5; // EST is UTC-5 (during standard time)
+    const classDateTime = new Date(`${dateStr}T${booking.start_time}-05:00`);
+    
+    console.warn("🚨 API CANCEL: Date parsing completed with Eastern timezone", {
       originalDate: booking.date,
-      parsedClassDateTime: classDateTime.toISOString(),
+      dateStr,
+      startTime: booking.start_time,
+      classDateTime: classDateTime.toISOString(),
+      classDateTimeLocal: classDateTime.toString(),
     });
 
     const now = new Date();

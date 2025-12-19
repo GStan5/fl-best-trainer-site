@@ -420,19 +420,9 @@ export default function Classes() {
         class_title: booking.class_title,
       });
 
-      // Parse date in YYYY-MM-DD format
-      const dateParts = booking.date.split("-");
-      const timeParts = booking.start_time.split(":");
-
-      // Create date object explicitly in local timezone (EST)
-      const classDateTime = new Date(
-        parseInt(dateParts[0]), // year
-        parseInt(dateParts[1]) - 1, // month (0-indexed)
-        parseInt(dateParts[2]), // day
-        parseInt(timeParts[0]), // hour
-        parseInt(timeParts[1]), // minute
-        parseInt(timeParts[2] || "0") // second (optional)
-      );
+      // Create date with explicit Eastern timezone to match backend
+      const dateStr = booking.date.split("T")[0]; // Get "2025-12-20"
+      const classDateTime = new Date(`${dateStr}T${booking.start_time}-05:00`);
 
       return CANCELLATION_POLICY.isRefundable(classDateTime);
     } catch (error) {
