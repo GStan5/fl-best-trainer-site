@@ -346,7 +346,7 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
 
-  const introText = `I, ${data.name}, in consideration for being permitted to participate in personal training services, fitness instruction, and related activities provided by Gavin R. Stanifer (collectively referred to as "Provider"), acknowledge, understand, and agree to the following terms and conditions:`;
+  const introText = `I, ${data.name}, in consideration for being permitted to participate in personal training services, fitness instruction, and related activities provided by FL Best Trainer LLC, and its owners, members, managers, employees, trainers, independent contractors, agents, and representatives, including Gavin R. Stanifer (collectively referred to as "Provider"), acknowledge, understand, and agree to the following terms and conditions:`;
 
   const splitIntro = doc.splitTextToSize(introText, pageWidth - 2 * margin);
   splitIntro.forEach((line: string) => {
@@ -376,7 +376,7 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
     {
       title: "3. RELEASE AND WAIVER",
       content:
-        'I, for myself and my heirs, assigns, personal representatives, and next of kin, HEREBY RELEASE, WAIVE, DISCHARGE, AND COVENANT NOT TO SUE Gavin R. Stanifer (collectively "Released Parties") from any and all liability, claims, demands, losses, or damages on my account caused or alleged to be caused in whole or in part by the negligence of the Released Parties or otherwise, including negligent rescue operations.',
+        'I, for myself and my heirs, assigns, personal representatives, and next of kin, HEREBY RELEASE, WAIVE, DISCHARGE, AND COVENANT NOT TO SUE FL Best Trainer LLC, and its owners, members, managers, employees, trainers, independent contractors, agents, and representatives, including Gavin R. Stanifer (collectively "Released Parties") from any and all liability, claims, demands, losses, or damages on my account caused or alleged to be caused in whole or in part by the negligence of the Released Parties or otherwise, including negligent rescue operations.',
     },
     {
       title: "4. INDEMNIFICATION",

@@ -188,107 +188,133 @@ export default function WaiverPage() {
             </p>
 
             <p>
-              In consideration for being permitted to participate in personal
-              training services, fitness instruction, and related activities
-              provided by <strong>Gavin R Stanifer</strong>, I acknowledge,
-              understand, and agree to the following:
+              In consideration of being permitted to participate in personal
+              training sessions, fitness instruction, exercise programs, and
+              related physical activities (collectively, the
+              &quot;Activities&quot;) provided by FL Best Trainer LLC, a Florida
+              limited liability company (the &quot;Company&quot;), and its
+              owners, members, managers, employees, trainers, independent
+              contractors, agents, and representatives, including Gavin R.
+              Stanifer (collectively, the &quot;Released Parties&quot;), I, the
+              undersigned participant, acknowledge and agree to the following:
             </p>
 
             <h2>Terms and Conditions</h2>
 
             <ol className="space-y-4">
               <li>
-                <strong>Assumption of Risk:</strong> I understand and
-                acknowledge that physical exercise, fitness training, and
-                related activities involve inherent risks of physical injury,
-                including but not limited to: muscle strains, sprains, tears,
-                broken bones, heart attack, stroke, heat exhaustion,
-                dehydration, and in extreme cases, permanent disability or
-                death. I voluntarily assume all such risks and hazards
-                incidental to such participation.
+                <strong>Assumption of Risk:</strong> I understand that
+                participation in fitness and physical training activities
+                involves inherent risks, including but not limited to muscle
+                strains, sprains, fractures, cardiovascular events, illness,
+                permanent injury, or death. I voluntarily and knowingly assume
+                all risks, whether known or unknown, foreseeable or
+                unforeseeable, arising from my participation in the Activities.
               </li>
 
               <li>
                 <strong>Physical Condition:</strong> I represent and warrant
-                that I am in good physical condition and have no medical
-                condition, impairment, disease, infirmity, or other illness that
-                would prevent my participation or use of equipment or that would
-                increase my risk of injury or adverse health consequences. I
-                acknowledge that Provider has recommended that I consult with a
-                physician before beginning any exercise program.
+                that I am physically and medically able to participate in the
+                Activities and have no condition that would increase my risk of
+                injury or prevent safe participation. I acknowledge that the
+                Company has recommended that I consult with a physician prior to
+                beginning any exercise or fitness program.
               </li>
 
               <li>
-                <strong>Release and Waiver:</strong> I, for myself and my heirs,
-                assigns, personal representatives, and next of kin,{" "}
+                <strong>Release and Waiver of Liability:</strong> I, for myself
+                and on behalf of my heirs, assigns, personal representatives,
+                and next of kin,{" "}
                 <strong>
                   HEREBY RELEASE, WAIVE, DISCHARGE, AND COVENANT NOT TO SUE
                 </strong>{" "}
-                Gavin R Stanifer from any and all liability, claims, demands,
-                losses, or damages on my account caused or alleged to be caused
-                in whole or in part by negligence or otherwise.
+                the Released Parties from any and all claims, demands, actions,
+                causes of action, liabilities, damages, losses, or expenses of
+                any kind arising out of or related to my participation in the
+                Activities,{" "}
+                <strong>
+                  INCLUDING ANY CLAIMS ARISING FROM THE NEGLIGENCE OF THE
+                  RELEASED PARTIES
+                </strong>
+                , to the fullest extent permitted by Florida law.
               </li>
 
               <li>
                 <strong>Indemnification:</strong> I agree to indemnify and hold
-                harmless the Released Parties from any loss, liability, damage,
-                or cost they may incur arising out of or related to my
-                participation in activities, whether caused by my own actions or
-                inactions, those of others participating in the activity, the
-                conditions in which the activities take place, or negligence.
+                harmless the Released Parties to the fullest extent permitted by
+                Florida law from any loss, liability, damage, or cost (including
+                reasonable attorneys&apos; fees) arising out of or related to my
+                participation in the Activities.
               </li>
 
               <li>
-                <strong>Medical Treatment:</strong> I consent to receive medical
-                treatment that may be deemed advisable in the event of injury,
-                accident, and/or illness during participation. I understand and
-                agree that I am solely responsible for all costs related to
-                medical treatment and transportation.
+                <strong>Medical Treatment:</strong> I authorize the Company and
+                its representatives to obtain emergency medical treatment for me
+                if deemed necessary during my participation. I understand that I
+                am solely responsible for all costs related to medical
+                treatment, transportation, and related expenses.
               </li>
 
               <li>
-                <strong>Media Release:</strong> I grant to the Released Parties
-                the irrevocable right and permission to photograph, videotape,
-                or otherwise record my participation and to use such recordings
-                for promotional, educational, or commercial purposes without
-                compensation to me.
+                <strong>Media Release:</strong> I grant the Released Parties the
+                irrevocable right to photograph, video record, or otherwise
+                record my participation in the Activities and to use such media
+                for lawful promotional or commercial purposes without
+                compensation, unless I revoke this permission in writing.
               </li>
 
               <li>
-                <strong>Equipment Use:</strong> I acknowledge that I am
-                responsible for inspecting any equipment before use and will
-                immediately report any unsafe conditions. I will use equipment
-                only as instructed and within my capabilities.
+                <strong>Equipment and Environment:</strong> I acknowledge that I
+                am responsible for inspecting any equipment prior to use and
+                will immediately report unsafe conditions. I agree to use
+                equipment only as instructed and within my personal physical
+                capabilities. I understand that Activities may occur in
+                non-commercial environments, including private residences, which
+                may present additional hazards.
+              </li>
+
+              <li>
+                <strong>No Guarantees:</strong> I acknowledge that the Company
+                makes no guarantees regarding fitness results, health
+                improvements, or outcomes.
               </li>
 
               <li>
                 <strong>Severability:</strong> If any provision of this
-                agreement is held to be invalid or unenforceable, the remaining
-                provisions shall continue in full force and effect.
+                Agreement is held to be invalid or unenforceable, the remaining
+                provisions shall remain in full force and effect.
               </li>
 
               <li>
-                <strong>Governing Law:</strong> This agreement shall be governed
-                by the laws of the State of Florida. Any disputes arising under
-                this agreement shall be resolved exclusively in the courts of
-                Florida, and I consent to the jurisdiction of such courts.
+                <strong>Governing Law and Venue:</strong> This Agreement shall
+                be governed by and interpreted in accordance with the laws of
+                the State of Florida. Any legal action arising out of this
+                Agreement shall be brought exclusively in the state or federal
+                courts located in Florida, and I consent to such jurisdiction.
               </li>
 
               <li>
-                <strong>Entire Agreement:</strong> This document constitutes the
-                entire agreement between the parties and supersedes any prior
-                understandings or agreements.
+                <strong>Entire Agreement:</strong> This Agreement constitutes
+                the entire agreement between the parties and supersedes any
+                prior oral or written agreements or understandings.
+              </li>
+
+              <li>
+                <strong>Acknowledgment and Voluntary Execution:</strong> I
+                acknowledge that I have read this Agreement in its entirety,
+                understand its terms, understand that I am giving up substantial
+                legal rights, and sign it freely and voluntarily without
+                inducement.
               </li>
             </ol>
 
             <div className="bg-yellow-900/20 border border-yellow-500 p-4 rounded-md mt-6">
               <p className="text-yellow-300 font-bold">
                 <strong>ACKNOWLEDGMENT:</strong> By signing below, I acknowledge
-                that I have read this agreement, fully understand its terms,
-                understand that I am giving up substantial rights including my
-                right to sue, and have signed it freely and without any
-                inducement or assurance of any nature. This is a legally binding
-                electronic document.
+                that I have read this Agreement in its entirety, understand its
+                terms, understand that I am giving up substantial legal rights,
+                and sign it freely and voluntarily without inducement. This is a
+                legally binding electronic document.
               </p>
             </div>
           </div>

@@ -98,12 +98,12 @@ export default async function handler(
 
     const [year, month, day] = dateStr.split("-").map(Number);
     const timeComponents = booking.start_time.split(":");
-    
+
     // Backend must explicitly handle Eastern timezone since Vercel runs in UTC
     // Create date string in Eastern timezone format for consistent parsing
     const easternTimeString = `${dateStr}T${booking.start_time}-05:00`; // EST offset
     const classDateTime = new Date(easternTimeString);
-    
+
     console.warn("🚨 API CANCEL: Server-safe Eastern timezone", {
       originalDate: booking.date,
       dateStr,
