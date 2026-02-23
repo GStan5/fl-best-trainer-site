@@ -187,7 +187,7 @@ export default function UpgradedClassDetailsModal({
     setIsSearching(true);
     try {
       const response = await fetch(
-        `/api/users/search?q=${encodeURIComponent(query)}`
+        `/api/users/search?q=${encodeURIComponent(query)}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -211,7 +211,7 @@ export default function UpgradedClassDetailsModal({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: user.id, isAdminOverride: true }),
-        }
+        },
       );
 
       console.log("Add API Response status:", response.status);
@@ -238,7 +238,7 @@ export default function UpgradedClassDetailsModal({
         alert("Participant added successfully!");
       } else {
         alert(
-          `Failed to add participant: ${responseData.error || "Unknown error"}`
+          `Failed to add participant: ${responseData.error || "Unknown error"}`,
         );
       }
     } catch (error) {
@@ -262,7 +262,7 @@ export default function UpgradedClassDetailsModal({
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: participant.id }),
-        }
+        },
       );
 
       console.log("Remove API Response status:", response.status);
@@ -278,14 +278,14 @@ export default function UpgradedClassDetailsModal({
             ...editedClass,
             current_participants: Math.max(
               0,
-              (editedClass.current_participants || 0) - 1
+              (editedClass.current_participants || 0) - 1,
             ),
           });
         }
         // Refresh parent component data
         if (onRefreshData) {
           console.log(
-            "Modal: calling onRefreshData after removing participant"
+            "Modal: calling onRefreshData after removing participant",
           );
           onRefreshData();
         }
@@ -294,7 +294,7 @@ export default function UpgradedClassDetailsModal({
         alert(
           `Failed to remove participant: ${
             responseData.error || "Unknown error"
-          }`
+          }`,
         );
       }
     } catch (error) {
@@ -327,10 +327,17 @@ export default function UpgradedClassDetailsModal({
   };
 
   // Handle adding participant by user selection
-  const handleAddUser = async (user: User) => {
+  const handleAddUser = async (
+    user: User,
+    bookingStatus: "confirmed" | "waitlist" = "confirmed",
+  ) => {
     if (!classData?.id) return;
 
-    console.log("Adding participant:", { user, classId: classData.id });
+    console.log("Adding participant:", {
+      user,
+      classId: classData.id,
+      bookingStatus,
+    });
 
     try {
       const response = await fetch(
@@ -341,8 +348,9 @@ export default function UpgradedClassDetailsModal({
           body: JSON.stringify({
             userId: user.id,
             isAdminOverride: true,
+            bookingStatus: bookingStatus,
           }),
-        }
+        },
       );
 
       console.log("API Response status:", response.status);
@@ -354,8 +362,8 @@ export default function UpgradedClassDetailsModal({
         loadParticipants();
         setSearchQuery("");
         setShowUserDropdown(false);
-        // Update class participant count
-        if (editedClass) {
+        // Update class participant count (only for confirmed bookings)
+        if (editedClass && bookingStatus === "confirmed") {
           setEditedClass({
             ...editedClass,
             current_participants: (editedClass.current_participants || 0) + 1,
@@ -366,12 +374,14 @@ export default function UpgradedClassDetailsModal({
           console.log("Modal: calling onRefreshData after adding user");
           onRefreshData();
         }
-        alert("Participant added successfully!");
+        const statusMessage =
+          bookingStatus === "waitlist" ? "added to waitlist" : "added to class";
+        alert(`Participant ${statusMessage} successfully!`);
       } else {
         alert(
           `Failed to add participant: ${
             responseData.error || "User not found or already enrolled"
-          }`
+          }`,
         );
       }
     } catch (error) {
@@ -381,12 +391,15 @@ export default function UpgradedClassDetailsModal({
   };
 
   // Handle direct participant addition by email (fallback)
-  const handleDirectAdd = async () => {
+  const handleDirectAdd = async (
+    bookingStatus: "confirmed" | "waitlist" = "confirmed",
+  ) => {
     if (!searchQuery.trim() || !classData?.id) return;
 
     console.log("Adding participant by email:", {
       email: searchQuery.trim(),
       classId: classData.id,
+      bookingStatus,
     });
 
     try {
@@ -398,8 +411,9 @@ export default function UpgradedClassDetailsModal({
           body: JSON.stringify({
             userEmail: searchQuery.trim().toLowerCase(),
             isAdminOverride: true,
+            bookingStatus: bookingStatus,
           }),
-        }
+        },
       );
 
       console.log("API Response status:", response.status);
@@ -410,7 +424,7 @@ export default function UpgradedClassDetailsModal({
         loadParticipants();
         setSearchQuery("");
         setShowUserDropdown(false);
-        if (editedClass) {
+        if (editedClass && bookingStatus === "confirmed") {
           setEditedClass({
             ...editedClass,
             current_participants: (editedClass.current_participants || 0) + 1,
@@ -421,12 +435,14 @@ export default function UpgradedClassDetailsModal({
           console.log("Modal: calling onRefreshData after direct add by email");
           onRefreshData();
         }
-        alert("Participant added successfully!");
+        const statusMessage =
+          bookingStatus === "waitlist" ? "added to waitlist" : "added to class";
+        alert(`Participant ${statusMessage} successfully!`);
       } else {
         alert(
           `Failed to add participant: ${
             responseData.error || "User not found or already enrolled"
-          }`
+          }`,
         );
       }
     } catch (error) {
@@ -453,7 +469,7 @@ export default function UpgradedClassDetailsModal({
     (user) =>
       searchQuery.length > 0 &&
       (user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+        user.email.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 
   // Load available users when modal opens
@@ -541,7 +557,7 @@ export default function UpgradedClassDetailsModal({
 
   const capacityPercentage = Math.min(
     (currentParticipants / classData.max_participants) * 100,
-    100
+    100,
   );
   const isFullyBooked = currentParticipants >= classData.max_participants;
   const isAlmostFull = capacityPercentage >= 80;
@@ -628,7 +644,7 @@ export default function UpgradedClassDetailsModal({
                     {editedClass.difficulty_level && (
                       <span
                         className={`px-3 py-1 text-xs font-semibold rounded-full ${getDifficultyColor(
-                          editedClass.difficulty_level
+                          editedClass.difficulty_level,
                         )}`}
                       >
                         {editedClass.difficulty_level}
@@ -810,7 +826,7 @@ export default function UpgradedClassDetailsModal({
 
                 <div
                   className={`rounded-lg p-4 border ${getLocationColorClass(
-                    classData.location
+                    classData.location,
                   )}`}
                 >
                   <div className="flex items-center justify-between">
@@ -868,7 +884,7 @@ export default function UpgradedClassDetailsModal({
                         ((editedClass.current_participants || 0) /
                           editedClass.max_participants) *
                           100,
-                        100
+                        100,
                       ).toFixed(0)}
                       % capacity
                     </span>
@@ -881,7 +897,7 @@ export default function UpgradedClassDetailsModal({
                           ((editedClass.current_participants || 0) /
                             editedClass.max_participants) *
                             100,
-                          100
+                          100,
                         )}%`,
                       }}
                       transition={{ duration: 0.8, ease: "easeOut" }}
@@ -890,10 +906,10 @@ export default function UpgradedClassDetailsModal({
                         editedClass.max_participants
                           ? "bg-red-500"
                           : (editedClass.current_participants || 0) /
-                              editedClass.max_participants >=
-                            0.8
-                          ? "bg-orange-500"
-                          : "bg-gradient-to-r from-blue-500 to-green-500"
+                                editedClass.max_participants >=
+                              0.8
+                            ? "bg-orange-500"
+                            : "bg-gradient-to-r from-blue-500 to-green-500"
                       }`}
                     />
                   </div>
@@ -930,50 +946,78 @@ export default function UpgradedClassDetailsModal({
 
                         {/* User Search Dropdown */}
                         {searchQuery.length > 0 && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-700 border border-slate-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
                             {filteredUsers.length > 0 ? (
                               filteredUsers.map((user) => (
                                 <div
                                   key={user.id}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddUser(user);
-                                  }}
-                                  className="px-4 py-2 hover:bg-slate-600 cursor-pointer text-white border-b border-slate-600 last:border-b-0"
+                                  className="flex items-center justify-between px-4 py-2 hover:bg-slate-600 text-white border-b border-slate-600 last:border-b-0 group"
                                 >
-                                  <div className="font-medium">{user.name}</div>
-                                  <div className="text-sm text-slate-400">
-                                    {user.email}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-medium truncate">
+                                      {user.name}
+                                    </div>
+                                    <div className="text-sm text-slate-400 truncate">
+                                      {user.email}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 ml-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddUser(user, "confirmed");
+                                      }}
+                                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors flex items-center gap-1 whitespace-nowrap"
+                                    >
+                                      <FaUserPlus className="w-3 h-3" />
+                                      Add to Class
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddUser(user, "waitlist");
+                                      }}
+                                      className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-medium transition-colors flex items-center gap-1 whitespace-nowrap"
+                                    >
+                                      <FaUserPlus className="w-3 h-3" />
+                                      Waitlist
+                                    </button>
                                   </div>
                                 </div>
                               ))
                             ) : (
-                              <div className="px-4 py-3 text-slate-400 text-sm">
-                                No users found matching "{searchQuery}"
-                                <br />
-                                <span className="text-xs">
-                                  Press Enter to add by email directly
-                                </span>
+                              <div className="px-4 py-3">
+                                <div className="text-slate-400 text-sm mb-2">
+                                  No users found matching "{searchQuery}"
+                                </div>
+                                <div className="text-xs text-slate-500 mb-3">
+                                  Add user by email directly:
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDirectAdd("confirmed");
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors"
+                                  >
+                                    Add to Class
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDirectAdd("waitlist");
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-medium transition-colors"
+                                  >
+                                    Add to Waitlist
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (filteredUsers.length === 1) {
-                            handleAddUser(filteredUsers[0]);
-                          } else {
-                            handleDirectAdd();
-                          }
-                        }}
-                        disabled={!searchQuery.trim()}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                      >
-                        <FaUserPlus />
-                        Add
-                      </button>
                     </div>
                   </div>
                 )}
@@ -1079,11 +1123,11 @@ export default function UpgradedClassDetailsModal({
                                   <p className="text-slate-500 text-xs">
                                     Joined waitlist:{" "}
                                     {new Date(
-                                      participant.booking_date
+                                      participant.booking_date,
                                     ).toLocaleDateString()}{" "}
                                     at{" "}
                                     {new Date(
-                                      participant.booking_date
+                                      participant.booking_date,
                                     ).toLocaleTimeString([], {
                                       hour: "2-digit",
                                       minute: "2-digit",
@@ -1331,7 +1375,7 @@ export default function UpgradedClassDetailsModal({
                       <span className="text-white font-medium">
                         {classData.recurring_days
                           .map(
-                            (day) => day.charAt(0).toUpperCase() + day.slice(1)
+                            (day) => day.charAt(0).toUpperCase() + day.slice(1),
                           )
                           .join(", ")}
                       </span>
@@ -1348,7 +1392,7 @@ export default function UpgradedClassDetailsModal({
                     onClick={() => {
                       if (
                         confirm(
-                          "Are you sure you want to delete this class? This action cannot be undone."
+                          "Are you sure you want to delete this class? This action cannot be undone.",
                         )
                       ) {
                         onDeleteClass(editedClass.id!);

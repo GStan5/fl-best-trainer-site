@@ -3,7 +3,7 @@ import sql from "../../../../lib/database";
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   const { classId } = req.query;
 
@@ -56,7 +56,8 @@ export default async function handler(
     }
   } else if (req.method === "POST") {
     try {
-      const { userId, userEmail, isAdminOverride, action } = req.body;
+      const { userId, userEmail, isAdminOverride, action, bookingStatus } =
+        req.body;
 
       // Handle admin actions (add/remove without specific user)
       if (action === "add") {
@@ -161,11 +162,17 @@ export default async function handler(
           });
         }
 
-        // For other statuses (confirmed, waitlist), show error
-        return res.status(409).json({
-          success: false,
-          error: `User is already ${existingBooking[0].status} for this class`,
-        });
+        // If admin override and user is already confirmed/waitlist, allow duplicate booking
+        if (isAdminOverride) {
+          // Admin can add user multiple times - continue to create new booking below
+          // This allows fixing classes where people need to be manually added
+        } else {
+          // For non-admin, block duplicate bookings
+          return res.status(409).json({
+            success: false,
+            error: `User is already ${existingBooking[0].status} for this class`,
+          });
+        }
       }
 
       // Check if class is full (only if not admin override)
@@ -183,23 +190,26 @@ export default async function handler(
       }
 
       // Determine booking status
-      let bookingStatus = "confirmed";
+      let finalBookingStatus = bookingStatus || "confirmed"; // Use provided status or default to confirmed
+
+      // If not admin override and not explicitly set to waitlist, check if class is full
       if (
         !isAdminOverride &&
+        !bookingStatus && // Only auto-assign to waitlist if status wasn't explicitly provided
         classInfo[0].current_participants >= classInfo[0].max_participants
       ) {
-        bookingStatus = "waitlist";
+        finalBookingStatus = "waitlist";
       }
 
       // Add the participant
       const newBooking = await sql`
         INSERT INTO bookings (user_id, class_id, status)
-        VALUES (${finalUserId}, ${classId}, ${bookingStatus})
+        VALUES (${finalUserId}, ${classId}, ${finalBookingStatus})
         RETURNING id, booking_date, status
       `;
 
-      // Update participant count in classes table
-      if (bookingStatus === "confirmed") {
+      // Update participant count in classes table (only for confirmed bookings)
+      if (finalBookingStatus === "confirmed") {
         await sql`
           UPDATE classes 
           SET current_participants = COALESCE(current_participants, 0) + 1
@@ -208,7 +218,7 @@ export default async function handler(
       }
 
       // Update user's booking count if it's a confirmed booking
-      if (bookingStatus === "confirmed") {
+      if (finalBookingStatus === "confirmed") {
         await sql`
           UPDATE users 
           SET weightlifting_classes_booked = COALESCE(weightlifting_classes_booked, 0) + 1
@@ -232,7 +242,7 @@ export default async function handler(
           status: newBooking[0].status,
         },
         message:
-          bookingStatus === "waitlist"
+          finalBookingStatus === "waitlist"
             ? "Participant added to waitlist"
             : "Participant confirmed",
       });
