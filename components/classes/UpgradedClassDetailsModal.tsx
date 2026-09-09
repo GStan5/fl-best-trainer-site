@@ -1047,10 +1047,10 @@ export default function UpgradedClassDetailsModal({
                         .map((participant) => (
                           <div
                             key={participant.id}
-                            className="flex items-center justify-between p-3 bg-slate-700/30 rounded-lg border border-slate-600/50"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-slate-700/30 rounded-lg border border-slate-600/50"
                           >
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-white font-medium">
                                   {participant.name}
                                 </p>
@@ -1058,7 +1058,7 @@ export default function UpgradedClassDetailsModal({
                                   ✓ Confirmed
                                 </span>
                               </div>
-                              <p className="text-slate-400 text-sm">
+                              <p className="text-slate-400 text-sm break-all">
                                 {participant.email}
                               </p>
                             </div>
@@ -1068,7 +1068,7 @@ export default function UpgradedClassDetailsModal({
                                   e.stopPropagation();
                                   handleRemoveParticipant(participant);
                                 }}
-                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors flex items-center gap-1"
+                                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors flex items-center justify-center gap-1 min-h-[44px] w-full sm:w-auto"
                               >
                                 <FaUserMinus />
                                 Remove
@@ -1083,9 +1083,9 @@ export default function UpgradedClassDetailsModal({
                         .map((participant, index) => (
                           <div
                             key={participant.id}
-                            className="flex items-center justify-between p-3 bg-orange-500/10 rounded-lg border border-orange-500/30"
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-orange-500/10 rounded-lg border border-orange-500/30"
                           >
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="text-white font-medium">
                                   {participant.name}

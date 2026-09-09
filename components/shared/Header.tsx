@@ -186,6 +186,14 @@ export default function Header() {
                 <>
                   {session ? (
                     <div className="hidden lg:flex items-center gap-3 mr-4">
+                      {session.user?.isAdmin && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center px-3 py-2 bg-white/10 text-white rounded-lg text-sm font-medium hover:bg-white/20 transition-all duration-300"
+                        >
+                          Admin
+                        </Link>
+                      )}
                       <Link
                         href="/account"
                         className="flex items-center px-3 py-2 bg-royal text-white rounded-lg text-sm font-medium hover:bg-royal-light transition-all duration-300"
@@ -253,7 +261,8 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Fixed Call Button - Now OUTSIDE the header component flow */}
+      {/* Fixed Call Button - hide on admin so it does not cover controls */}
+      {!router.pathname.includes("/admin") && (
       <div
         className="fixed-call-button"
         style={{
@@ -272,13 +281,14 @@ export default function Header() {
           <FaPhone className="text-white text-xl" />
         </a>
       </div>
+      )}
 
       {/* Mobile Navigation Overlay */}
       <div
         className={`lg:hidden fixed inset-0 z-40 bg-gradient-to-br from-black/95 to-navy/95 backdrop-blur-lg transform transition-all duration-300 ease-in-out ${
           isOpen
             ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            : "opacity-0 pointer-events-none invisible"
         }`}
         style={{ height: "100vh", overflowY: "auto" }}
         aria-hidden={!isOpen}
@@ -329,6 +339,15 @@ export default function Header() {
               <div className="mt-6 pt-6 border-t border-white/10">
                 {session ? (
                   <div className="space-y-3">
+                    {session.user?.isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsOpen(false)}
+                        className="w-full px-4 py-3 bg-white/10 text-white rounded-xl text-center text-lg font-medium hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                      >
+                        Admin
+                      </Link>
+                    )}
                     <Link
                       href="/account"
                       onClick={() => setIsOpen(false)}

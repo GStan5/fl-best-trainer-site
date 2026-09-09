@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../../components/Layout";
 import SEO from "../../components/shared/SEO";
@@ -8,6 +9,7 @@ import ClassInstancesTable from "../../components/classes/ClassInstancesTable";
 import ClassCompletionModal from "../../components/admin/ClassCompletionModal";
 import PackageEditModal from "../../components/admin/PackageEditModal";
 import AnalyticsTabs from "../../components/admin/AnalyticsTabsNew";
+import AdminNav from "../../components/admin/AdminNav";
 import {
   FaPlus,
   FaUsers,
@@ -328,6 +330,7 @@ interface DashboardStats {
 
 export default function ClassesAdmin() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [classes, setClasses] = useState<Class[]>([]);
   const [completedClasses, setCompletedClasses] = useState<Class[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -346,6 +349,18 @@ export default function ClassesAdmin() {
   const [viewMode, setViewMode] = useState<
     "instances" | "templates" | "completed"
   >("instances");
+
+  useEffect(() => {
+    const tab = router.query.tab;
+    if (
+      tab === "overview" ||
+      tab === "classes" ||
+      tab === "packages" ||
+      tab === "analytics"
+    ) {
+      setActiveTab(tab);
+    }
+  }, [router.query.tab]);
   const [recurringTemplates, setRecurringTemplates] = useState<
     RecurringTemplate[]
   >([]);
@@ -940,6 +955,7 @@ export default function ClassesAdmin() {
 
       <div className="min-h-screen bg-slate-900 pt-24 sm:pt-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+          <AdminNav />
           {/* Mobile-Enhanced Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -952,18 +968,6 @@ export default function ClassesAdmin() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    window.location.href = "/admin/clients";
-                  }}
-                  className="bg-green-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg font-medium flex items-center justify-center space-x-2 hover:bg-green-700 transition-colors shadow-lg text-sm sm:text-base"
-                >
-                  <FaUsers />
-                  <span>Clients</span>
-                </motion.button>
-
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -984,55 +988,6 @@ export default function ClassesAdmin() {
                 </motion.button>
               </div>
             </div>
-          </div>
-
-          {/* Mobile-Enhanced Navigation Tabs */}
-          <div className="border-b border-slate-700 mb-6 sm:mb-8">
-            <nav className="-mb-px flex overflow-x-auto scrollbar-hide">
-              {[
-                {
-                  id: "overview",
-                  name: "Overview",
-                  icon: FaChartLine,
-                  shortName: "Stats",
-                },
-                {
-                  id: "classes",
-                  name: "Manage Classes",
-                  icon: FaCalendarAlt,
-                  shortName: "Classes",
-                },
-                {
-                  id: "packages",
-                  name: "Packages",
-                  icon: FaDollarSign,
-                  shortName: "Packages",
-                },
-                {
-                  id: "analytics",
-                  name: "Analytics",
-                  icon: FaChartLine,
-                  shortName: "Reports",
-                },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`py-3 sm:py-4 px-3 sm:px-4 border-b-2 font-medium text-sm flex items-center space-x-2 flex-shrink-0 min-w-[80px] sm:min-w-0 justify-center sm:justify-start ${
-                      activeTab === tab.id
-                        ? "border-blue-500 text-blue-400"
-                        : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
-                    }`}
-                  >
-                    <Icon className="text-base sm:text-sm" />
-                    <span className="hidden sm:inline">{tab.name}</span>
-                    <span className="sm:hidden text-xs">{tab.shortName}</span>
-                  </button>
-                );
-              })}
-            </nav>
           </div>
 
           {/* Overview Tab */}

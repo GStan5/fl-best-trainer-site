@@ -1,4 +1,5 @@
 import Layout from "@/components/shared/Layout";
+import AdminNav from "@/components/admin/AdminNav";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
@@ -566,6 +567,7 @@ export default function AdminClientsPage() {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black pt-24 sm:pt-28 pb-8">
         <div className="container mx-auto px-4">
+          <AdminNav />
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
