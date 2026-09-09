@@ -10,11 +10,11 @@ import {
   FaHandshake,
   FaRegClock,
   FaMapMarkerAlt,
-  FaPercent,
   FaDumbbell,
   FaCalendarAlt,
   FaExclamationTriangle,
 } from "react-icons/fa";
+import { IN_HOME_CANCELLATION_POLICY } from "../../config/cancellation";
 
 export default function TrainingPricing() {
   // Enhanced plan features to show clearer value progression
@@ -40,7 +40,7 @@ export default function TrainingPricing() {
       name: "Starter Package",
       sessions: "8 Sessions",
       description: "Recommended for training twice a week",
-      price: 140,
+      price: 150,
       priceDetails: "per session",
       features: [
         "Eight 60-minute sessions",
@@ -51,14 +51,14 @@ export default function TrainingPricing() {
       ],
       popular: false,
       icon: <FaStar className="text-royal-light w-5 h-5 mr-2" />,
-      savings: "$160 savings",
+      savings: "$80 savings",
     },
 
     {
       name: "Transform",
       sessions: "24 Sessions",
       description: "Our most comprehensive package",
-      price: 110,
+      price: 140,
       priceDetails: "per session",
       features: [
         "Twenty-four 60-minute sessions",
@@ -70,7 +70,7 @@ export default function TrainingPricing() {
       ],
       popular: false,
       icon: <FaUsers className="text-royal-light w-5 h-5 mr-2" />,
-      savings: "$1,200 savings",
+      savings: "$480 savings",
     },
   ];
 
@@ -93,9 +93,11 @@ export default function TrainingPricing() {
       "Trial Session":
         "Hi Gavin, I'm interested in booking a Trial Session for $160. Please send me details!",
       "Starter Package":
-        "Hi Gavin, I'd like to get the 8-Session Starter Package $140/session. Please send me more information.",
+        "Hi Gavin, I'd like to get the 8-Session Starter Package $150/session. Please send me more information.",
       Transform:
-        "Hi Gavin, I'm interested in your 24-Session Transform Package at $110/session. Please send me more information!",
+        "Hi Gavin, I'm interested in your 24-Session Transform Package at $140/session. Please send me more information!",
+      "Semi-Private 5-Pack":
+        "Hi Gavin, I'm interested in the in-home Semi-Private 5-Session Pack at $110 per person. We'll have 2 people training together. Please send me more information!",
     };
 
     const message =
@@ -236,7 +238,7 @@ export default function TrainingPricing() {
                     repeatType: "mirror",
                   }}
                 >
-                  BEST VALUE! SAVE $1,200
+                  BEST VALUE! SAVE $480
                   <span className="absolute inset-0 bg-white/10 transform -skew-x-12 animate-shine"></span>
                 </motion.div>
               )}
@@ -471,6 +473,87 @@ export default function TrainingPricing() {
           ))}
         </div>
 
+        {/* Semi-private: 5-session pack only */}
+        <motion.div
+          className="mt-10 sm:mt-14 max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <div className="text-center mb-6">
+            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              Semi-Private{" "}
+              <span className="text-royal-light">In-Home Training</span>
+            </h3>
+            <p className="text-white/70 text-sm sm:text-base">
+              Train with a partner in your home. Two people, one session, shared
+              coaching. Offered as a 5-session pack only.
+            </p>
+          </div>
+
+          <div className="bg-black/30 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden hover:border-royal/30 transition-all duration-300">
+            <div className="bg-royal/80 text-white text-center text-sm font-bold py-2">
+              2 PEOPLE MAX · 5-SESSION PACK
+            </div>
+            <div className="p-5 sm:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center mb-1">
+                    <FaUsers className="text-royal-light w-5 h-5 mr-2 flex-shrink-0" />
+                    <h4 className="text-xl sm:text-2xl font-bold text-white">
+                      Semi-Private 5-Pack
+                    </h4>
+                  </div>
+                  <p className="text-royal-light font-medium mb-2">
+                    5 Sessions · 2 people
+                  </p>
+                  <p className="text-white/70 mb-4 text-sm sm:text-base">
+                    Best for couples, friends, or family who want to train
+                    together at home.
+                  </p>
+                  <div className="mb-4">
+                    <span className="text-3xl sm:text-4xl font-bold text-white">
+                      $110
+                    </span>
+                    <span className="text-white/70 ml-1 text-sm sm:text-base">
+                      per person, per session
+                    </span>
+                  </div>
+                  <p className="text-white/60 text-sm mb-5">
+                    $550 per person · $1,100 for both · no single-session option
+                  </p>
+                  <div className="space-y-2 sm:space-y-3 text-sm sm:text-base">
+                    {[
+                      "Five 60-minute shared sessions",
+                      "Two people training together (max)",
+                      "Programming adapted for both partners",
+                      IN_HOME_CANCELLATION_POLICY.getShortFeature(),
+                    ].map((feature) => (
+                      <div key={feature} className="flex items-start">
+                        <FaCheck className="mt-1 mr-3 flex-shrink-0 text-royal-light" />
+                        <span className="text-white/80">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="sm:w-56 flex-shrink-0 sm:self-end">
+                  <a
+                    href="#"
+                    onClick={(e) =>
+                      handlePackageClick(e, "Semi-Private 5-Pack")
+                    }
+                    className="inline-flex items-center justify-center w-full py-3 px-5 rounded-xl font-medium text-white text-sm sm:text-base bg-royal shadow-lg shadow-royal/20 hover:shadow-royal/40 hover:translate-y-[-2px] active:translate-y-0 active:scale-[0.98] transition-all duration-300"
+                  >
+                    Get Semi-Private Pack
+                    <FaArrowRight className="ml-2 flex-shrink-0" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Simple FAQ Section */}
         <motion.div
           className="mt-12 mb-10 max-w-3xl mx-auto px-4"
@@ -484,6 +567,19 @@ export default function TrainingPricing() {
           </h3>
 
           <div className="space-y-4">
+            <div className="bg-black/30 border border-white/10 rounded-lg p-4">
+              <h4 className="text-white font-medium mb-2 flex items-center">
+                <FaUsers className="text-royal-light mr-3 flex-shrink-0" />
+                How does semi-private training work?
+              </h4>
+              <p className="text-white/80 text-sm">
+                Semi-private is two people training together in your home during
+                the same 60-minute session. It is sold as a 5-session pack only
+                at $110 per person, per session. There is no single-session
+                option.
+              </p>
+            </div>
+
             <div className="bg-black/30 border border-white/10 rounded-lg p-4">
               <h4 className="text-white font-medium mb-2 flex items-center">
                 <FaRegClock className="text-royal-light mr-3 flex-shrink-0" />
@@ -517,9 +613,8 @@ export default function TrainingPricing() {
               </h4>
               <p className="text-white/80 text-sm">
                 After purchasing a package, I'll contact you to set up a
-                schedule that works best for you. The Commitment and Transform
-                packages include scheduling priority to ensure you get your
-                preferred time slots.
+                schedule that works best for you. The Transform package includes
+                scheduling priority to ensure you get your preferred time slots.
               </p>
             </div>
 
@@ -529,9 +624,7 @@ export default function TrainingPricing() {
                 What is your cancellation policy?
               </h4>
               <p className="text-white/80 text-sm">
-                I require 72 hours notice for cancellations to avoid being
-                charged for the session. I understand emergencies happen, so
-                please contact me as soon as possible if you need to reschedule.
+                {IN_HOME_CANCELLATION_POLICY.getPolicyText()}
               </p>
             </div>
           </div>
@@ -550,17 +643,6 @@ export default function TrainingPricing() {
             Additional Pricing Information
           </h3>
           <ul className="space-y-2 sm:space-y-3 text-sm sm:text-base">
-            <li className="flex items-start">
-              <FaPercent className="text-amber-400 mt-1 mr-3 flex-shrink-0" />
-              <span className="text-white/80">
-                <strong className="text-white">
-                  Back-to-Back Training Special:
-                </strong>{" "}
-                Save up to 15% when you and a friend/partner book sessions at
-                the same location on the same day. Contact me for details on
-                this exclusive offer.
-              </span>
-            </li>
             <li className="flex items-start">
               <FaMapMarkerAlt className="text-royal-light mt-1 mr-3 flex-shrink-0" />
               <span className="text-white/80">

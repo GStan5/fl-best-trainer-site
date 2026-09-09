@@ -22,7 +22,7 @@ export default function TermsOfService() {
                 Terms of Service
               </h1>
               <div className="h-1 w-20 bg-royal rounded-full mb-6"></div>
-              <p className="text-white/70">Last updated: May 29, 2025</p>
+                  <p className="text-white/70">Last updated: September 9, 2026</p>
             </div>
 
             {/* Content */}
@@ -124,8 +124,13 @@ export default function TermsOfService() {
                 <p>Cancellation policies:</p>
                 <ul className="list-disc pl-6 space-y-2">
                   <li>
-                    For individual sessions, cancellations must be made at least
-                    72 hours in advance to avoid being charged for the session.
+                    For in-home personal training (including semi-private
+                    sessions), cancellations must be made at least 48 hours in
+                    advance to avoid being charged for the session.
+                  </li>
+                  <li>
+                    For group classes, cancellations must be made at least 12
+                    hours in advance to avoid being charged a session.
                   </li>
                   <li>
                     For package or subscription services, please refer to the

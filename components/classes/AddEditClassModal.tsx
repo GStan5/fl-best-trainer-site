@@ -164,6 +164,15 @@ export default function AddEditClassModal({
     setErrors({});
   }, [editingClass, editingRecurringTemplate, isOpen, mode]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   // Stable field update handler
   const updateField = useCallback((field: keyof Class, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -487,26 +496,26 @@ export default function AddEditClassModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999999]"
+          className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-[9999999]"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl w-full max-w-4xl h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <FaCalendarAlt className="mr-3 text-xl" />
-                  <h2 className="text-2xl font-bold">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6 flex-shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center min-w-0">
+                  <FaCalendarAlt className="mr-3 text-xl flex-shrink-0" />
+                  <h2 className="text-lg sm:text-2xl font-bold truncate">
                     {mode === "recurring"
                       ? editingRecurringTemplate
-                        ? "Edit Recurring Class Template"
-                        : "Create Recurring Class Template"
+                        ? "Edit Recurring Template"
+                        : "Create Recurring Template"
                       : editingClass
                       ? "Edit Class"
                       : "Add New Class"}
@@ -514,7 +523,7 @@ export default function AddEditClassModal({
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <FaTimes className="text-xl" />
                 </button>
@@ -543,9 +552,9 @@ export default function AddEditClassModal({
             </div>
 
             {/* Content and Footer wrapped in form */}
-            <form onSubmit={handleSubmit} className="flex flex-col">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
               {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-240px)]">
+              <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
                 <div className="space-y-6">
                   {/* Basic Tab */}
                   {activeTab === "basic" && (
@@ -859,7 +868,7 @@ export default function AddEditClassModal({
               </div>
 
               {/* Footer */}
-              <div className="bg-gray-50 px-6 py-4">
+              <div className="bg-gray-50 px-4 sm:px-6 py-4 flex-shrink-0 border-t border-gray-200 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                   <button
                     type="button"

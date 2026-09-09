@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 
 export default function Layout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const isAdminRoute = router.pathname.includes("/admin");
 
   // Scroll to top on route change
   useEffect(() => {
@@ -24,14 +25,15 @@ export default function Layout({ children }: { children: ReactNode }) {
       {/* Main content */}
       <div className="relative flex-1 flex flex-col z-10">
         <Header />
-        <main className="flex-1">
+        <main className="flex-1 overflow-x-hidden">
           {/* Page transition wrapper */}
           <div className="animate-fade-in">{children}</div>
         </main>
-        <Footer />
+        {!isAdminRoute && <Footer />}
       </div>
 
       {/* Scroll to top button */}
+      {!isAdminRoute && (
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         className="fixed bottom-8 right-8 p-3 rounded-full bg-navy/80 backdrop-blur-sm
@@ -54,6 +56,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           />
         </svg>
       </button>
+      )}
     </div>
   );
 }

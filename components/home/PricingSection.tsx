@@ -6,35 +6,29 @@ export default function PricingSection() {
 
   const plans = [
     {
-      label: '1 Session',
-      price: '$150',
-      note: 'Perfect for trying out our services',
-      features: ['One 60-minute session', 'Full equipment provided', 'Personalized workout plan'],
+      label: 'Trial Session',
+      price: '$160',
+      note: 'per session',
+      features: ['One 60-minute session', 'Fitness assessment', 'Custom workout for your space'],
     },
     {
-      label: '5 Sessions',
-      price: '$700',
-      note: '$140 per session',
-      features: ['Five 60-minute sessions', 'Progress tracking', 'Nutrition guidance'],
+      label: 'Starter Package',
+      price: '$1,200',
+      note: '$150 per session · 8 sessions',
+      features: ['Eight 60-minute sessions', 'Custom workout program', 'Nutrition recommendations'],
       popular: true,
     },
     {
-      label: '10 Sessions',
-      price: '$1,300',
-      note: '$130 per session',
-      features: ['Ten 60-minute sessions', 'Body composition analysis', 'Monthly program adjustments'],
+      label: 'Transform',
+      price: '$3,360',
+      note: '$140 per session · 24 sessions',
+      features: ['Twenty-four 60-minute sessions', 'Priority scheduling', 'Customized program adjustments'],
     },
     {
-      label: '50 Sessions',
-      price: '$6,250',
-      note: '$125 per session',
-      features: ['Never expires', 'Priority scheduling', 'Quarterly fitness assessments'],
-    },
-    {
-      label: '100 Sessions',
-      price: '$10,000',
-      note: '$100 per session',
-      features: ['Best value', 'Never expires', 'VIP benefits & perks'],
+      label: 'Semi-Private 5-Pack',
+      price: '$550',
+      note: '$110 per person, per session',
+      features: ['Five shared 60-minute sessions', 'Two people max', 'No single-session option'],
     },
   ];
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CANCELLATION_POLICY } from "../../config/cancellation";
+import { IN_HOME_CANCELLATION_POLICY } from "../../config/cancellation";
 
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -18,11 +18,11 @@ export default function FAQSection() {
     {
       question: "What areas do you service in Florida?",
       answer:
-        "Services are available throughout South Florida, including Broward and Miami-Dade counties.",
+        "In-home training is available throughout Southwest Florida, including Bradenton, Anna Maria Island, Longboat Key, Sarasota, and Lakewood Ranch.",
     },
     {
       question: "Can I cancel or reschedule my session?",
-      answer: CANCELLATION_POLICY.getFAQMessage(),
+      answer: IN_HOME_CANCELLATION_POLICY.getFAQMessage(),
     },
   ];
 

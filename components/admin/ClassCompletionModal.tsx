@@ -181,17 +181,16 @@ export default function ClassCompletionModal({
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 flex justify-center z-50 p-3 sm:p-4"
-        style={{ alignItems: "flex-start", paddingTop: "15vh" }}
+        className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 24 }}
+          className="bg-white rounded-t-lg sm:rounded-lg shadow-xl max-w-4xl w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="bg-royal-dark text-white px-6 py-4 flex items-center justify-between">
+          <div className="bg-royal-dark text-white px-4 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center space-x-3">
               <FaUsers className="text-royal-light" />
               <div>
@@ -213,7 +212,7 @@ export default function ClassCompletionModal({
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
             {error && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2 text-red-700">
                 <FaExclamationTriangle />
@@ -330,22 +329,22 @@ export default function ClassCompletionModal({
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-6 py-4 flex items-center justify-between">
+          <div className="bg-gray-50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="text-sm text-gray-600">
               Completing a class will deduct 1 session from each selected
               attendee and increment their classes attended counter.
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:space-x-3 sm:gap-0 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-4 py-3 sm:py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors min-h-[44px]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCompleteClass}
                 disabled={selectedAttendees.size === 0 || isCompleting}
-                className="px-4 py-2 bg-royal-dark text-white rounded-lg hover:bg-royal-dark/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                className="px-4 py-3 sm:py-2 bg-royal-dark text-white rounded-lg hover:bg-royal-dark/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 min-h-[44px]"
               >
                 {isCompleting ? (
                   <>

@@ -439,7 +439,7 @@ export default function Classes() {
       const now = new Date();
       const hoursUntilClass =
         (classDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-      const isRefundable = hoursUntilClass > 12;
+      const isRefundable = hoursUntilClass > CANCELLATION_POLICY.HOURS;
 
       console.warn("🚨 FIXED TIMING CHECK:", {
         dateStr,
@@ -456,7 +456,7 @@ export default function Classes() {
         now: now.toISOString(),
         nowLocal: now.toString(),
         hoursUntilClass: hoursUntilClass.toFixed(2),
-        isMoreThan12Hours: hoursUntilClass > 12,
+        isMoreThan12Hours: hoursUntilClass > CANCELLATION_POLICY.HOURS,
         isRefundable,
       });
 

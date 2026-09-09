@@ -564,7 +564,7 @@ export default function AdminClientsPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black py-8 pt-[25vh]">
+      <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black pt-24 sm:pt-28 pb-8">
         <div className="container mx-auto px-4">
           {/* Header */}
           <motion.div
@@ -587,14 +587,14 @@ export default function AdminClientsPage() {
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowManualPurchaseModal(true)}
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300 transform hover:scale-105 flex items-center justify-center touch-manipulation text-sm sm:text-base"
+                  className="px-4 sm:px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center touch-manipulation text-sm sm:text-base min-h-[44px]"
                 >
                   <FaDumbbell className="mr-2 text-sm sm:text-base" />
                   Manual Purchase
                 </button>
                 <button
                   onClick={openAddModal}
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-royal-light text-royal-dark font-semibold rounded-lg hover:bg-white transition-all duration-300 transform hover:scale-105 flex items-center justify-center touch-manipulation text-sm sm:text-base"
+                  className="px-4 sm:px-6 py-3 bg-royal-light text-royal-dark font-semibold rounded-lg hover:bg-white transition-colors flex items-center justify-center touch-manipulation text-sm sm:text-base min-h-[44px]"
                 >
                   <FaPlus className="mr-2 text-sm sm:text-base" />
                   Add Client
@@ -686,12 +686,11 @@ export default function AdminClientsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredClients.map((client, index) => (
+                      {filteredClients.map((client) => (
                         <motion.tr
                           key={client.id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
                           className="border-t border-white/10 hover:bg-white/5 transition-colors"
                         >
                           <td className="px-6 py-4">
@@ -870,12 +869,11 @@ export default function AdminClientsPage() {
 
                 {/* Mobile Card View */}
                 <div className="lg:hidden space-y-4">
-                  {filteredClients.map((client, index) => (
+                  {filteredClients.map((client) => (
                     <motion.div
                       key={client.id}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
                       className="bg-white/5 rounded-xl p-4 border border-white/10"
                     >
                       {/* Client Name and Email */}
@@ -894,7 +892,7 @@ export default function AdminClientsPage() {
                         <div className="flex space-x-2 ml-4">
                           <button
                             onClick={() => openEditModal(client)}
-                            className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors touch-manipulation"
+                            className="p-3 min-h-[44px] min-w-[44px] bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors touch-manipulation"
                             title="Edit Client"
                           >
                             <FaEdit className="text-sm" />
@@ -1079,11 +1077,11 @@ export default function AdminClientsPage() {
 
       {/* Add/Edit Client Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-royal-dark border border-white/10 rounded-2xl p-4 sm:p-8 max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-royal-dark border border-white/10 rounded-t-2xl sm:rounded-2xl p-4 sm:p-8 max-w-2xl w-full max-h-[100dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-white">
@@ -1572,11 +1570,11 @@ export default function AdminClientsPage() {
 
       {/* Waiver Viewing Modal */}
       {showWaiverModal && viewingWaiverClient && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-royal-dark border border-white/10 rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-royal-dark border border-white/10 rounded-t-2xl sm:rounded-2xl p-4 sm:p-8 max-w-4xl w-full max-h-[100dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">
@@ -1703,11 +1701,11 @@ export default function AdminClientsPage() {
 
       {/* Session Edit Modal */}
       {showSessionEditModal && editingSessionsClient && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-royal-dark border border-white/10 rounded-2xl p-8 max-w-lg w-full"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-royal-dark border border-white/10 rounded-t-2xl sm:rounded-2xl p-4 sm:p-8 max-w-lg w-full max-h-[100dvh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">
@@ -1809,11 +1807,11 @@ export default function AdminClientsPage() {
 
       {/* Manual Purchase Modal */}
       {showManualPurchaseModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-royal-dark border border-white/10 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-royal-dark border border-white/10 rounded-t-2xl sm:rounded-2xl p-4 sm:p-8 max-w-2xl w-full max-h-[100dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">

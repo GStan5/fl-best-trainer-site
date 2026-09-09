@@ -7,6 +7,7 @@ interface SEOProps {
   ogImage?: string;
   url?: string;
   isArticle?: boolean;
+  schema?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 export default function SEO({
@@ -16,6 +17,7 @@ export default function SEO({
   ogImage = "/images/og-image.jpg",
   url = "https://flbesttrainer.com",
   isArticle = false,
+  schema,
 }: SEOProps) {
   const fullUrl = url.startsWith("http")
     ? url
@@ -48,6 +50,13 @@ export default function SEO({
       {/* Canonical */}
       <link rel="canonical" href={fullUrl} />
       <link rel="alternate" href="https://flbesttrainer.com" hrefLang="en-us" />
+
+      {schema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      )}
     </Head>
   );
 }

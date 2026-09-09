@@ -86,12 +86,12 @@ export default function PackageEditModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-slate-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        className="bg-slate-800 rounded-t-lg sm:rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[100dvh] sm:max-h-[90vh] overflow-y-auto overscroll-contain"
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-white">Edit Package</h2>

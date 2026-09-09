@@ -48,11 +48,11 @@ export default function InHomeTraining() {
     })),
     offers: {
       "@type": "Offer",
-      price: "150.00",
+      price: "160.00",
       priceCurrency: "USD",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
-        price: "150.00",
+        price: "160.00",
         priceCurrency: "USD",
         unitText: "session",
       },
@@ -68,7 +68,7 @@ export default function InHomeTraining() {
             "@type": "Service",
             name: "Trial Session (60 Minutes)",
           },
-          price: "150.00",
+          price: "160.00",
           priceCurrency: "USD",
         },
         {
@@ -77,16 +77,7 @@ export default function InHomeTraining() {
             "@type": "Service",
             name: "Starter Package (8 Sessions)",
           },
-          price: "1040.00",
-          priceCurrency: "USD",
-        },
-        {
-          "@type": "Offer",
-          itemOffered: {
-            "@type": "Service",
-            name: "Commitment Package (12 Sessions)",
-          },
-          price: "1440.00",
+          price: "1200.00",
           priceCurrency: "USD",
         },
         {
@@ -95,7 +86,16 @@ export default function InHomeTraining() {
             "@type": "Service",
             name: "Transform Package (24 Sessions)",
           },
-          price: "2400.00",
+          price: "3360.00",
+          priceCurrency: "USD",
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Semi-Private 5-Pack (per person)",
+          },
+          price: "550.00",
           priceCurrency: "USD",
         },
       ],

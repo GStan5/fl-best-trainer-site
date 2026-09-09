@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import SignaturePad from "signature_pad";
 import { event } from "../utils/gtag";
+import { WAIVER_CANCELLATION_CLAUSE } from "../config/cancellation";
 
 export default function WaiverPage() {
   const { data: session, status } = useSession();
@@ -277,6 +278,10 @@ export default function WaiverPage() {
                 <strong>No Guarantees:</strong> I acknowledge that the Company
                 makes no guarantees regarding fitness results, health
                 improvements, or outcomes.
+              </li>
+
+              <li>
+                <strong>Cancellation Policy:</strong> {WAIVER_CANCELLATION_CLAUSE}
               </li>
 
               <li>

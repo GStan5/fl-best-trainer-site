@@ -119,8 +119,8 @@ const TemplateCard = ({
 
   return (
     <div className="bg-slate-900 rounded-lg p-6 border border-slate-700">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+        <div className="flex-1 min-w-0">
           <h4 className="text-lg font-semibold text-white mb-2">
             {template.title}
           </h4>
@@ -210,28 +210,28 @@ const TemplateCard = ({
           </div>
         </div>
 
-        <div className="flex space-x-2 ml-4">
+        <div className="flex space-x-2 sm:ml-4">
           <button
             onClick={() => onEdit(template)}
-            className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors"
+            className="min-h-[44px] min-w-[44px] p-2 text-slate-300 hover:text-blue-400 hover:bg-slate-800 rounded-lg transition-colors touch-manipulation"
             title="Edit Template"
           >
-            <FaEdit className="w-4 h-4" />
+            <FaEdit className="w-5 h-5" />
           </button>
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors"
+            className="min-h-[44px] min-w-[44px] p-2 text-slate-300 hover:text-red-400 hover:bg-slate-800 rounded-lg transition-colors touch-manipulation"
             title="Delete Template & Future Classes"
           >
-            <FaTrash className="w-4 h-4" />
+            <FaTrash className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 rounded-lg p-6 max-w-md mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-0">
             <h3 className="text-lg font-semibold text-white mb-4">
               Delete Recurring Template?
             </h3>
@@ -938,7 +938,7 @@ export default function ClassesAdmin() {
         description="Manage fitness classes, participants, and schedules"
       />
 
-      <div className="min-h-screen bg-slate-900 pt-20">
+      <div className="min-h-screen bg-slate-900 pt-24 sm:pt-28">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Mobile-Enhanced Header */}
           <div className="mb-6 sm:mb-8">

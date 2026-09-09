@@ -5,6 +5,7 @@ import jsPDF from "jspdf";
 import { Readable } from "stream";
 import { Pool } from "pg";
 import sql from "../../lib/database";
+import { WAIVER_CANCELLATION_CLAUSE } from "../../config/cancellation";
 
 interface WaiverBody {
   name: string;
@@ -399,17 +400,21 @@ const generateWaiverPDF = async (data: WaiverBody, req: NextApiRequest) => {
         "I acknowledge that I am responsible for inspecting any equipment before use and will immediately report any unsafe conditions. I will use equipment only as instructed and within my capabilities.",
     },
     {
-      title: "8. SEVERABILITY",
+      title: "8. CANCELLATION POLICY",
+      content: WAIVER_CANCELLATION_CLAUSE,
+    },
+    {
+      title: "9. SEVERABILITY",
       content:
         "If any provision of this agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.",
     },
     {
-      title: "9. GOVERNING LAW",
+      title: "10. GOVERNING LAW",
       content:
         "This agreement shall be governed by the laws of the State of Florida. Any disputes arising under this agreement shall be resolved exclusively in the courts of Florida, and I consent to the jurisdiction of such courts.",
     },
     {
-      title: "10. ENTIRE AGREEMENT",
+      title: "11. ENTIRE AGREEMENT",
       content:
         "This document constitutes the entire agreement between the parties and supersedes any prior understandings or agreements.",
     },

@@ -203,7 +203,7 @@ export default function ClassInstancesTable({
                   key={classData.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={{ delay: Math.min(index * 0.03, 0.2) }}
                   className={`bg-slate-800 rounded-xl p-4 border border-slate-700 ${
                     isPastClass ? "opacity-75" : ""
                   } ${
@@ -283,7 +283,7 @@ export default function ClassInstancesTable({
                           <button
                             onClick={() => onAddParticipant(classData.id!)}
                             disabled={isClassFull}
-                            className="p-1 text-green-400 hover:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed rounded transition-colors touch-manipulation"
+                            className="min-h-[44px] min-w-[44px] px-2 text-green-400 hover:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed rounded transition-colors touch-manipulation"
                             title="Add participant"
                           >
                             <span className="text-sm">👤+</span>
@@ -291,7 +291,7 @@ export default function ClassInstancesTable({
                           <button
                             onClick={() => onRemoveParticipant(classData.id!)}
                             disabled={isEmpty}
-                            className="p-1 text-red-400 hover:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed rounded transition-colors touch-manipulation"
+                            className="min-h-[44px] min-w-[44px] px-2 text-red-400 hover:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed rounded transition-colors touch-manipulation"
                             title="Remove participant"
                           >
                             <span className="text-sm">👤-</span>
@@ -319,18 +319,26 @@ export default function ClassInstancesTable({
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-700">
                     <button
                       onClick={() => handleViewDetails(classData)}
-                      onTouchStart={() => {}} // Improve touch responsiveness on mobile
-                      className="flex-1 sm:flex-none px-3 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation select-none"
+                      className="flex-1 min-w-[120px] px-3 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation select-none min-h-[44px]"
                       title="View Details"
                     >
                       <span className="mr-2">👁️</span>
-                      View Details
+                      View
+                    </button>
+
+                    <button
+                      onClick={() => onEditClass(classData)}
+                      className="flex-1 min-w-[120px] px-3 py-3 bg-slate-600 hover:bg-slate-500 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation min-h-[44px]"
+                      title="Edit Class"
+                    >
+                      <span className="mr-2">✏️</span>
+                      Edit
                     </button>
 
                     {canCompleteClass && onCompleteClass && (
                       <button
                         onClick={() => onCompleteClass(classData.id!)}
-                        className="flex-1 sm:flex-none px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation"
+                        className="flex-1 min-w-[120px] px-3 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation min-h-[44px]"
                         title="Complete Class"
                       >
                         <span className="mr-2">✅</span>
@@ -340,7 +348,7 @@ export default function ClassInstancesTable({
 
                     <button
                       onClick={() => onDeleteClass(classData.id!)}
-                      className="flex-1 sm:flex-none px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation"
+                      className="flex-1 min-w-[120px] px-3 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm touch-manipulation min-h-[44px]"
                       title="Cancel Class"
                     >
                       <span className="mr-2">🗑️</span>

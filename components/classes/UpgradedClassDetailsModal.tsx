@@ -584,43 +584,23 @@ export default function UpgradedClassDetailsModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999]"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               onClose();
             }
           }}
-          onTouchStart={(e) => {
-            if (e.target === e.currentTarget) {
-              e.preventDefault();
-            }
-          }}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden border border-white/10 mx-4 sm:mx-0"
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-5xl w-full h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden border border-white/10 flex flex-col"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: "calc(100vw - 2rem)",
-              maxHeight: "calc(100vh - 2rem)",
-            }}
           >
             {/* Enhanced Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-6 relative">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-4 sm:px-6 sm:py-6 relative flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
@@ -637,7 +617,7 @@ export default function UpgradedClassDetailsModal({
                         className="text-2xl font-bold bg-white/20 text-white placeholder-white/70 border border-white/30 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-white/50"
                       />
                     ) : (
-                      <h2 className="text-2xl font-bold text-white">
+                      <h2 className="text-xl sm:text-2xl font-bold text-white break-words">
                         {editedClass.title}
                       </h2>
                     )}
@@ -795,7 +775,7 @@ export default function UpgradedClassDetailsModal({
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
               {/* Quick Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
