@@ -53,10 +53,10 @@ export default function App({
 
   return (
     <SessionProvider session={session}>
-      <main className={`${inter.variable} ${montserrat.variable} font-sans`}>
+      <div className={`${inter.variable} ${montserrat.variable} font-sans`}>
         <Component {...restPageProps} />
         <SpeedInsights />
-      </main>
+      </div>
     </SessionProvider>
   );
 }

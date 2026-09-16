@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
+import ViewportOverlay from "../shared/ViewportOverlay";
 import {
   FaExclamationTriangle,
   FaTimes,
@@ -62,27 +62,7 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
   };
 
   const modalContent = (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[99999999]"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 99999999,
-          }}
-        >
-          {/* Modal */}
+    <ViewportOverlay open={isOpen} onClose={onClose} zIndex={99999999}>
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -200,12 +180,10 @@ const CancelBookingModal: React.FC<CancelBookingModalProps> = ({
               </button>
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </ViewportOverlay>
   );
 
-  return createPortal(modalContent, document.body);
+  return modalContent;
 };
 
 export default CancelBookingModal;

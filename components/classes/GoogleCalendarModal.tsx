@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
+import ViewportOverlay from "../shared/ViewportOverlay";
 import {
   FaTimes,
   FaClock,
@@ -286,26 +286,7 @@ export default function GoogleCalendarModal({
   const isAlmostFull = spotsRemaining <= 2 && spotsRemaining > 0;
 
   const modalContent = (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999999]"
-          onClick={onClose}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999999,
-          }}
-        >
+    <ViewportOverlay open={isOpen} onClose={onClose}>
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: -20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -761,33 +742,17 @@ export default function GoogleCalendarModal({
               </p>
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </ViewportOverlay>
   );
 
   // Confirmation Modal for duplicate bookings
   const confirmationModal = (
-    <AnimatePresence>
-      {showConfirmation && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[9999999]"
-          onClick={handleCancelConfirmation}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10000000,
-          }}
-        >
+    <ViewportOverlay
+      open={showConfirmation}
+      onClose={handleCancelConfirmation}
+      zIndex={10000000}
+      dimClassName="bg-black/90"
+    >
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: -20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -834,15 +799,13 @@ export default function GoogleCalendarModal({
               </div>
             </div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </ViewportOverlay>
   );
 
   return (
     <>
-      {createPortal(modalContent, document.body)}
-      {createPortal(confirmationModal, document.body)}
+      {modalContent}
+      {confirmationModal}
     </>
   );
 }

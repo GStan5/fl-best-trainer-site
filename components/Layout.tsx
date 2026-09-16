@@ -27,7 +27,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <Header />
         <main className="flex-1 overflow-x-hidden">
           {/* Page transition wrapper */}
-          <div className="animate-fade-in">{children}</div>
+          <div>{children}</div>
         </main>
         {!isAdminRoute && <Footer />}
       </div>
