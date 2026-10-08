@@ -3,21 +3,24 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
+import AdminNav from "../../components/admin/AdminNav";
 import { PROGRAMS } from "../../lib/programs";
 import {
   FaDownload,
   FaVideo,
-  FaUsers,
-  FaCalendarWeek,
-  FaCalendarAlt,
   FaExternalLinkAlt,
+  FaArrowRight,
+  FaCircle,
 } from "react-icons/fa";
 
-// Independent for Life — Admin Online Program hub (Phase 5).
-// NEW admin page; gate mirrors pages/admin/index.tsx (session isAdmin,
-// loading → spinner, signed-out → sign-in, non-admin → /classes).
-// Data comes from /api/program-admin; programs catalog from
-// lib/programs.ts. Existing admin pages are not modified.
+// Independent for Life — Admin Online Program hub (Phase 5, redesigned
+// 2026-10-08 at Gavin's request). Dashboard layout: a slim status strip
+// (checkout mode + headline numbers), one programs table with REAL
+// per-program signup counts (lead source resolved per program — niche
+// founding-list counts included), funnel + attention rail, recent
+// signups, quick actions. Data: /api/program-admin; catalog:
+// lib/programs.ts. Existing admin pages are not modified beyond the
+// shared AdminNav "Online Program" tab (Gavin, 2026-10-08).
 
 interface AdminData {
   totals: {
@@ -46,12 +49,14 @@ interface AdminData {
   checkoutMode: "test" | "live" | "off";
 }
 
-// Lead source each program's page collects through guide-signup.
-// Programs without a lead source show 0 signups here.
-const PROGRAM_SOURCE: Record<string, string> = {
+// Lead source each program collects through guide-signup. null means the
+// program has no email-capture path (sales-only) — show "—", not 0.
+const PROGRAM_SOURCE: Record<string, string | null> = {
   guide: "guide",
   starter: "starter",
   flagship: "flagship",
+  "self-study": null,
+  monthly: null,
 };
 
 // Funnel page → the lead source a view on that page can turn into.
@@ -62,24 +67,52 @@ const PAGE_SOURCE: Record<string, string> = {
   "/plans": "plans",
 };
 
-const CHECKOUT_BANNERS: Record<
+const PAGE_LABEL: Record<string, string> = {
+  "/start": "Free Guide",
+  "/starter": "Starter Plan",
+  "/flagship": "Flagship",
+  "/self-study": "Self-Study",
+  "/monthly": "Monthly",
+  "/plans": "Programs page",
+  "/thank-you-starter": "Starter thank-you",
+  "/library": "Video Library",
+  "/form-check": "Form Check",
+};
+
+// Human label for a lead source (recent-signups chips).
+function sourceLabel(source: string): string {
+  if (source === "guide") return "Free Guide";
+  if (source === "plans") return "Guide · /plans";
+  if (source === "starter") return "Starter";
+  if (source === "flagship") return "Flagship waitlist";
+  if (source.startsWith("niche-")) {
+    const slug = source.replace("niche-", "");
+    const niche = PROGRAMS.find((p) => p.slug === source);
+    return niche
+      ? niche.name.replace(" — Independent for Life", "")
+      : `Niche · ${slug}`;
+  }
+  return source;
+}
+
+const CHECKOUT_STATUS: Record<
   AdminData["checkoutMode"],
-  { title: string; body: string; classes: string }
+  { dot: string; label: string; body: string }
 > = {
   test: {
-    title: "Checkout mode: TEST",
-    body: "Stripe test key detected — the online buy buttons create test checkouts only. No real money can move.",
-    classes: "border-yellow-400/40 bg-yellow-400/10 text-yellow-100",
+    dot: "text-yellow-300",
+    label: "Checkout: TEST",
+    body: "Test key — buy buttons create test checkouts. No real money can move.",
   },
   live: {
-    title: "Checkout mode: LIVE",
-    body: "ONLINE_SALES_LIVE is on with a live Stripe key — the online buy buttons take real payments.",
-    classes: "border-green-400/40 bg-green-400/10 text-green-100",
+    dot: "text-green-400",
+    label: "Checkout: LIVE",
+    body: "Live sales are ON — the online buy buttons take real payments.",
   },
   off: {
-    title: "Checkout mode: OFF",
-    body: "Online checkout is guarded off (no test key, and live sales are not enabled). Buy buttons refuse politely.",
-    classes: "border-white/15 bg-white/[0.04] text-white/80",
+    dot: "text-white/40",
+    label: "Checkout: OFF",
+    body: "Buy buttons refuse politely. Flip ONLINE_SALES_LIVE after the test-mode pass to sell.",
   },
 };
 
@@ -93,6 +126,8 @@ function formatDate(value: string | null): string {
     year: "numeric",
   });
 }
+
+const CARD = "bg-white/[0.04] border border-white/10 rounded-2xl";
 
 export default function AdminOnlinePage() {
   const { data: session, status } = useSession();
@@ -149,36 +184,33 @@ export default function AdminOnlinePage() {
     return null; // Will redirect
   }
 
-  const banner = data ? CHECKOUT_BANNERS[data.checkoutMode] : null;
+  const bySource = data?.totals.signupsBySource ?? {};
+  const programCount = (slug: string): number | null => {
+    const source =
+      slug in PROGRAM_SOURCE ? PROGRAM_SOURCE[slug] : slug; // niche slugs ARE their source
+    if (source === null || source === undefined) return null;
+    return bySource[source] ?? 0;
+  };
+  const programsSorted = [...PROGRAMS].sort(
+    (a, b) => (programCount(b.slug) ?? -1) - (programCount(a.slug) ?? -1)
+  );
+  const checkout = data ? CHECKOUT_STATUS[data.checkoutMode] : null;
 
-  const statCards = [
-    {
-      label: "Total signups",
-      value: data?.totals.leads ?? 0,
-      icon: <FaUsers className="text-royal-light" />,
-    },
-    {
-      label: "Last 7 days",
-      value: data?.totals.last7d ?? 0,
-      icon: <FaCalendarWeek className="text-royal-light" />,
-    },
-    {
-      label: "Last 30 days",
-      value: data?.totals.last30d ?? 0,
-      icon: <FaCalendarAlt className="text-royal-light" />,
-    },
-    {
-      label: "Pending form checks",
-      value: data?.formChecks.pending ?? 0,
-      icon: <FaVideo className="text-royal-light" />,
-    },
+  const miniStats = [
+    { label: "Total signups", value: data?.totals.leads ?? 0 },
+    { label: "Last 7 days", value: data?.totals.last7d ?? 0 },
+    { label: "Last 30 days", value: data?.totals.last30d ?? 0 },
+    { label: "Form checks pending", value: data?.formChecks.pending ?? 0 },
   ];
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black py-10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-          <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <AdminNav />
+
+          {/* Header */}
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
             <div>
               <h1 className="font-heading text-3xl md:text-4xl font-bold text-white">
                 Online Programs
@@ -199,6 +231,11 @@ export default function AdminOnlinePage() {
                 className="inline-flex items-center bg-white/10 hover:bg-white/20 text-white font-heading font-bold py-3 px-5 rounded-xl transition"
               >
                 <FaVideo className="mr-2" /> Form-check queue
+                {(data?.formChecks.pending ?? 0) > 0 && (
+                  <span className="ml-2 bg-royal text-white text-xs font-bold rounded-full px-2 py-0.5">
+                    {data?.formChecks.pending}
+                  </span>
+                )}
               </Link>
             </div>
           </div>
@@ -210,71 +247,196 @@ export default function AdminOnlinePage() {
             </div>
           )}
 
-          {/* (a) Checkout mode banner */}
-          {banner && (
-            <div className={`border rounded-2xl p-5 mb-6 ${banner.classes}`}>
-              <p className="font-heading font-bold text-lg">{banner.title}</p>
-              <p className="text-sm mt-1 opacity-90">{banner.body}</p>
-            </div>
-          )}
-
-          {/* (b) Stat cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {statCards.map((card) => (
-              <div
-                key={card.label}
-                className="bg-white/[0.04] border border-white/10 rounded-2xl p-5"
-              >
-                <div className="text-2xl mb-2">{card.icon}</div>
-                <div className="font-heading text-3xl font-bold text-white">
-                  {card.value}
+          {/* Status strip: checkout mode + headline numbers */}
+          <div className={`${CARD} px-5 py-4 mb-6`}>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+              {checkout && (
+                <div className="flex items-center gap-2.5 min-w-[220px]">
+                  <FaCircle className={`${checkout.dot} text-[10px]`} />
+                  <span className="font-heading font-bold text-white">
+                    {checkout.label}
+                  </span>
+                  <span className="text-white/50 text-sm hidden xl:inline">
+                    {checkout.body}
+                  </span>
                 </div>
-                <div className="text-white/60 text-sm mt-1">{card.label}</div>
+              )}
+              <div className="flex flex-wrap gap-x-8 gap-y-2 ml-auto">
+                {miniStats.map((s) => (
+                  <div key={s.label} className="flex items-baseline gap-2">
+                    <span className="font-heading text-2xl font-bold text-white">
+                      {s.value}
+                    </span>
+                    <span className="text-white/55 text-sm">{s.label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            {checkout && (
+              <p className="text-white/50 text-sm mt-2 xl:hidden">
+                {checkout.body}
+              </p>
+            )}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2 mb-8">
-            {/* (c) Signups by program */}
-            <section className="bg-white/[0.04] border border-white/10 rounded-2xl p-6">
-              <h2 className="font-heading text-xl font-bold text-white mb-4">
-                Signups by program
-              </h2>
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-white/50 border-b border-white/10">
-                    <th className="py-2 pr-3 font-medium">Program</th>
-                    <th className="py-2 pr-3 font-medium">Price</th>
-                    <th className="py-2 font-medium text-right">Signups</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PROGRAMS.map((program) => {
-                    const source = PROGRAM_SOURCE[program.slug];
-                    const count = source
-                      ? data?.totals.signupsBySource[source] ?? 0
-                      : 0;
-                    return (
-                      <tr
-                        key={program.slug}
-                        className="border-b border-white/5 text-white/85"
-                      >
-                        <td className="py-3 pr-3">{program.name}</td>
-                        <td className="py-3 pr-3 text-white/60">
-                          {program.price}
-                        </td>
-                        <td className="py-3 text-right font-semibold text-white">
-                          {count}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <div className="grid gap-6 lg:grid-cols-3 mb-6">
+            {/* Programs with real signup counts */}
+            <section className={`${CARD} p-6 lg:col-span-2`}>
+              <div className="flex items-baseline justify-between gap-3 mb-1">
+                <h2 className="font-heading text-xl font-bold text-white">
+                  Your programs
+                </h2>
+                <span className="text-white/45 text-xs">
+                  sorted by signups
+                </span>
+              </div>
+              <p className="text-white/50 text-sm mb-4">
+                Every signup your pages collect, counted under the program
+                that earned it — niche founding lists included.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm min-w-[520px]">
+                  <thead>
+                    <tr className="text-white/50 border-b border-white/10">
+                      <th className="py-2 pr-3 font-medium">Program</th>
+                      <th className="py-2 pr-3 font-medium">Price</th>
+                      <th className="py-2 pr-3 font-medium">Status</th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Signups
+                      </th>
+                      <th className="py-2 font-medium text-right">Page</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {programsSorted.map((program) => {
+                      const count = programCount(program.slug);
+                      return (
+                        <tr
+                          key={program.slug}
+                          className="border-b border-white/5 text-white/85"
+                        >
+                          <td className="py-3 pr-3 font-medium text-white">
+                            {program.name}
+                          </td>
+                          <td className="py-3 pr-3 text-white/60 whitespace-nowrap">
+                            {program.price}
+                          </td>
+                          <td className="py-3 pr-3">
+                            <span className="text-xs text-white/55 border border-white/15 rounded-full px-2.5 py-1 whitespace-nowrap">
+                              {program.status}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-3 text-right font-heading font-bold text-white">
+                            {count === null ? "—" : count}
+                          </td>
+                          <td className="py-3 text-right">
+                            <Link
+                              href={program.page}
+                              className="inline-flex items-center text-royal-light text-sm font-semibold whitespace-nowrap"
+                            >
+                              View{" "}
+                              <FaExternalLinkAlt className="ml-1.5 text-xs" />
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-white/40 text-xs mt-3">
+                “—” = sales-only program (no email capture). Niche counts are
+                founding-list joins — your demand signal for what to build
+                first.
+              </p>
             </section>
 
-            {/* (d) Funnel */}
-            <section className="bg-white/[0.04] border border-white/10 rounded-2xl p-6">
+            {/* Attention rail */}
+            <div className="space-y-6">
+              <section className={`${CARD} p-6`}>
+                <h2 className="font-heading text-xl font-bold text-white mb-1">
+                  Needs you
+                </h2>
+                <p className="text-white/50 text-sm mb-4">
+                  Form checks waiting for the weekly Steady Letter.
+                </p>
+                {(data?.formChecks.latest.length ?? 0) === 0 ? (
+                  <p className="text-white/60 text-sm">
+                    Nothing waiting. Member submissions land here.
+                  </p>
+                ) : (
+                  <ul className="space-y-3 mb-4">
+                    {data?.formChecks.latest.slice(0, 3).map((fc, i) => (
+                      <li
+                        key={`${fc.email}-${i}`}
+                        className="text-sm border-b border-white/5 pb-3"
+                      >
+                        <div className="text-white/85 font-medium break-all">
+                          {fc.email}
+                        </div>
+                        <div className="text-white/50 text-xs mt-0.5">
+                          {formatDate(fc.createdAt)} · {fc.status}
+                        </div>
+                        <a
+                          href={fc.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center text-royal-light text-sm font-semibold mt-1"
+                        >
+                          Watch video{" "}
+                          <FaExternalLinkAlt className="ml-1.5 text-xs" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Link
+                  href="/admin/online-form-checks"
+                  className="inline-flex items-center text-royal-light font-semibold text-sm"
+                >
+                  Open the queue <FaArrowRight className="ml-2 text-xs" />
+                </Link>
+              </section>
+
+              <section className={`${CARD} p-6`}>
+                <h2 className="font-heading text-xl font-bold text-white mb-4">
+                  Quick links
+                </h2>
+                <ul className="space-y-2.5 text-sm">
+                  {[
+                    { label: "Free Guide page", href: "/start" },
+                    { label: "Programs lineup", href: "/plans" },
+                    { label: "Video Library", href: "/library" },
+                    { label: "Form-check page", href: "/form-check" },
+                    { label: "Flagship waitlist", href: "/flagship" },
+                  ].map((l) => (
+                    <li key={l.href}>
+                      <Link
+                        href={l.href}
+                        className="inline-flex items-center text-white/80 hover:text-white font-medium"
+                      >
+                        {l.label}{" "}
+                        <FaExternalLinkAlt className="ml-2 text-xs text-white/40" />
+                      </Link>
+                    </li>
+                  ))}
+                  <li className="pt-1">
+                    <a
+                      href="/api/program-leads?format=csv"
+                      className="inline-flex items-center text-white/80 hover:text-white font-medium"
+                    >
+                      Download all leads (CSV){" "}
+                      <FaDownload className="ml-2 text-xs text-white/40" />
+                    </a>
+                  </li>
+                </ul>
+              </section>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3 items-start">
+            {/* Funnel */}
+            <section className={`${CARD} p-6 lg:col-span-1`}>
               <h2 className="font-heading text-xl font-bold text-white mb-4">
                 Funnel — views → signups
               </h2>
@@ -283,16 +445,16 @@ export default function AdminOnlinePage() {
                   <tr className="text-white/50 border-b border-white/10">
                     <th className="py-2 pr-3 font-medium">Page</th>
                     <th className="py-2 pr-3 font-medium text-right">Views</th>
-                    <th className="py-2 pr-3 font-medium text-right">Signups</th>
+                    <th className="py-2 pr-3 font-medium text-right">
+                      Signups
+                    </th>
                     <th className="py-2 font-medium text-right">Conv.</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(data?.funnel ?? []).map((row) => {
                     const source = PAGE_SOURCE[row.page];
-                    const signups = source
-                      ? data?.totals.signupsBySource[source] ?? 0
-                      : null;
+                    const signups = source ? bySource[source] ?? 0 : null;
                     const conv =
                       signups !== null && row.views > 0
                         ? `${Math.round((signups / row.views) * 100)}%`
@@ -302,7 +464,12 @@ export default function AdminOnlinePage() {
                         key={row.page}
                         className="border-b border-white/5 text-white/85"
                       >
-                        <td className="py-3 pr-3">{row.page}</td>
+                        <td className="py-3 pr-3">
+                          <div className="text-white font-medium">
+                            {PAGE_LABEL[row.page] ?? row.page}
+                          </div>
+                          <div className="text-white/40 text-xs">{row.page}</div>
+                        </td>
                         <td className="py-3 pr-3 text-right">{row.views}</td>
                         <td className="py-3 pr-3 text-right">
                           {signups ?? "—"}
@@ -314,92 +481,56 @@ export default function AdminOnlinePage() {
                 </tbody>
               </table>
               <p className="text-white/40 text-xs mt-3">
-                First-party tracking (no cookies). GA in the site header
-                covers raw traffic; this is views against guide signups.
+                First-party tracking (no cookies). Google Analytics covers raw
+                traffic; this ties views to signups.
               </p>
             </section>
-          </div>
 
-          {/* (e) Recent signups */}
-          <section className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 mb-8">
-            <h2 className="font-heading text-xl font-bold text-white mb-4">
-              Recent signups
-            </h2>
-            {(data?.recentLeads.length ?? 0) === 0 ? (
-              <p className="text-white/60 text-sm">
-                No signups yet. They&apos;ll appear here as the guide forms
-                collect them.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm min-w-[540px]">
-                  <thead>
-                    <tr className="text-white/50 border-b border-white/10">
-                      <th className="py-2 pr-3 font-medium">Name</th>
-                      <th className="py-2 pr-3 font-medium">Email</th>
-                      <th className="py-2 pr-3 font-medium">Source</th>
-                      <th className="py-2 font-medium">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data?.recentLeads.map((lead, i) => (
-                      <tr
-                        key={`${lead.email}-${i}`}
-                        className="border-b border-white/5 text-white/85"
-                      >
-                        <td className="py-3 pr-3">{lead.firstName}</td>
-                        <td className="py-3 pr-3">{lead.email}</td>
-                        <td className="py-3 pr-3 text-white/60">
-                          {lead.source}
-                        </td>
-                        <td className="py-3 text-white/60">
-                          {formatDate(lead.createdAt)}
-                        </td>
+            {/* Recent signups */}
+            <section className={`${CARD} p-6 lg:col-span-2`}>
+              <h2 className="font-heading text-xl font-bold text-white mb-4">
+                Recent signups
+              </h2>
+              {(data?.recentLeads.length ?? 0) === 0 ? (
+                <p className="text-white/60 text-sm">
+                  No signups yet — they&apos;ll appear here the moment your
+                  pages collect them.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm min-w-[540px]">
+                    <thead>
+                      <tr className="text-white/50 border-b border-white/10">
+                        <th className="py-2 pr-3 font-medium">Name</th>
+                        <th className="py-2 pr-3 font-medium">Email</th>
+                        <th className="py-2 pr-3 font-medium">Came from</th>
+                        <th className="py-2 font-medium">Date</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
-
-          {/* (f) Programs catalog */}
-          <section>
-            <h2 className="font-heading text-xl font-bold text-white mb-4">
-              What you&apos;re selling
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {PROGRAMS.map((program) => (
-                <article
-                  key={program.slug}
-                  className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 flex flex-col"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="font-heading text-lg font-bold text-white">
-                      {program.name}
-                    </h3>
-                    <span className="text-royal-light font-heading font-bold whitespace-nowrap">
-                      {program.price}
-                    </span>
-                  </div>
-                  <p className="text-white/65 text-sm leading-relaxed mb-4">
-                    {program.description}
-                  </p>
-                  <div className="mt-auto flex items-center justify-between gap-3">
-                    <span className="text-xs uppercase tracking-wide text-white/50 border border-white/15 rounded-full px-2.5 py-1">
-                      {program.status}
-                    </span>
-                    <Link
-                      href={program.page}
-                      className="inline-flex items-center text-royal-light text-sm font-semibold"
-                    >
-                      View page <FaExternalLinkAlt className="ml-1.5 text-xs" />
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
+                    </thead>
+                    <tbody>
+                      {data?.recentLeads.map((lead, i) => (
+                        <tr
+                          key={`${lead.email}-${i}`}
+                          className="border-b border-white/5 text-white/85"
+                        >
+                          <td className="py-3 pr-3">{lead.firstName}</td>
+                          <td className="py-3 pr-3 break-all">{lead.email}</td>
+                          <td className="py-3 pr-3">
+                            <span className="text-xs text-royal-light border border-royal/40 bg-royal/10 rounded-full px-2.5 py-1 whitespace-nowrap">
+                              {sourceLabel(lead.source)}
+                            </span>
+                          </td>
+                          <td className="py-3 text-white/60 whitespace-nowrap">
+                            {formatDate(lead.createdAt)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </div>
         </div>
       </div>
     </Layout>
