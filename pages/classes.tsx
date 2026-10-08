@@ -11,7 +11,9 @@ import UpcomingClassesSection from "../components/classes/UpcomingClassesSection
 import ClassStats from "../components/classes/ClassStats";
 import CancelBookingModal from "../components/classes/CancelBookingModal";
 import MyUpcomingClassesGrid from "../components/classes/MyUpcomingClassesGrid";
-import StripeCheckoutButton from "../components/shared/StripeCheckoutButton";
+import StripeCheckoutButton, {
+  getOnlineCheckoutTotal,
+} from "../components/shared/StripeCheckoutButton";
 import {
   useWeightliftingPackage,
   useSingleSessionPackage,
@@ -682,7 +684,9 @@ export default function Classes() {
                                 }}
                               >
                                 Buy 10-Class Package - $
-                                {weightliftingPackage?.price || 400}
+                                {getOnlineCheckoutTotal(
+                                  weightliftingPackage ?? null
+                                ) ?? 430}
                               </StripeCheckoutButton>
                             ) : (
                               <button

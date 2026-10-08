@@ -437,11 +437,11 @@ export default function UpgradedClassModal({
                     <FaDumbbell className="w-4 h-4" />
                     <span>
                       Purchase Sessions - $
-                      {weightliftingPackage?.price ||
+                      {(weightliftingPackage?.price ||
                         PACKAGE_CONFIGS.find(
                           (pkg) => pkg.id === "weightlifting-10-class"
                         )?.price ||
-                        400}
+                        400) + 30}
                     </span>
                   </StripeCheckoutButton>
                 ) : (

@@ -6,6 +6,7 @@ import { GetServerSideProps } from "next";
 import Layout from "../components/Layout";
 import SEO from "../components/shared/SEO";
 import StripeCheckoutButton, {
+  getOnlineCheckoutTotal,
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
 import StripeSuccess from "../components/shared/StripeSuccess";
@@ -517,7 +518,10 @@ export default function Account() {
                       alert("Payment failed. Please try again.");
                     }}
                   >
-                    Buy Weightlifting Package
+                    Buy Weightlifting Package - $
+                    {getOnlineCheckoutTotal(weightliftingPackage ?? null) ??
+                      430}{" "}
+                    total
                   </StripeCheckoutButton>
                 </div>
 

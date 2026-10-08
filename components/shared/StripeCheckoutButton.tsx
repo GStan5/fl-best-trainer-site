@@ -18,6 +18,22 @@ interface Package {
   features?: string[];
 }
 
+export const ONLINE_PROCESSING_FEE = 30;
+
+export function getOnlineCheckoutTotal(pkg: Package | null): number | null {
+  if (!pkg) {
+    return null;
+  }
+
+  const sessions = pkg.sessions ?? pkg.sessions_included;
+  const isTenClassWeightliftingPackage =
+    sessions === 10 && pkg.name.toLowerCase().includes("weightlifting");
+
+  return isTenClassWeightliftingPackage
+    ? pkg.price + ONLINE_PROCESSING_FEE
+    : pkg.price;
+}
+
 interface StripeCheckoutButtonProps {
   // Payment-safety (2026-10-08): null means the database package has not
   // loaded — the button renders disabled instead of selling anything.
@@ -114,13 +130,17 @@ export default function StripeCheckoutButton({
     ${className}
   `;
 
+  const checkoutTotal = getOnlineCheckoutTotal(pkg);
+
   return (
     <button
       onClick={handleCheckout}
       disabled={loading || !pkg}
       className={defaultClassName}
       aria-label={
-        pkg ? `Purchase ${pkg.name} for $${pkg.price}` : "Package unavailable"
+        pkg
+          ? `Purchase ${pkg.name} for $${checkoutTotal}`
+          : "Package unavailable"
       }
     >
       {loading ? (
@@ -135,7 +155,7 @@ export default function StripeCheckoutButton({
           {children || (
             <>
               <FaCreditCard className="mr-2" />
-              Buy for ${pkg.price}
+              Buy for ${checkoutTotal}
             </>
           )}
         </>
