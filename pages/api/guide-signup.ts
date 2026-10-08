@@ -17,11 +17,25 @@ import path from "path";
 const GUIDE_PDF_URL =
   "https://flbesttrainer.com/downloads/independent-for-life-guide.pdf";
 
+// Signup sources (Phase 2: flagship waitlist joins through this same
+// route; waitlist members also receive the free guide). Anything off the
+// allowlist falls back to "guide" rather than being rejected.
+const ALLOWED_SOURCES = ["guide", "starter", "flagship", "plans"];
+
+function normalizeSource(raw: unknown): string {
+  if (typeof raw === "string" && ALLOWED_SOURCES.includes(raw)) return raw;
+  return "guide";
+}
+
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-async function saveLead(firstName: string, email: string): Promise<void> {
+async function saveLead(
+  firstName: string,
+  email: string,
+  source: string
+): Promise<void> {
   if (!process.env.DATABASE_URL) {
     console.log(
       "[guide-signup] DATABASE_URL not set — skipping lead save for",
@@ -42,7 +56,7 @@ async function saveLead(firstName: string, email: string): Promise<void> {
     `;
     await sql`
       INSERT INTO leads (first_name, email, source)
-      VALUES (${firstName}, ${email}, 'guide')
+      VALUES (${firstName}, ${email}, ${source})
     `;
   } catch (err) {
     console.error("[guide-signup] Lead save failed (continuing):", err);
@@ -113,6 +127,7 @@ export default async function handler(
     typeof req.body?.firstName === "string" ? req.body.firstName.trim() : "";
   const email =
     typeof req.body?.email === "string" ? req.body.email.trim() : "";
+  const source = normalizeSource(req.body?.source);
 
   if (!firstName || !email || !isValidEmail(email)) {
     return res
@@ -120,7 +135,7 @@ export default async function handler(
       .json({ error: "Please provide your first name and a valid email." });
   }
 
-  await saveLead(firstName, email);
+  await saveLead(firstName, email, source);
   await sendGuideEmail(firstName, email);
 
   return res.status(200).json({

@@ -10,12 +10,28 @@ import Stripe from "stripe";
 // secret key is a TEST key (sk_test_...) or ONLINE_SALES_LIVE === 'true'.
 // That guarantees a Vercel preview deployment can never take real money.
 
-const STARTER_PRODUCT = {
-  name: "Independent for Life — 4-Week Starter Plan",
-  description:
-    "12 sessions. 30 minutes, 3 times a week. At home. A complete, trainer-written program for adults 50+.",
-  amount: 3700, // $37.00 in cents
-};
+const PRODUCTS = {
+  starter: {
+    name: "Independent for Life — 4-Week Starter Plan",
+    description:
+      "12 sessions. 30 minutes, 3 times a week. At home. A complete, trainer-written program for adults 50+.",
+    amount: 3700, // $37.00 in cents
+    metadataProduct: "starter-plan",
+    successPath: "/thank-you-starter",
+    cancelPath: "/starter?checkout=cancelled",
+  },
+  "self-study": {
+    name: "Independent for Life — Self-Study",
+    description:
+      "The same 18 sessions. The same three tests. The same video library. The only thing missing is the coach looking over your shoulder.",
+    amount: 19700, // $197.00 in cents
+    metadataProduct: "self-study",
+    successPath: "/self-study?checkout=success",
+    cancelPath: "/self-study?checkout=cancelled",
+  },
+} as const;
+
+type ProductKey = keyof typeof PRODUCTS;
 
 export default async function handler(
   req: NextApiRequest,
@@ -36,6 +52,10 @@ export default async function handler(
       .json({ error: "online checkout not enabled" });
   }
 
+  const productKey: ProductKey =
+    req.body?.product === "self-study" ? "self-study" : "starter";
+  const product = PRODUCTS[productKey];
+
   try {
     const stripe = new Stripe(secretKey, {
       apiVersion: "2025-08-27.basil",
@@ -53,17 +73,17 @@ export default async function handler(
           price_data: {
             currency: "usd",
             product_data: {
-              name: STARTER_PRODUCT.name,
-              description: STARTER_PRODUCT.description,
+              name: product.name,
+              description: product.description,
             },
-            unit_amount: STARTER_PRODUCT.amount,
+            unit_amount: product.amount,
           },
           quantity: 1,
         },
       ],
-      metadata: { product: "starter-plan" },
-      success_url: `${origin}/starter?checkout=success`,
-      cancel_url: `${origin}/starter?checkout=cancelled`,
+      metadata: { product: product.metadataProduct },
+      success_url: `${origin}${product.successPath}`,
+      cancel_url: `${origin}${product.cancelPath}`,
     });
 
     return res.status(200).json({ url: checkoutSession.url });
