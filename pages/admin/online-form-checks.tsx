@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
+import AdminNav from "../../components/admin/AdminNav";
 import { FaArrowLeft, FaExternalLinkAlt, FaVideo } from "react-icons/fa";
 
 // Independent for Life — Admin form-check queue (Phase 5).
@@ -118,6 +119,7 @@ export default function AdminOnlineFormChecksPage() {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-royal-dark via-royal-dark/90 to-black py-10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+          <AdminNav />
           <Link
             href="/admin/online"
             className="inline-flex items-center text-royal-light text-sm font-semibold mb-6"

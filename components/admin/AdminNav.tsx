@@ -5,6 +5,7 @@ import {
   FaChartBar,
   FaChartLine,
   FaDollarSign,
+  FaGlobe,
   FaUsers,
 } from "react-icons/fa";
 
@@ -39,10 +40,17 @@ const adminLinks = [
     label: "Reports",
     icon: FaChartBar,
   },
+  {
+    href: "/admin/online",
+    tab: "online",
+    label: "Online Program",
+    icon: FaGlobe,
+  },
 ];
 
 function currentAdminTab(pathname: string, queryTab?: string | string[]) {
   if (pathname.includes("/clients")) return "clients";
+  if (pathname.includes("/online")) return "online";
   if (typeof queryTab === "string") return queryTab;
   return "overview";
 }
