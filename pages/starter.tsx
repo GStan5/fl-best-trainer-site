@@ -24,7 +24,7 @@ const howItWorks = [
 const whatsInside = [
   "The full 12-session program (Weeks 1–4, progressive)",
   "The complete movement library — 14 exercises, every one with setup, key cue, common mistake, and easier/harder versions",
-  "The exercise video library — watch every movement demonstrated, then copy it",
+  "Exercise video demos are being filmed now — every buyer gets them free as each one publishes",
   "Your one-page tracker — print it, stick it on the fridge",
   "The Week 4 retest — prove to yourself it worked",
 ];

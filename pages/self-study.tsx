@@ -18,7 +18,7 @@ const whatsInside = [
   "the complete 18-session manual",
   "the full movement library",
   "the three-ability tracker (Day 1 / Week 4 / Day 42)",
-  "the exercise video library",
+  "video demos added free as they're filmed and published",
 ];
 
 export default function SelfStudyPage() {
@@ -63,7 +63,7 @@ export default function SelfStudyPage() {
     <Layout>
       <SEO
         title="The 6-Week Program, Do-It-Yourself — $197 | Independent for Life | FL Best Trainer"
-        description="The same 18 sessions. The same three tests. The same video library. The only thing missing is the coach looking over your shoulder."
+        description="The same 18 sessions. The same three tests. The only thing missing is the coach looking over your shoulder."
         keywords="6 week strength program self study over 50, diy home workout program seniors, independent for life, FL Best Trainer"
         url="/self-study"
       />

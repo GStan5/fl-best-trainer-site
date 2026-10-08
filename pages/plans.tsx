@@ -91,10 +91,10 @@ const PROGRAMS: Program[] = [
     price: "$197",
     priceNote: "one time",
     blurb:
-      "The same 18 sessions, the same three tests, the same video library. The only thing missing is the coach looking over your shoulder.",
+      "The same 18 sessions, the same three tests. The only thing missing is the coach looking over your shoulder.",
     points: [
       "The full 6-week progression, self-paced",
-      "Every movement demonstrated in the video library",
+      "Video demos added free as they're filmed",
       "For self-starters who finished the Starter Plan",
     ],
     cta: "See Self-Study",

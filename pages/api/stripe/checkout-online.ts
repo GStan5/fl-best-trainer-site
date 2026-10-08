@@ -24,7 +24,7 @@ const PRODUCTS = {
   "self-study": {
     name: "Independent for Life — Self-Study",
     description:
-      "The same 18 sessions. The same three tests. The same video library. The only thing missing is the coach looking over your shoulder.",
+      "The same 18 sessions. The same three tests. The only thing missing is the coach looking over your shoulder.",
     amount: 19700, // $197.00 in cents
     metadataProduct: "self-study",
     successPath: "/self-study?checkout=success",
