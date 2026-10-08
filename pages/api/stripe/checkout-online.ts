@@ -90,6 +90,18 @@ export default async function handler(
   const productKey: ProductKey =
     requested in PRODUCTS ? (requested as ProductKey) : "starter";
   const product = PRODUCTS[productKey];
+
+  // Monthly stays closed until its own launch switch (2026-10-08 flip
+  // decision: starter + self-study go live; monthly waits for the cohort
+  // Week-5 launch). Test keys are exempt so preview rehearsals keep
+  // working; with a live key, monthly products refuse until
+  // MONTHLY_SALES_LIVE === 'true'.
+  const monthlyLive = process.env.MONTHLY_SALES_LIVE === "true";
+  if (productKey.startsWith("monthly") && !testKey && !monthlyLive) {
+    return res
+      .status(501)
+      .json({ error: "monthly enrollment is not open yet" });
+  }
   const isSubscription = product.mode === "subscription";
 
   try {
