@@ -30,10 +30,9 @@ const TIERS: Tier[] = [
     price: 97,
     features: [
       "A new training block every month (Build and Maintain tracks)",
-      "Weekly group Q&A with Gavin",
+      "The Steady Letter — weekly: Gavin reviews the form-check videos members send in and corrects them, so everyone learns from each other",
       "Quarterly retesting — your numbers, tracked over time",
       "Member community",
-      "The Steady Letter — monthly coaching newsletter",
       "Access to the shared form-correction teaching library",
     ],
     button: "Subscribe — $97/mo",

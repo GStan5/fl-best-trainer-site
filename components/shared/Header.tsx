@@ -110,7 +110,7 @@ export default function Header() {
       special: "popular",
     },
     {
-      name: "Workout Plans",
+      name: "Online Programs",
       path: "/plans",
       icon: <FaDumbbell className="mr-1.5" />,
       highlight: true,

@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { useRouter } from "next/router";
+import Link from "next/link";
 import Head from "next/head";
 import type { GetServerSidePropsContext } from "next";
+import { getSession } from "next-auth/react";
 import Layout from "../components/shared/Layout";
 import SEO from "@/components/shared/SEO";
-import { FaLock, FaPlayCircle, FaKey } from "react-icons/fa";
-import { hasLibraryAccess } from "./api/library-access";
+import { FaLock, FaPlayCircle } from "react-icons/fa";
 
-// Independent for Life — exercise video library (Phase 3).
-// Copy: PAGE_COPY.md PAGE 6, verbatim. Customer-only, password-gated,
-// noindexed. The gate is enforced server-side: the exercise list is only
-// sent to the browser after the `ifl_library` cookie checks out, and each
-// video slot is an honest placeholder until the October filming day —
-// no fake players, no stock footage. Until LIBRARY_PASSWORD is set, the
-// page shows its full structure with a "not open yet" notice instead of
-// the password form: there is nothing to unlock yet.
+// Independent for Life — exercise video library (Phase 3; access model
+// changed by Gavin 2026-10-08: no emailed passwords — members sign in
+// with their free site account, Google sign-in, created when they need
+// it). Copy: PAGE_COPY.md PAGE 6. Customer-only, account-gated,
+// noindexed. The gate is enforced server-side: the exercise list is
+// only sent to the browser for signed-in members, and each video slot
+// is an honest placeholder until the October filming day — no fake
+// players, no stock footage. Until the videos exist, the page shows
+// its "not open yet" state to everyone.
 
 interface Exercise {
   id: string;
@@ -53,60 +53,33 @@ const EXERCISES: Exercise[] = [
 ];
 
 interface LibraryProps {
-  passwordSet: boolean;
-  unlocked: boolean;
+  signedIn: boolean;
+  // The videos don't exist until the October filming day, so the
+  // library is closed to everyone until then — this flag is the
+  // single switch to flip (per-video) as the clips land.
+  libraryOpen: boolean;
   exercises: Exercise[];
 }
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const passwordSet = !!process.env.LIBRARY_PASSWORD;
-  const unlocked = passwordSet && hasLibraryAccess(context.req.headers.cookie);
+  // Repo pattern (cf. pages/account.tsx): getSession in
+  // getServerSideProps — keeps the auth/DB config out of this page's
+  // module graph at build time.
+  const session = await getSession(context);
+  const signedIn = !!session;
+  const libraryOpen = false;
   return {
     props: {
-      passwordSet,
-      unlocked,
-      // The exercise list only leaves the server for unlocked visitors.
-      exercises: unlocked ? EXERCISES : [],
+      signedIn,
+      libraryOpen,
+      // The exercise list only leaves the server for signed-in members
+      // once the library is open — never in the closed state.
+      exercises: signedIn && libraryOpen ? EXERCISES : [],
     } as LibraryProps,
   };
 }
 
-type FormState = "idle" | "submitting" | "error";
-
-export default function LibraryPage({ passwordSet, unlocked, exercises }: LibraryProps) {
-  const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [state, setState] = useState<FormState>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-
-  async function handleUnlock(e: React.FormEvent) {
-    e.preventDefault();
-    setState("submitting");
-    setErrorMsg("");
-    try {
-      const res = await fetch("/api/library-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (res.ok) {
-        router.reload();
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      setErrorMsg(
-        data.error === "library not open yet"
-          ? "The library isn't open yet — it opens with the program videos."
-          : data.error === "Incorrect password"
-            ? "That password didn't work. Check your delivery email and try again."
-            : "Something went wrong. Please try again in a moment."
-      );
-      setState("error");
-    } catch {
-      setErrorMsg("Something went wrong. Please try again in a moment.");
-      setState("error");
-    }
-  }
+export default function LibraryPage({ signedIn, libraryOpen, exercises }: LibraryProps) {
 
   return (
     <Layout>
@@ -139,7 +112,7 @@ export default function LibraryPage({ passwordSet, unlocked, exercises }: Librar
       <section className="py-12 bg-[#0A0A0A]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            {unlocked ? (
+            {signedIn && libraryOpen ? (
               <>
                 <p className="text-white/70 text-base text-center mb-10">
                   You're in. Videos appear here as they're filmed — every
@@ -171,48 +144,23 @@ export default function LibraryPage({ passwordSet, unlocked, exercises }: Librar
                   ))}
                 </div>
               </>
-            ) : passwordSet ? (
-              <div className="bg-gradient-to-b from-navy to-[#0A0A0A] border border-royal/40 rounded-2xl p-8 shadow-xl shadow-black/50 max-w-2xl mx-auto">
-                <FaLock className="text-royal text-4xl mx-auto mb-4 block text-center" />
-                <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-4 text-center">
+            ) : !signedIn ? (
+              <div className="bg-gradient-to-b from-navy to-[#0A0A0A] border border-royal/40 rounded-2xl p-8 shadow-xl shadow-black/50 max-w-2xl mx-auto text-center">
+                <FaLock className="text-royal text-4xl mx-auto mb-4" />
+                <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-4">
                   Members only
                 </h2>
-                <p className="text-white/80 text-base md:text-lg leading-relaxed text-center mb-8">
-                  Enter the password from your delivery email to open the
-                  library.
+                <p className="text-white/80 text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-8">
+                  The library is for program members. Sign in with the free
+                  account you create on this site — one tap with Google, no
+                  password to keep track of.
                 </p>
-                <form onSubmit={handleUnlock} noValidate className="max-w-md mx-auto">
-                  <label
-                    htmlFor="libraryPassword"
-                    className="block text-white/80 text-base font-medium mb-2"
-                  >
-                    Library password
-                  </label>
-                  <input
-                    id="libraryPassword"
-                    name="libraryPassword"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full mb-6 rounded-xl bg-black/40 border border-white/20 px-4 py-4 text-lg text-white placeholder-white/40 focus:outline-none focus:border-royal min-h-[56px]"
-                    placeholder="Your library password"
-                  />
-                  {state === "error" && (
-                    <p className="text-red-400 text-base mb-4" role="alert">
-                      {errorMsg}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={state === "submitting"}
-                    className="w-full inline-flex items-center justify-center bg-royal hover:bg-royal-dark disabled:opacity-60 text-white font-heading font-bold text-lg py-4 px-8 rounded-xl transition min-h-[56px]"
-                  >
-                    <FaKey className="mr-3" />
-                    {state === "submitting" ? "Checking…" : "Open the Library"}
-                  </button>
-                </form>
+                <Link
+                  href="/auth/signin?callbackUrl=/library"
+                  className="inline-flex items-center justify-center bg-royal hover:bg-royal-dark text-white font-heading font-bold text-lg py-4 px-8 rounded-xl transition min-h-[56px]"
+                >
+                  Sign in to the Library
+                </Link>
               </div>
             ) : (
               <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-8 text-center max-w-2xl mx-auto">
@@ -221,16 +169,17 @@ export default function LibraryPage({ passwordSet, unlocked, exercises }: Librar
                   Library opens with the program videos
                 </h2>
                 <p className="text-white/80 text-base md:text-lg leading-relaxed max-w-xl mx-auto">
-                  The 24 movement demonstrations are filmed in October. When
-                  they're live, your password arrives in your delivery email —
-                  there is nothing to unlock yet.
+                  The 24 movement demonstrations are filmed in October.
+                  You're signed in, so the moment they're live your library
+                  unlocks right here — nothing else to do.
                 </p>
               </div>
             )}
 
             {/* Customer-only note (PAGE_COPY PAGE 6) */}
             <p className="text-center text-white/50 text-base mt-12">
-              Customer-only page: password in your delivery email. Do not share.
+              Customer-only page: sign in with your member account. Please
+              don't share your login.
             </p>
           </div>
         </div>

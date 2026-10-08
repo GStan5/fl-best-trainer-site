@@ -4,12 +4,13 @@ import { FaCheckCircle, FaDownload, FaArrowRight } from "react-icons/fa";
 
 // Independent for Life — starter purchase thank-you + flagship upsell
 // (Phase 2). Copy: PAGE_COPY.md PAGE 3, verbatim for the delivery half.
-// Documented adaptation (pending Gavin's review): the "Upgrade Me — $460"
-// button links to /flagship instead of a checkout, because flagship
-// enrollment is waitlist-only right now; the credit-honored line under it
-// is new, written to keep the offer honest. The copy's email line reads
-// "video library password" — no password exists in the copy, and the line
-// below keeps the wording without asserting a credential was sent.
+// Documented adaptations: (1) the "Upgrade Me — $460" button links to
+// /flagship instead of a checkout, because flagship enrollment is
+// waitlist-only right now; the credit-honored line under it keeps the
+// offer honest. (2) Access model changed by Gavin 2026-10-08: no
+// emailed library passwords — buyers sign in on the site with a free
+// account (Google sign-in) when the library opens, so the body text
+// says exactly that instead of the old password line.
 
 export default function ThankYouStarterPage() {
   return (
@@ -33,8 +34,10 @@ export default function ThankYouStarterPage() {
               <span className="text-royal">on its way.</span>
             </h1>
             <p className="text-white/80 text-lg md:text-xl leading-relaxed mb-10">
-              Check your email — your download link and video library password
-              are there now. Start with Session 1 whenever you're ready.
+              Your plan is ready — download it below and start with Session 1
+              whenever you're ready. When the exercise videos open, you'll
+              unlock them by signing in here with a free site account (one
+              tap with Google) — no password to keep track of.
             </p>
             <a
               href="/downloads/independent-for-life-starter-plan.pdf"
