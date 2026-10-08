@@ -1,6 +1,7 @@
 import Header from "./Header";
 import Footer from "./Footer";
 import GuidePopup from "../GuidePopup";
+import FunnelTracker from "../FunnelTracker";
 import { useRouter } from "next/router";
 
 interface LayoutProps {
@@ -17,6 +18,7 @@ export default function Layout({ children }: LayoutProps) {
       <main className="flex-1">{children}</main>
       {!isAdminRoute && <Footer />}
       <GuidePopup />
+      <FunnelTracker />
     </div>
   );
 }

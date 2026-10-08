@@ -34,7 +34,24 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     '/contact',
     '/privacy',
     '/terms',
-    '/waiver'
+    '/waiver',
+    // Independent for Life funnel (Phase 5 SEO). /library,
+    // /thank-you-starter and /form-check stay out: member-only /
+    // post-purchase pages, noindexed on the pages themselves.
+    '/start',
+    '/starter',
+    '/flagship',
+    '/self-study',
+    '/monthly',
+    // Niche focused plans (Phase 5): founding-list pages are public
+    // and indexable — they are demand tests, so search traffic is the
+    // point.
+    '/plans/back-pain',
+    '/plans/balance',
+    '/plans/bone-density',
+    '/plans/knee-friendly',
+    '/plans/chair-based',
+    '/plans/push-pull-legs'
   ];
 
   // Generate the XML sitemap with the pages data

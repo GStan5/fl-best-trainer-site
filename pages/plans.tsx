@@ -11,7 +11,9 @@ import {
   FaDumbbell,
   FaLaptop,
   FaSyncAlt,
+  FaHammer,
 } from "react-icons/fa";
+import { NICHE_PROGRAMS } from "@/lib/nichePrograms";
 
 // Independent for Life — program lineup (Phase 4).
 // This page retires the old hand-made Basic/Premium custom plans
@@ -237,6 +239,51 @@ export default function PlansPage() {
                 </Link>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* In production — focused niche plans (Phase 5 addition).
+          Each card sells the founding list, never the plan: no prices,
+          no dates. Per-plan signup counts in the admin hub decide which
+          one Gavin writes first. */}
+      <section className="pb-16 md:pb-20 bg-[#0A0A0A]">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="font-heading text-3xl md:text-4xl font-bold text-white mb-4 text-center">
+              In production — <span className="text-royal">focused plans</span>
+            </h2>
+            <p className="text-white/80 text-lg text-center leading-relaxed mb-10">
+              Focused plans for specific needs, built one at a time and
+              released to their founding lists first. Join the list for the
+              one that sounds like you — founding members get the free guide
+              today and founding pricing when their plan opens.
+            </p>
+            <div className="grid gap-6 sm:grid-cols-2">
+              {NICHE_PROGRAMS.map((p) => (
+                <div
+                  key={p.slug}
+                  className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 flex flex-col"
+                >
+                  <p className="text-royal text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2">
+                    <FaHammer /> In production
+                  </p>
+                  <h3 className="font-heading text-xl font-bold text-white mb-2">
+                    {p.shortName}
+                  </h3>
+                  <p className="text-white/75 text-base leading-relaxed mb-5 flex-1">
+                    {p.headline}
+                  </p>
+                  <Link
+                    href={`/plans/${p.slug}`}
+                    className="inline-flex items-center font-heading font-semibold text-royal hover:text-royal-light text-base transition"
+                  >
+                    Join the founding list
+                    <FaArrowRight className="ml-2" />
+                  </Link>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

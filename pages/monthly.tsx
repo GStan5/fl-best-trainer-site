@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../components/shared/Layout";
 import SEO from "@/components/shared/SEO";
@@ -205,6 +206,16 @@ export default function MonthlyPage() {
             <p className="text-white/60 text-base text-center mt-10">
               Annual billing (2 months free) will be offered when checkout
               opens. Secure checkout by Stripe — cancel anytime.
+            </p>
+
+            <p className="text-white/60 text-base text-center mt-4">
+              Already a member?{" "}
+              <Link
+                href="/form-check"
+                className="text-royal-light font-semibold underline underline-offset-2"
+              >
+                Submit a form check →
+              </Link>
             </p>
           </div>
         </div>

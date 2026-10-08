@@ -1,3 +1,4 @@
+import Head from "next/head";
 import Layout from "../components/shared/Layout";
 import SEO from "@/components/shared/SEO";
 import { FaCheckCircle, FaDownload, FaArrowRight } from "react-icons/fa";
@@ -15,6 +16,9 @@ import { FaCheckCircle, FaDownload, FaArrowRight } from "react-icons/fa";
 export default function ThankYouStarterPage() {
   return (
     <Layout>
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+      </Head>
       <SEO
         title="You're In — Your 4-Week Starter Plan | Independent for Life | FL Best Trainer"
         description="Your Independent for Life 4-Week Starter Plan is ready. Download it and start with Session 1 whenever you're ready."

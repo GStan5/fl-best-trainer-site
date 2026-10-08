@@ -18,12 +18,19 @@ const GUIDE_PDF_URL =
   "https://flbesttrainer.com/downloads/independent-for-life-guide.pdf";
 
 // Signup sources (Phase 2: flagship waitlist joins through this same
-// route; waitlist members also receive the free guide). Anything off the
-// allowlist falls back to "guide" rather than being rejected.
+// route; waitlist members also receive the free guide. Phase 5: the
+// niche founding lists join as "niche-<slug>" sources, one per plan in
+// lib/nichePrograms.ts — the per-plan slug is what the admin hub reads
+// as member pull). Anything off the allowlist / niche pattern falls
+// back to "guide" rather than being rejected.
 const ALLOWED_SOURCES = ["guide", "starter", "flagship", "plans"];
+const NICHE_SOURCE_RE = /^niche-[a-z0-9-]+$/;
 
 function normalizeSource(raw: unknown): string {
-  if (typeof raw === "string" && ALLOWED_SOURCES.includes(raw)) return raw;
+  if (typeof raw === "string") {
+    if (ALLOWED_SOURCES.includes(raw)) return raw;
+    if (raw.length <= 60 && NICHE_SOURCE_RE.test(raw)) return raw;
+  }
   return "guide";
 }
 
