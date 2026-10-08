@@ -12,6 +12,7 @@ import {
   FaUserAlt,
   FaArrowRight,
   FaBlog,
+  FaBookOpen,
   FaUsers,
   FaSignOutAlt,
   FaSignInAlt,
@@ -109,12 +110,13 @@ export default function Header() {
       special: "popular",
     },
     {
-      name: "Workout Plans",
+      name: "Online Programs",
       path: "/plans",
       icon: <FaDumbbell className="mr-1.5" />,
       highlight: true,
       special: "Remote",
     },
+    { name: "Free Guide", path: "/start", icon: <FaBookOpen className="mr-1.5" /> },
     { name: "Blog", path: "/blog", icon: <FaBlog className="mr-1.5" /> },
     { name: "About", path: "/about", icon: <FaUserAlt className="mr-1.5" /> },
   ];
