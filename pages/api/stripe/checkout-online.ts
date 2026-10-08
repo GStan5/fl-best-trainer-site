@@ -19,6 +19,7 @@ const PRODUCTS = {
     metadataProduct: "starter-plan",
     successPath: "/thank-you-starter",
     cancelPath: "/starter?checkout=cancelled",
+    mode: "payment",
   },
   "self-study": {
     name: "Independent for Life — Self-Study",
@@ -28,6 +29,38 @@ const PRODUCTS = {
     metadataProduct: "self-study",
     successPath: "/self-study?checkout=success",
     cancelPath: "/self-study?checkout=cancelled",
+    mode: "payment",
+  },
+  // Phase 3: continuity subscriptions (PAGE_COPY PAGE 7). The only
+  // recurring products in the online ladder; same guard applies.
+  "monthly-97": {
+    name: "Independent for Life Monthly",
+    description:
+      "A new training block every month, weekly group Q&A, quarterly retesting, member community, and The Steady Letter.",
+    amount: 9700, // $97.00/mo in cents
+    metadataProduct: "monthly-97",
+    successPath: "/monthly?checkout=success",
+    cancelPath: "/monthly?checkout=cancelled",
+    mode: "subscription",
+  },
+  "monthly-147": {
+    name: "Independent for Life Monthly Plus",
+    description: "Everything in Monthly, plus 1:1 text access to Gavin.",
+    amount: 14700, // $147.00/mo in cents
+    metadataProduct: "monthly-147",
+    successPath: "/monthly?checkout=success",
+    cancelPath: "/monthly?checkout=cancelled",
+    mode: "subscription",
+  },
+  "monthly-197": {
+    name: "Independent for Life Monthly Best",
+    description:
+      "Everything in Plus, plus a personal form-video review every month.",
+    amount: 19700, // $197.00/mo in cents
+    metadataProduct: "monthly-197",
+    successPath: "/monthly?checkout=success",
+    cancelPath: "/monthly?checkout=cancelled",
+    mode: "subscription",
   },
 } as const;
 
@@ -52,9 +85,12 @@ export default async function handler(
       .json({ error: "online checkout not enabled" });
   }
 
+  const requested =
+    typeof req.body?.product === "string" ? req.body.product : "";
   const productKey: ProductKey =
-    req.body?.product === "self-study" ? "self-study" : "starter";
+    requested in PRODUCTS ? (requested as ProductKey) : "starter";
   const product = PRODUCTS[productKey];
+  const isSubscription = product.mode === "subscription";
 
   try {
     const stripe = new Stripe(secretKey, {
@@ -67,7 +103,7 @@ export default async function handler(
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      mode: "payment",
+      mode: isSubscription ? "subscription" : "payment",
       line_items: [
         {
           price_data: {
@@ -77,6 +113,9 @@ export default async function handler(
               description: product.description,
             },
             unit_amount: product.amount,
+            ...(isSubscription
+              ? { recurring: { interval: "month" as const } }
+              : {}),
           },
           quantity: 1,
         },
