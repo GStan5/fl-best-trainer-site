@@ -507,12 +507,7 @@ export default function Account() {
                   </div>
 
                   <StripeCheckoutButton
-                    package={
-                      weightliftingPackage ||
-                      PACKAGE_CONFIGS.find(
-                        (pkg) => pkg.id === "weightlifting-10-class"
-                      )!
-                    }
+                    package={weightliftingPackage ?? null}
                     className="from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light"
                     onSuccess={() => {
                       setTimeout(() => window.location.reload(), 2000);

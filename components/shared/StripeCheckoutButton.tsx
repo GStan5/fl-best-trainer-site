@@ -19,7 +19,10 @@ interface Package {
 }
 
 interface StripeCheckoutButtonProps {
-  package: Package;
+  // Payment-safety (2026-10-08): null means the database package has not
+  // loaded — the button renders disabled instead of selling anything.
+  // The database is the only price source; never pass a hardcoded package.
+  package: Package | null;
   className?: string;
   children?: React.ReactNode;
   onSuccess?: () => void;
@@ -36,6 +39,9 @@ export default function StripeCheckoutButton({
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
+    if (!pkg) {
+      return;
+    }
     if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
       const error =
         "Stripe is not properly configured. Please contact support.";
@@ -111,15 +117,19 @@ export default function StripeCheckoutButton({
   return (
     <button
       onClick={handleCheckout}
-      disabled={loading}
+      disabled={loading || !pkg}
       className={defaultClassName}
-      aria-label={`Purchase ${pkg.name} for $${pkg.price}`}
+      aria-label={
+        pkg ? `Purchase ${pkg.name} for $${pkg.price}` : "Package unavailable"
+      }
     >
       {loading ? (
         <>
           <FaSpinner className="animate-spin mr-2" />
           Processing...
         </>
+      ) : !pkg ? (
+        <>Package unavailable — please refresh</>
       ) : (
         <>
           {children || (
@@ -134,13 +144,17 @@ export default function StripeCheckoutButton({
   );
 }
 
-// Predefined package configurations
+// Predefined package configurations.
+// NOTE (2026-10-08): the weightlifting package below is NOT a checkout
+// fallback — class packages are sold only from the database (the only
+// price source). Its price matches the $400 package price (+ $30 online
+// processing fee = $430) for display fallbacks only.
 export const PACKAGE_CONFIGS: Package[] = [
   {
     id: "weightlifting-10-class",
     name: "10-Class Weightlifting Package",
     description: "Small group training • 4-person max • Expert instruction",
-    price: 500,
+    price: 400,
     sessions: 10,
     type: "weightlifting",
     features: [

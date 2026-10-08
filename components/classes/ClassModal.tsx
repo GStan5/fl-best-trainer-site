@@ -256,12 +256,7 @@ export default function ClassModal({
                   </motion.button>
                 ) : hasNoSessions ? (
                   <StripeCheckoutButton
-                    package={
-                      weightliftingPackage ||
-                      PACKAGE_CONFIGS.find(
-                        (pkg) => pkg.id === "weightlifting-10-class"
-                      )!
-                    }
+                    package={weightliftingPackage ?? null}
                     className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all hover:shadow-lg hover:shadow-emerald/20 flex items-center justify-center space-x-2"
                     onSuccess={() => {
                       setTimeout(() => window.location.reload(), 2000);

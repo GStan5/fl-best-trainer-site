@@ -47,7 +47,7 @@ async function syncPackage() {
           name = '10-Class Weightlifting Package',
           description = 'Small group training • 4-person max • Expert instruction',
           sessions_included = 10,
-          price = 500.00,
+          price = 400.00,
           duration_days = 90,
           is_active = true,
           updated_at = CURRENT_TIMESTAMP
@@ -74,7 +74,7 @@ async function syncPackage() {
           '10-Class Weightlifting Package',
           'Small group training • 4-person max • Expert instruction',
           10,
-          500.00,
+          400.00,
           90,
           true
         )

@@ -40,8 +40,40 @@ export default async function handler(
       });
     }
 
+    // Payment-safety (2026-10-08): if this package lives in the database,
+    // the database row is the only price source — the posted name, price,
+    // and sessions are ignored, so no stale or tampered client can change
+    // the charge. Non-database packages (private training configs) keep
+    // their posted values. A failed lookup falls back to posted values so
+    // checkout never breaks on a database hiccup.
+    let chargeName = packageName;
+    let chargeDescription = packageDescription;
+    let chargeSessions = sessions;
+    let chargePrice = Number(price);
+    try {
+      if (process.env.DATABASE_URL) {
+        const { default: sql } = await import("../../../lib/database");
+        const rows = await sql`
+          SELECT name, description, sessions_included, price
+          FROM packages
+          WHERE id = ${packageId} AND is_active = true
+        `;
+        if (rows.length > 0) {
+          chargeName = rows[0].name;
+          chargeDescription = rows[0].description || packageDescription;
+          chargeSessions = rows[0].sessions_included;
+          chargePrice = Number(rows[0].price);
+        }
+      }
+    } catch (dbError) {
+      console.error(
+        "[create-checkout-session] DB price lookup failed; using posted values:",
+        dbError
+      );
+    }
+
     // Convert price to cents for Stripe
-    const priceInCents = Math.round(price * 100);
+    const priceInCents = Math.round(chargePrice * 100);
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -51,12 +83,12 @@ export default async function handler(
           price_data: {
             currency: "usd",
             product_data: {
-              name: packageName,
-              description: packageDescription,
+              name: chargeName,
+              description: chargeDescription,
               metadata: {
                 packageId,
                 packageType,
-                sessions: sessions.toString(),
+                sessions: chargeSessions.toString(),
               },
             },
             unit_amount: priceInCents,
@@ -68,7 +100,7 @@ export default async function handler(
       success_url: `${
         process.env.NEXT_PUBLIC_DOMAIN || "http://localhost:3001"
       }/account?success=true&session_id={CHECKOUT_SESSION_ID}&package=${encodeURIComponent(
-        packageName
+        chargeName
       )}`,
       cancel_url: `${
         process.env.NEXT_PUBLIC_DOMAIN || "http://localhost:3001"
@@ -76,10 +108,10 @@ export default async function handler(
       metadata: {
         userId: session.user.email,
         packageId,
-        packageName,
+        packageName: chargeName,
         packageType,
-        sessions: sessions.toString(),
-        price: price.toString(),
+        sessions: chargeSessions.toString(),
+        price: chargePrice.toString(),
       },
       customer_email: session.user.email,
       billing_address_collection: "required",

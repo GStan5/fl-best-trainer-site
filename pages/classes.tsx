@@ -11,9 +11,7 @@ import UpcomingClassesSection from "../components/classes/UpcomingClassesSection
 import ClassStats from "../components/classes/ClassStats";
 import CancelBookingModal from "../components/classes/CancelBookingModal";
 import MyUpcomingClassesGrid from "../components/classes/MyUpcomingClassesGrid";
-import StripeCheckoutButton, {
-  PACKAGE_CONFIGS,
-} from "../components/shared/StripeCheckoutButton";
+import StripeCheckoutButton from "../components/shared/StripeCheckoutButton";
 import {
   useWeightliftingPackage,
   useSingleSessionPackage,
@@ -641,12 +639,12 @@ export default function Classes() {
                               </div>
                               <div className="text-right">
                                 <span className="text-royal-light font-bold text-lg">
-                                  ${weightliftingPackage?.price || 430}
+                                  ${weightliftingPackage?.price || 400}
                                 </span>
                                 <p className="text-white/50 text-xs">
                                   $
                                   {(
-                                    (weightliftingPackage?.price || 430) / 10
+                                    (weightliftingPackage?.price || 400) / 10
                                   ).toFixed(0)}
                                   /session
                                 </p>
@@ -671,12 +669,7 @@ export default function Classes() {
 
                             {session ? (
                               <StripeCheckoutButton
-                                package={
-                                  weightliftingPackage ||
-                                  PACKAGE_CONFIGS.find(
-                                    (pkg) => pkg.id === "weightlifting-10-class"
-                                  )!
-                                }
+                                package={weightliftingPackage ?? null}
                                 className="w-full from-royal-light to-blue-500 hover:from-blue-500 hover:to-royal-light font-bold py-2 px-4 rounded-lg transform hover:scale-[1.02] text-sm"
                                 onSuccess={() => {
                                   setTimeout(
@@ -689,7 +682,7 @@ export default function Classes() {
                                 }}
                               >
                                 Buy 10-Class Package - $
-                                {weightliftingPackage?.price || 430}
+                                {weightliftingPackage?.price || 400}
                               </StripeCheckoutButton>
                             ) : (
                               <button
@@ -726,18 +719,7 @@ export default function Classes() {
 
                             {session ? (
                               <StripeCheckoutButton
-                                package={
-                                  singleSessionPackage || {
-                                    id: "single-session-drop-in",
-                                    name: "Single Session Drop-In",
-                                    description:
-                                      "Perfect for trying out our weightlifting classes • No commitment required",
-                                    sessions_included: 1,
-                                    price: 55,
-                                    duration_days: 3650,
-                                    is_active: true,
-                                  }
-                                }
+                                package={singleSessionPackage ?? null}
                                 className="w-full from-green-500 to-emerald-500 hover:from-emerald-500 hover:to-green-500 font-bold py-2 px-4 rounded-lg transform hover:scale-[1.02] text-sm"
                                 onSuccess={() => {
                                   setTimeout(
