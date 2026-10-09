@@ -15,6 +15,7 @@ import {
   FaExternalLinkAlt,
 } from "react-icons/fa";
 import StripeCheckoutButton, {
+  getOnlineCheckoutTotal,
   PACKAGE_CONFIGS,
 } from "../shared/StripeCheckoutButton";
 
@@ -437,11 +438,13 @@ export default function GoogleCalendarModal({
                     <FaDumbbell className="w-4 h-4" />
                     <span>
                       Purchase Sessions - $
-                      {(weightliftingPackage?.price ||
-                        PACKAGE_CONFIGS.find(
-                          (pkg) => pkg.id === "weightlifting-10-class"
-                        )?.price ||
-                        400) + 30}
+                      {getOnlineCheckoutTotal(
+                        weightliftingPackage ??
+                          PACKAGE_CONFIGS.find(
+                            (pkg) => pkg.id === "weightlifting-10-class"
+                          ) ??
+                          null
+                      ) ?? 430}
                     </span>
                   </StripeCheckoutButton>
                 ) : (
