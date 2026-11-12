@@ -22,14 +22,14 @@ interface AddEditClassModalProps {
 }
 
 const defaultClass: Class = {
-  title: "Intro Weight Lifting – Exclusive 4-Person Training",
+  title: "Intro Weight Lifting – small group exclusive training",
   description:
     "Perfect introduction to weight lifting in a small group setting. Learn proper form, basic exercises, and build confidence in the gym.",
   instructor: "Gavin Stanifer, NASM-CPT",
   date: "",
   start_time: "07:30",
   end_time: "08:30",
-  max_participants: 4,
+  max_participants: 5,
   location: "Bayfront Park Recreation Center",
   class_type: "Strength Training",
   difficulty_level: "Beginner",

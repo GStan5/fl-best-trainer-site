@@ -487,7 +487,7 @@ export default function Account() {
                     </h4>
                   </div>
                   <p className="text-white/70 text-xs sm:text-sm mb-3 sm:mb-4">
-                    Small group training • 10 sessions • 4-person max • Expert
+                    Small group training • 10 sessions • 5-person max • Expert
                     instruction
                   </p>
 

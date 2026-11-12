@@ -1061,14 +1061,14 @@ export default function ClassesAdmin() {
                     onClick={() => {
                       setSelectedClass({
                         title:
-                          "Intro Weight Lifting – Exclusive 4-Person Training",
+                          "Intro Weight Lifting – small group exclusive training",
                         description:
                           "Perfect introduction to weight lifting in a small group setting.",
                         instructor: "Gavin Stanifer",
                         date: "",
                         start_time: "18:00",
                         end_time: "19:00",
-                        max_participants: 4,
+                        max_participants: 5,
                         location: "FL Best Trainer Studio",
                         class_type: "Strength Training",
                         difficulty_level: "Beginner",

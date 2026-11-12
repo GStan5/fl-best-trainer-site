@@ -183,7 +183,7 @@ export const PACKAGE_CONFIGS: Package[] = [
   {
     id: "weightlifting-10-class",
     name: "10-Class Weightlifting Package",
-    description: "Small group training • 4-person max • Expert instruction",
+    description: "Small group training • 5-person max • Expert instruction",
     price: 400,
     sessions: 10,
     type: "weightlifting",

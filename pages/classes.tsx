@@ -621,7 +621,7 @@ export default function Classes() {
                             </h3>
                             <p className="text-white/70 text-sm">
                               Choose your training package • Small Group
-                              Training • 4-Person Max
+                              Training • 5-Person Max
                             </p>
                           </div>
                         </div>

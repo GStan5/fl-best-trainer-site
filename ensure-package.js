@@ -45,7 +45,7 @@ async function ensurePackageExists() {
           is_active
         ) VALUES (
           '10-Class Weightlifting Package',
-          'Small group training • 4-person max • Expert instruction',
+          'Small group training • 5-person max • Expert instruction',
           10,
           400.00,
           90,
