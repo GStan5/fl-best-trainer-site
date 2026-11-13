@@ -18,10 +18,12 @@ import { overcomingMentalObstacles } from "./posts/overcomingMentalObstacles";
 import { wellnessLifestyleBalance } from "./posts/wellnessLifestyleBalance";
 import { beyondPowerVoltra1 } from "./posts/beyondPowerVoltra1";
 import { slowDownFormFirst } from "./posts/slowDownFormFirst";
+import { farmerCarriesEveryClass } from "./posts/farmerCarriesEveryClass";
 
 // Import more posts as you add them
 
 export const blogPosts = [
+  farmerCarriesEveryClass,
   slowDownFormFirst,
   beyondPowerVoltra1,
   farmerCarriesBenefits,
