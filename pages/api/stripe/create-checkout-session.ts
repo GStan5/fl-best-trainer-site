@@ -7,6 +7,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil",
 });
 
+const ONLINE_PROCESSING_FEE_DOLLARS = 20;
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -50,6 +52,7 @@ export default async function handler(
     let chargeDescription = packageDescription;
     let chargeSessions = sessions;
     let chargePrice = Number(price);
+    let processingFee = 0;
     try {
       if (process.env.DATABASE_URL) {
         const { default: sql } = await import("../../../lib/database");
@@ -63,6 +66,22 @@ export default async function handler(
           chargeDescription = rows[0].description || packageDescription;
           chargeSessions = rows[0].sessions_included;
           chargePrice = Number(rows[0].price);
+
+          // The 10-class package is priced separately from the fee charged
+          // for paying online by card: $400 package + $20 processing fee.
+          // Confirm both from the database row so posted values cannot add
+          // the fee to another package or change its amount. The fee applies
+          // only at the exact $400 base price: while the database still
+          // holds the old all-in $430, no fee is added and the total stays
+          // $430, so this can deploy before the admin price change and the
+          // change alone activates the $400 + $20 composition.
+          if (
+            Number(chargeSessions) === 10 &&
+            chargeName.toLowerCase().includes("weightlifting") &&
+            chargePrice === 400
+          ) {
+            processingFee = ONLINE_PROCESSING_FEE_DOLLARS;
+          }
         }
       }
     } catch (dbError) {
@@ -72,30 +91,48 @@ export default async function handler(
       );
     }
 
-    // Convert price to cents for Stripe
+    // Convert prices to cents for Stripe
     const priceInCents = Math.round(chargePrice * 100);
+    const processingFeeInCents = Math.round(processingFee * 100);
+    const totalChargePrice = chargePrice + processingFee;
+
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: chargeName,
+            description: chargeDescription,
+            metadata: {
+              packageId,
+              packageType,
+              sessions: chargeSessions.toString(),
+            },
+          },
+          unit_amount: priceInCents,
+        },
+        quantity: 1,
+      },
+    ];
+
+    if (processingFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Online processing fee",
+            description: "Applied to online card payments",
+          },
+          unit_amount: processingFeeInCents,
+        },
+        quantity: 1,
+      });
+    }
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: chargeName,
-              description: chargeDescription,
-              metadata: {
-                packageId,
-                packageType,
-                sessions: chargeSessions.toString(),
-              },
-            },
-            unit_amount: priceInCents,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       mode: "payment",
       success_url: `${
         process.env.NEXT_PUBLIC_DOMAIN || "http://localhost:3001"
@@ -111,7 +148,8 @@ export default async function handler(
         packageName: chargeName,
         packageType,
         sessions: chargeSessions.toString(),
-        price: chargePrice.toString(),
+        price: totalChargePrice.toString(),
+        processingFee: processingFee.toString(),
       },
       customer_email: session.user.email,
       billing_address_collection: "required",

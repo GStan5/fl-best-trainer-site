@@ -11,7 +11,9 @@ import UpcomingClassesSection from "../components/classes/UpcomingClassesSection
 import ClassStats from "../components/classes/ClassStats";
 import CancelBookingModal from "../components/classes/CancelBookingModal";
 import MyUpcomingClassesGrid from "../components/classes/MyUpcomingClassesGrid";
-import StripeCheckoutButton from "../components/shared/StripeCheckoutButton";
+import StripeCheckoutButton, {
+  getOnlineCheckoutTotal,
+} from "../components/shared/StripeCheckoutButton";
 import {
   useWeightliftingPackage,
   useSingleSessionPackage,
@@ -619,7 +621,7 @@ export default function Classes() {
                             </h3>
                             <p className="text-white/70 text-sm">
                               Choose your training package • Small Group
-                              Training • 4-Person Max
+                              Training • 5-Person Max
                             </p>
                           </div>
                         </div>
@@ -658,7 +660,7 @@ export default function Classes() {
                               </p>
                               <p className="text-yellow-100 text-xs mb-2">
                                 <strong>
-                                  Online payments include a $30 processing fee.
+                                  Online payments include a $20 processing fee.
                                 </strong>
                               </p>
                               <p className="text-white/80 text-xs">
@@ -682,7 +684,9 @@ export default function Classes() {
                                 }}
                               >
                                 Buy 10-Class Package - $
-                                {weightliftingPackage?.price || 400}
+                                {getOnlineCheckoutTotal(
+                                  weightliftingPackage ?? null
+                                ) ?? 420}
                               </StripeCheckoutButton>
                             ) : (
                               <button

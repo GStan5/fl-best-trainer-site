@@ -18,6 +18,32 @@ interface Package {
   features?: string[];
 }
 
+export const ONLINE_PROCESSING_FEE = 20;
+
+// The 10-class package's intended composition is a $400 package plus
+// this $20 fee ($420 online total). The fee activates only when the
+// database package price is exactly that $400 base: while the database
+// still holds the old all-in $430, no fee is added, so the online total
+// stays $430 either way. That keeps this code safe to deploy before the
+// admin price change — the change itself becomes the only trigger, with
+// no window where buyers pay $400 or $450 by mistake.
+export const ONLINE_PACKAGE_BASE_PRICE = 400;
+
+export function getOnlineCheckoutTotal(pkg: Package | null): number | null {
+  if (!pkg) {
+    return null;
+  }
+
+  const sessions = pkg.sessions ?? pkg.sessions_included;
+  const isTenClassWeightliftingPackage =
+    sessions === 10 && pkg.name.toLowerCase().includes("weightlifting");
+
+  return isTenClassWeightliftingPackage &&
+    Number(pkg.price) === ONLINE_PACKAGE_BASE_PRICE
+    ? pkg.price + ONLINE_PROCESSING_FEE
+    : pkg.price;
+}
+
 interface StripeCheckoutButtonProps {
   // Payment-safety (2026-10-08): null means the database package has not
   // loaded — the button renders disabled instead of selling anything.
@@ -114,13 +140,17 @@ export default function StripeCheckoutButton({
     ${className}
   `;
 
+  const checkoutTotal = getOnlineCheckoutTotal(pkg);
+
   return (
     <button
       onClick={handleCheckout}
       disabled={loading || !pkg}
       className={defaultClassName}
       aria-label={
-        pkg ? `Purchase ${pkg.name} for $${pkg.price}` : "Package unavailable"
+        pkg
+          ? `Purchase ${pkg.name} for $${checkoutTotal}`
+          : "Package unavailable"
       }
     >
       {loading ? (
@@ -135,7 +165,7 @@ export default function StripeCheckoutButton({
           {children || (
             <>
               <FaCreditCard className="mr-2" />
-              Buy for ${pkg.price}
+              Buy for ${checkoutTotal}
             </>
           )}
         </>
@@ -147,13 +177,13 @@ export default function StripeCheckoutButton({
 // Predefined package configurations.
 // NOTE (2026-10-08): the weightlifting package below is NOT a checkout
 // fallback — class packages are sold only from the database (the only
-// price source). Its price matches the $400 package price (+ $30 online
-// processing fee = $430) for display fallbacks only.
+// price source). Its price matches the $400 package price (+ $20 online
+// processing fee = $420) for display fallbacks only.
 export const PACKAGE_CONFIGS: Package[] = [
   {
     id: "weightlifting-10-class",
     name: "10-Class Weightlifting Package",
-    description: "Small group training • 4-person max • Expert instruction",
+    description: "Small group training • 5-person max • Expert instruction",
     price: 400,
     sessions: 10,
     type: "weightlifting",

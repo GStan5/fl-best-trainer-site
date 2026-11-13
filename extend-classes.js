@@ -53,11 +53,11 @@ const SCHEDULE = [
 
 // Common class properties
 const CLASS_TEMPLATE = {
-  title: "Intro Weight Lifting – Exclusive 4-Person Training",
+  title: "Intro Weight Lifting – small group exclusive training",
   description:
     "Perfect introduction to weight lifting in a small group setting.",
   instructor: "Gavin Stanifer, NASM-CPT",
-  max_participants: 4,
+  max_participants: 5,
   location: "Bayfront Park Recreation Center",
   class_type: "Strength Training",
   difficulty_level: "Beginner",

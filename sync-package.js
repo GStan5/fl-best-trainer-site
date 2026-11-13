@@ -45,7 +45,7 @@ async function syncPackage() {
         UPDATE packages 
         SET 
           name = '10-Class Weightlifting Package',
-          description = 'Small group training • 4-person max • Expert instruction',
+          description = 'Small group training • 5-person max • Expert instruction',
           sessions_included = 10,
           price = 400.00,
           duration_days = 90,
@@ -72,7 +72,7 @@ async function syncPackage() {
           is_active
         ) VALUES (
           '10-Class Weightlifting Package',
-          'Small group training • 4-person max • Expert instruction',
+          'Small group training • 5-person max • Expert instruction',
           10,
           400.00,
           90,

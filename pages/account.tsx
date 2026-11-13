@@ -6,6 +6,7 @@ import { GetServerSideProps } from "next";
 import Layout from "../components/Layout";
 import SEO from "../components/shared/SEO";
 import StripeCheckoutButton, {
+  getOnlineCheckoutTotal,
   PACKAGE_CONFIGS,
 } from "../components/shared/StripeCheckoutButton";
 import StripeSuccess from "../components/shared/StripeSuccess";
@@ -486,7 +487,7 @@ export default function Account() {
                     </h4>
                   </div>
                   <p className="text-white/70 text-xs sm:text-sm mb-3 sm:mb-4">
-                    Small group training • 10 sessions • 4-person max • Expert
+                    Small group training • 10 sessions • 5-person max • Expert
                     instruction
                   </p>
 
@@ -497,7 +498,7 @@ export default function Account() {
                     </p>
                     <p className="text-yellow-100 text-xs mb-2">
                       <strong>
-                        Online payments include a $30 processing fee.
+                        Online payments include a $20 processing fee.
                       </strong>
                     </p>
                     <p className="text-white/80 text-xs">
@@ -517,7 +518,10 @@ export default function Account() {
                       alert("Payment failed. Please try again.");
                     }}
                   >
-                    Buy Weightlifting Package
+                    Buy Weightlifting Package - $
+                    {getOnlineCheckoutTotal(weightliftingPackage ?? null) ??
+                      420}{" "}
+                    total
                   </StripeCheckoutButton>
                 </div>
 
@@ -604,7 +608,7 @@ export default function Account() {
                           {/* Payment Fee Warning */}
                           <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-2 mb-3">
                             <p className="text-yellow-300 text-xs font-medium mb-1">
-                              💳 +$30 processing fee
+                              💳 +$20 processing fee
                             </p>
                             <p className="text-white/80 text-xs">
                               Use cash, check, or Zelle to avoid fees
