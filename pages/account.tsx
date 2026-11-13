@@ -498,7 +498,7 @@ export default function Account() {
                     </p>
                     <p className="text-yellow-100 text-xs mb-2">
                       <strong>
-                        Online payments include a $30 processing fee.
+                        Online payments include a $20 processing fee.
                       </strong>
                     </p>
                     <p className="text-white/80 text-xs">
@@ -520,7 +520,7 @@ export default function Account() {
                   >
                     Buy Weightlifting Package - $
                     {getOnlineCheckoutTotal(weightliftingPackage ?? null) ??
-                      430}{" "}
+                      420}{" "}
                     total
                   </StripeCheckoutButton>
                 </div>
@@ -608,7 +608,7 @@ export default function Account() {
                           {/* Payment Fee Warning */}
                           <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-2 mb-3">
                             <p className="text-yellow-300 text-xs font-medium mb-1">
-                              💳 +$30 processing fee
+                              💳 +$20 processing fee
                             </p>
                             <p className="text-white/80 text-xs">
                               Use cash, check, or Zelle to avoid fees

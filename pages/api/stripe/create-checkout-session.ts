@@ -7,7 +7,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil",
 });
 
-const ONLINE_PROCESSING_FEE_DOLLARS = 30;
+const ONLINE_PROCESSING_FEE_DOLLARS = 20;
 
 export default async function handler(
   req: NextApiRequest,
@@ -68,13 +68,13 @@ export default async function handler(
           chargePrice = Number(rows[0].price);
 
           // The 10-class package is priced separately from the fee charged
-          // for paying online by card: $400 package + $30 processing fee.
+          // for paying online by card: $400 package + $20 processing fee.
           // Confirm both from the database row so posted values cannot add
           // the fee to another package or change its amount. The fee applies
           // only at the exact $400 base price: while the database still
           // holds the old all-in $430, no fee is added and the total stays
           // $430, so this can deploy before the admin price change and the
-          // change alone activates the $400 + $30 composition.
+          // change alone activates the $400 + $20 composition.
           if (
             Number(chargeSessions) === 10 &&
             chargeName.toLowerCase().includes("weightlifting") &&

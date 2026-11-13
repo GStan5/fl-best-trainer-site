@@ -660,7 +660,7 @@ export default function Classes() {
                               </p>
                               <p className="text-yellow-100 text-xs mb-2">
                                 <strong>
-                                  Online payments include a $30 processing fee.
+                                  Online payments include a $20 processing fee.
                                 </strong>
                               </p>
                               <p className="text-white/80 text-xs">
@@ -686,7 +686,7 @@ export default function Classes() {
                                 Buy 10-Class Package - $
                                 {getOnlineCheckoutTotal(
                                   weightliftingPackage ?? null
-                                ) ?? 430}
+                                ) ?? 420}
                               </StripeCheckoutButton>
                             ) : (
                               <button

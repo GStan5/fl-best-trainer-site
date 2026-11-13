@@ -444,7 +444,7 @@ export default function GoogleCalendarModal({
                             (pkg) => pkg.id === "weightlifting-10-class"
                           ) ??
                           null
-                      ) ?? 430}
+                      ) ?? 420}
                     </span>
                   </StripeCheckoutButton>
                 ) : (

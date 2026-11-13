@@ -18,15 +18,15 @@ interface Package {
   features?: string[];
 }
 
-export const ONLINE_PROCESSING_FEE = 30;
+export const ONLINE_PROCESSING_FEE = 20;
 
 // The 10-class package's intended composition is a $400 package plus
-// this $30 fee ($430 online total). The fee activates only when the
+// this $20 fee ($420 online total). The fee activates only when the
 // database package price is exactly that $400 base: while the database
 // still holds the old all-in $430, no fee is added, so the online total
 // stays $430 either way. That keeps this code safe to deploy before the
 // admin price change — the change itself becomes the only trigger, with
-// no window where buyers pay $400 or $460 by mistake.
+// no window where buyers pay $400 or $450 by mistake.
 export const ONLINE_PACKAGE_BASE_PRICE = 400;
 
 export function getOnlineCheckoutTotal(pkg: Package | null): number | null {
@@ -177,8 +177,8 @@ export default function StripeCheckoutButton({
 // Predefined package configurations.
 // NOTE (2026-10-08): the weightlifting package below is NOT a checkout
 // fallback — class packages are sold only from the database (the only
-// price source). Its price matches the $400 package price (+ $30 online
-// processing fee = $430) for display fallbacks only.
+// price source). Its price matches the $400 package price (+ $20 online
+// processing fee = $420) for display fallbacks only.
 export const PACKAGE_CONFIGS: Package[] = [
   {
     id: "weightlifting-10-class",
