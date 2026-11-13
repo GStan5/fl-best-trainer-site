@@ -2,6 +2,7 @@ export const slowDownFormFirst = {
   id: "slow-down-form-first-after-50",
   title: "Why Slowing Down Gets You Stronger After 50",
   category: "Training",
+  series: "The Daily Rep",
   excerpt:
     "The biggest mistake people over 50 make in the gym isn't lifting too little — it's rushing. Slow down, own every rep, and less weight starts doing more.",
   content: `

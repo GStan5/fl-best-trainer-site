@@ -40,6 +40,14 @@ export default function BlogList({ filteredPosts, handlePostSelect }) {
             {/* Replace standard img with BlogImage component for fallback icons */}
             <div className="relative h-48">
               <BlogImage post={post} height="192px" />
+              {/* Series badge for Daily Rep posts */}
+              {post.series && (
+                <div className="absolute top-3 left-3">
+                  <span className="bg-royal px-3 py-1 text-xs uppercase font-semibold tracking-wider text-white rounded-full shadow-lg">
+                    {post.series}
+                  </span>
+                </div>
+              )}
               <div className="absolute bottom-3 left-3">
                 <span className="bg-black/60 backdrop-blur-sm px-3 py-1 text-xs uppercase font-medium tracking-wider text-white/90 rounded-full border border-white/10">
                   {post.category}

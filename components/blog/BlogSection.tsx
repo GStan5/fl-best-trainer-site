@@ -6,6 +6,7 @@ import { FaArrowLeft } from "react-icons/fa";
 
 // Import sub-components
 import BlogHeader from "./BlogHeader";
+import SeriesStrip from "./SeriesStrip";
 import BlogSearch from "./BlogSearch";
 import BlogFeatured from "./BlogFeatured";
 import BlogList from "./BlogList";
@@ -118,6 +119,9 @@ export default function BlogSection({ posts = defaultPosts }) {
   // Get featured post
   const featuredPost = safePosts.find((post) => post.featured);
   const featuredPosts = safePosts.filter((post) => post.featured);
+
+  // Get series posts (newest first, matching array order)
+  const seriesPosts = safePosts.filter((post) => post.series);
 
   // Filter posts based on category and search term
   const filteredPosts = safePosts.filter((post) => {
@@ -310,6 +314,15 @@ export default function BlogSection({ posts = defaultPosts }) {
                       setActiveCategory={setActiveCategory}
                       totalResults={filteredPosts.length}
                     />
+
+                    {/* New-series strip: introduces The Daily Rep + latest post */}
+                    {seriesPosts.length > 0 && (
+                      <SeriesStrip
+                        latestPost={seriesPosts[0]}
+                        count={seriesPosts.length}
+                        onSelect={handlePostSelect}
+                      />
+                    )}
 
                     {/* Show featured posts at the top only when not viewing "all" or "featured" category */}
                     {featuredPosts.length > 0 &&

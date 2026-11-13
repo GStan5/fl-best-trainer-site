@@ -115,6 +115,15 @@ export default function BlogPostView({
                 <span className="ml-4">{selectedPost.readTime}</span>
               </div>
 
+              {/* Series */}
+              {selectedPost.series && (
+                <div className="flex items-center">
+                  <span className="bg-royal text-white px-2 py-0.5 rounded-full text-xs uppercase tracking-wider font-semibold">
+                    Series · {selectedPost.series}
+                  </span>
+                </div>
+              )}
+
               {/* Category */}
               <div className="flex items-center ml-0 sm:ml-auto">
                 <span className="bg-royal/20 text-royal-light px-2 py-0.5 rounded-full border border-royal/30">

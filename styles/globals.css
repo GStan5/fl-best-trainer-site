@@ -472,3 +472,15 @@ a {
     transform: translateY(-10px);
   }
 }
+
+@layer utilities {
+  /* Hide scrollbars on horizontal scroll rows (e.g. blog category pills)
+     while keeping scrolling working — used by BlogSearch. */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
