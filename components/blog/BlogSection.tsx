@@ -1,7 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
-import { blogPosts as defaultPosts } from "./data/blogPosts"; // Keep this as fallback
 import { FaArrowLeft } from "react-icons/fa";
 
 // Import sub-components
@@ -17,10 +16,12 @@ import BackToTop from "./BackToTop";
 import ReadingProgress from "./ReadingProgress";
 import EmptyState from "./EmptyState";
 
-export default function BlogSection({ posts = defaultPosts }) {
-  // Ensure posts is always an array
-  const safePosts =
-    Array.isArray(posts) && posts.length > 0 ? posts : defaultPosts;
+export default function BlogSection({ posts = [] }) {
+  // Ensure posts is always an array. Posts arrive as summaries (no bodies)
+  // from getStaticProps; bodies load on demand when a post opens. No
+  // fallback import of the post data here, so bodies stay out of the
+  // client bundle entirely.
+  const safePosts = Array.isArray(posts) ? posts : [];
 
   // Initialize state with localStorage values if available
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -47,21 +48,11 @@ export default function BlogSection({ posts = defaultPosts }) {
 
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPost, setSelectedPost] = useState(() => {
-    // Check if we previously had a selected post (optional)
-    if (typeof window !== "undefined") {
-      const savedPost = localStorage.getItem("selectedBlogPost");
-      if (savedPost) {
-        try {
-          return JSON.parse(savedPost);
-        } catch (e) {
-          console.error("Error parsing saved post:", e);
-        }
-      }
-    }
-    return null; // Default to null if no post was saved
-  });
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Starts null so the first client render matches the server render; a
+  // previously open post is restored in the mount effect below.
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [postLoadError, setPostLoadError] = useState(false);
+  const loadRequestRef = useRef(0);
   const [isClientSide, setIsClientSide] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [screenSize, setScreenSize] = useState("lg");
@@ -70,17 +61,50 @@ export default function BlogSection({ posts = defaultPosts }) {
   const blogContentRef = useRef(null);
   const blogSectionRef = useRef(null);
 
-  // Set loaded state on mount and ensure client-side rendering
+  // Fetch a post's full body and swap it in once loaded. Stale responses
+  // (reader picked another post meanwhile) are ignored via the request id.
+  const loadFullPost = (post) => {
+    const requestId = ++loadRequestRef.current;
+    fetch(`/api/blog/${post.id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Post not found");
+        return res.json();
+      })
+      .then((fullPost) => {
+        if (loadRequestRef.current === requestId) {
+          setSelectedPost(fullPost);
+        }
+      })
+      .catch(() => {
+        if (loadRequestRef.current === requestId) {
+          setPostLoadError(true);
+        }
+      });
+  };
+
+  // On mount: mark client-side (sidebar renders after this) and restore a
+  // previously open post, fetching its body if the saved copy has none.
   useEffect(() => {
-    setIsLoaded(true);
     setIsClientSide(true);
 
-    // Small delay to ensure everything is properly mounted
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 100);
-
-    return () => clearTimeout(timer);
+    if (typeof window !== "undefined") {
+      const savedPost = localStorage.getItem("selectedBlogPost");
+      if (savedPost) {
+        try {
+          const parsed = JSON.parse(savedPost);
+          if (parsed && parsed.id) {
+            if (parsed.content) {
+              setSelectedPost(parsed);
+            } else {
+              setSelectedPost(parsed);
+              loadFullPost(parsed);
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing saved post:", e);
+        }
+      }
+    }
   }, []);
 
   // Detect mobile devices
@@ -143,7 +167,17 @@ export default function BlogSection({ posts = defaultPosts }) {
 
   // Handle selecting a post to read
   const handlePostSelect = (post) => {
-    setSelectedPost(post);
+    setPostLoadError(false);
+    // Invalidate any in-flight body load from a previous selection.
+    loadRequestRef.current += 1;
+
+    if (post.content) {
+      setSelectedPost(post);
+    } else {
+      // Show the post view immediately; the body loads in a moment.
+      setSelectedPost(post);
+      loadFullPost(post);
+    }
     setSidebarCollapsed(false); // Keep sidebar expanded when selecting post
 
     // Scroll blog content to top when changing posts
@@ -155,6 +189,9 @@ export default function BlogSection({ posts = defaultPosts }) {
   // Handle closing the selected post
   const handleClosePost = () => {
     setSelectedPost(null);
+    setPostLoadError(false);
+    // Invalidate any in-flight body load for the closed post.
+    loadRequestRef.current += 1;
     // Don't collapse sidebar when closing a post
     // setSidebarCollapsed(true); // Remove or comment out this line
 
@@ -301,8 +338,7 @@ export default function BlogSection({ posts = defaultPosts }) {
         {/* Main content area - REMOVED adjust for sidebar */}
         <div className="transition-all duration-300 w-full">
           <div className="container px-4 sm:px-6 lg:px-8 mx-auto">
-            {isLoaded ? (
-              <>
+            <>
                 {!selectedPost ? (
                   <>
                     <BlogHeader totalPosts={safePosts.length} />
@@ -377,14 +413,10 @@ export default function BlogSection({ posts = defaultPosts }) {
                     blogContentRef={blogContentRef}
                     toggleFocusMode={toggleFocusMode}
                     isFocusMode={isFocusMode}
+                    loadError={postLoadError}
                   />
                 )}
-              </>
-            ) : (
-              <div className="flex justify-center items-center py-40">
-                <div className="animate-spin w-12 h-12 border-4 border-royal border-t-transparent rounded-full"></div>
-              </div>
-            )}
+            </>
           </div>
         </div>
       </div>

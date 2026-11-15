@@ -69,9 +69,10 @@ export default function Blog({ posts }) {
 
 // This function runs at build time in production and on each request in development
 export async function getStaticProps() {
-  // Get posts using the util function
-  // The path is relative to the pages directory
-  const posts = getAllPosts();
+  // List payload carries summaries only (no full post bodies). The body of
+  // a post loads on demand via /api/blog/[id] when a reader opens it, so the
+  // page stays light as the archive grows.
+  const posts = getAllPosts().map(({ content, ...summary }) => summary);
 
   return {
     props: {

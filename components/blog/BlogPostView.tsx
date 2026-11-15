@@ -24,6 +24,7 @@ export default function BlogPostView({
   blogContentRef,
   toggleFocusMode,
   isFocusMode,
+  loadError = false,
 }) {
   return (
     <>
@@ -139,7 +140,13 @@ export default function BlogPostView({
 
             {/* Post content - Updated to use Markdown */}
             <div className="prose prose-invert prose-royal max-w-none">
-              <ReactMarkdown
+              {loadError ? (
+                <p className="text-white/70">
+                  This post could not be loaded. Go back and try opening it
+                  again.
+                </p>
+              ) : selectedPost.content ? (
+                <ReactMarkdown
                 rehypePlugins={[rehypeRaw, rehypeSanitize]}
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -205,6 +212,17 @@ export default function BlogPostView({
               >
                 {selectedPost.content}
               </ReactMarkdown>
+              ) : (
+                <div
+                  className="animate-pulse space-y-4 py-4"
+                  aria-label="Loading post"
+                >
+                  <div className="h-4 bg-white/10 rounded w-full"></div>
+                  <div className="h-4 bg-white/10 rounded w-11/12"></div>
+                  <div className="h-4 bg-white/10 rounded w-10/12"></div>
+                  <div className="h-4 bg-white/10 rounded w-9/12"></div>
+                </div>
+              )}
             </div>
 
             {/* Social sharing buttons */}
