@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Image from "next/image";
 import { getCategoryIcon } from "./utils/categoryIcons";
 
 export default function BlogImage({
@@ -6,6 +7,11 @@ export default function BlogImage({
   className = "",
   width = "100%",
   height = "200px",
+  // Above-the-fold heroes (featured post, open post view) load eagerly;
+  // grid cards and tooltips lazy-load. next/image serves resized,
+  // modern-format versions instead of the full-size originals.
+  priority = false,
+  sizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
 }) {
   const [imageError, setImageError] = useState(false);
 
@@ -25,10 +31,13 @@ export default function BlogImage({
 
   return (
     <div className={`relative ${className}`} style={{ width, height }}>
-      <img
+      <Image
         src={post.image}
         alt={post.title || "Blog post image"}
-        className="w-full h-full object-cover"
+        fill
+        sizes={sizes}
+        priority={priority}
+        className="object-cover"
         onError={() => setImageError(true)}
       />
     </div>

@@ -96,7 +96,12 @@ export default function BlogPostView({
         >
           {/* Featured image */}
           <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] relative">
-            <BlogImage post={selectedPost} height="100%" />
+            <BlogImage
+              post={selectedPost}
+              height="100%"
+              priority
+              sizes="(max-width: 768px) 100vw, 900px"
+            />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50"></div>
           </div>
 

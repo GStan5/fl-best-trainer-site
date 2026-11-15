@@ -41,6 +41,8 @@ export default function BlogFeatured({ posts = [], handlePostSelect }) {
                 post={featuredPost}
                 className="rounded-xl overflow-hidden"
                 height={isMobile ? "200px" : "400px"}
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
               />
 
               <div className="absolute top-4 left-4">
