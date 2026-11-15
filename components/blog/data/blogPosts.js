@@ -19,10 +19,12 @@ import { wellnessLifestyleBalance } from "./posts/wellnessLifestyleBalance";
 import { beyondPowerVoltra1 } from "./posts/beyondPowerVoltra1";
 import { slowDownFormFirst } from "./posts/slowDownFormFirst";
 import { farmerCarriesEveryClass } from "./posts/farmerCarriesEveryClass";
+import { osteoporosisWeightLifting } from "./posts/osteoporosisWeightLifting";
 
 // Import more posts as you add them
 
 export const blogPosts = [
+  osteoporosisWeightLifting,
   farmerCarriesEveryClass,
   slowDownFormFirst,
   beyondPowerVoltra1,
