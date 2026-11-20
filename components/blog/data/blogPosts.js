@@ -20,10 +20,12 @@ import { beyondPowerVoltra1 } from "./posts/beyondPowerVoltra1";
 import { slowDownFormFirst } from "./posts/slowDownFormFirst";
 import { farmerCarriesEveryClass } from "./posts/farmerCarriesEveryClass";
 import { osteoporosisWeightLifting } from "./posts/osteoporosisWeightLifting";
+import { walkingWeightLifting } from "./posts/walkingWeightLifting";
 
 // Import more posts as you add them
 
 export const blogPosts = [
+  walkingWeightLifting,
   osteoporosisWeightLifting,
   farmerCarriesEveryClass,
   slowDownFormFirst,
