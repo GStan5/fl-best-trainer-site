@@ -5,6 +5,7 @@ import {
   ensureNewsletterTables,
   upsertSubscriber,
   sendMarketingEmail,
+  normalizeEmail,
   type SqlTag,
 } from "../../lib/newsletter";
 import { NEWSLETTER_SEND_GATE_ON } from "../../lib/ladder";
@@ -205,8 +206,14 @@ export default async function handler(
 
   const firstName =
     typeof req.body?.firstName === "string" ? req.body.firstName.trim() : "";
+  // One address, one spelling: emails are normalized (trim +
+  // lowercase) at every entry point, so GavinStanifer@live.com and
+  // gavinstanifer@live.com land on the same row. Covers the lead
+  // save, the subscriber upsert, and the guide email below.
   const email =
-    typeof req.body?.email === "string" ? req.body.email.trim() : "";
+    typeof req.body?.email === "string"
+      ? normalizeEmail(req.body.email)
+      : "";
   const source = normalizeSource(req.body?.source);
 
   if (!firstName || !email || !isValidEmail(email)) {

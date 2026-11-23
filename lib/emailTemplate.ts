@@ -33,11 +33,12 @@
 // Links — config constants, one-line swaps.
 // ---------------------------------------------------------------------------
 
-// Google review link — DEFAULT is the Google Maps search URL for
-// FL Best Trainer. Swap in the short g.page review link from the
-// Google Business Profile when Gavin has it — one line.
+// Google review link — the short g.page review link from the Google
+// Business Profile (Gavin 2026-11-23 ~15:17). This was the one-line
+// swap the template was built for: the Maps search URL fallback is
+// gone.
 export const GOOGLE_REVIEW_URL =
-  "https://www.google.com/maps/search/?api=1&query=FL+Best+Trainer";
+  "https://g.page/r/CaACepEsFdx0EBM/review";
 
 // Socials — real URLs (Gavin 2026-11-23). A link renders only when its
 // URL is set; an empty string means it is left out entirely, so there

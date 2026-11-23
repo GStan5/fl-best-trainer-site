@@ -4,6 +4,7 @@ import {
   isOnlineProduct,
   sendPurchaseEmail,
 } from "../../../lib/purchaseDelivery";
+import { normalizeEmail } from "../../../lib/newsletter";
 
 // Independent for Life — ONLINE purchase webhook (new route, 2026-10-08).
 // The existing in-person webhook (pages/api/stripe/webhook.ts) is not
@@ -125,8 +126,13 @@ export default async function handler(
 
   const session = event.data.object as Stripe.Checkout.Session;
   const product = session.metadata?.product;
-  const email =
-    session.customer_details?.email || session.customer_email || "";
+  // One address, one spelling: Stripe sends the address as the
+  // customer typed it, so normalize here — the purchase_emails row,
+  // the receipt, and the post-purchase enrollment all take the same
+  // canonical form, and every downstream lookup matches.
+  const email = normalizeEmail(
+    session.customer_details?.email || session.customer_email || ""
+  );
 
   if (!isOnlineProduct(product)) {
     // Not one of ours (e.g. an in-person checkout that also lands here):

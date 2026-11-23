@@ -98,6 +98,16 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
       next_send_at timestamptz
     )
   `;
+  // One address, one spelling (Gavin 2026-11-23): emails are
+  // normalized (trim + lowercase) at every entry point, and the DB
+  // itself refuses a second spelling — a mixed-case signup can never
+  // create a second row for an existing address, even racing the
+  // upsert. The plain `email unique` stays; this index is the
+  // case-insensitive guard on top of it.
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS newsletter_subscribers_email_lower_idx
+    ON newsletter_subscribers (lower(email))
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS email_sends (
       id serial primary key,
@@ -412,9 +422,13 @@ export async function resolveWeeklyDeal(
   email: string
 ): Promise<WeeklyDeal> {
   try {
+    // lower() on the stored side: purchase_emails is written by the
+    // Stripe webhook, whose addresses arrive as the customer typed
+    // them — a mixed-case stored email must still match. The param
+    // is normalized; the column is compared case-insensitively.
     const rows = (await sql`
       SELECT product FROM purchase_emails
-      WHERE email = ${normalizeEmail(email)} AND status = 'sent'
+      WHERE lower(email) = ${normalizeEmail(email)} AND status = 'sent'
     `) as unknown as Array<{ product: string }>;
     return weeklyDealForProducts(rows.map((r) => r.product));
   } catch (err) {
@@ -632,7 +646,7 @@ export async function starterBuyersFromEmail(
       SELECT pe.email, pe.created_at AS purchased_at,
              ns.subscribed_at, ns.source
       FROM purchase_emails pe
-      LEFT JOIN newsletter_subscribers ns ON ns.email = pe.email
+      LEFT JOIN newsletter_subscribers ns ON lower(ns.email) = lower(pe.email)
       WHERE pe.product = 'starter-plan' AND pe.status = 'sent'
       ORDER BY pe.created_at DESC
     `) as unknown as Array<{
@@ -930,9 +944,12 @@ export async function processPostPurchaseRow(
   // holding an unrecognised product skips — the ladder decides, the
   // engine never hardcodes a rank.
   if (step === 3) {
+    // lower() on the stored side: purchase_emails is written by the
+    // Stripe webhook, whose addresses arrive as the customer typed
+    // them — a mixed-case stored email must still match.
     const bought = (await sql`
       SELECT product FROM purchase_emails
-      WHERE email = ${email} AND status = 'sent'
+      WHERE lower(email) = ${email} AND status = 'sent'
     `) as unknown as Array<{ product: string }>;
     const nextRung = nextRungAfterProducts([
       row.product ?? "",

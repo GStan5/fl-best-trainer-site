@@ -82,14 +82,18 @@ export const LADDER: LadderRung[] = [
     // WAITLIST, not a purchase (verified 2026-11-23 in
     // pages/flagship.tsx): the founding cohort is not yet enrolling,
     // the Enroll buttons are a waitlist form, and there is no Stripe
-    // product for flagship. The price is real ($497 one time, 3x$185
-    // on the page as the offer description) — so the deal names the
-    // price and the action is joining the waitlist, never a buy that
-    // doesn't exist. When the cohort opens, this label becomes a buy
-    // label; the rung, price, and link stay the same.
+    // product for flagship. Gavin (2026-11-23) has NOT decided how
+    // to build the program system yet — for now people can only sign
+    // up to reserve spots, probably run in groups with limited spots.
+    // The price is real ($497 one time, 3x$185 on the page as the
+    // offer description) — so the deal names the price and the action
+    // is joining the waitlist, never a buy that doesn't exist. And
+    // joining the waitlist costs nothing today: reserve only, pay
+    // nothing until the cohort opens (Gavin's words, confirmed
+    // 2026-11-23 ~15:15). When the cohort opens, this label becomes
+    // a buy label; the rung, price, and link stay the same.
     dealLabel: "Join the Flagship waitlist — $497",
-    dealLine:
-      "You finished Self-Study. The Flagship is the 6-week Foundations program — 18 sessions, a coach watching your form, $497 one time. The founding cohort isn't open yet — join the waitlist and you'll hear first.",
+    dealLine: "Reserve your spot for FREE today.",
   },
   {
     rank: 4,
@@ -203,14 +207,16 @@ export function weeklyDealForProducts(products: string[]): WeeklyDeal {
 // lead today), so nobody silently queues up for the day the gate
 // lifts. Enrollment becomes a deliberate step when Gavin lifts it.
 //
-// The allowlist is Gavin's address (both casings he uses) and Grim's.
-// Matching is case-insensitive; the duplicate casing is kept verbatim
-// because Gavin named both.
+// The allowlist is Gavin's address and Grim's — one spelling each.
+// The system treats the two casings of Gavin's address as ONE
+// address (emails are normalized — trim + lowercase — at every entry
+// point, lib/newsletter.ts normalizeEmail, and the DB enforces
+// case-insensitive uniqueness), so the allowlist holds the lowercase
+// form only. Matching is still case-insensitive as a belt-and-braces.
 export const NEWSLETTER_SEND_GATE_ON = true;
 
 export const NEWSLETTER_ALLOWLIST = [
   "gavinstanifer@live.com",
-  "GavinStanifer@live.com",
   "grim1051990@gmail.com",
 ] as const;
 

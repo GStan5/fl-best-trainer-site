@@ -8,6 +8,7 @@ import {
   enrollWinback,
   processPostPurchaseRow,
   processWinbackRow,
+  normalizeEmail,
 } from "../../../lib/newsletter";
 import {
   SUNSET_SILENT_DAYS,
@@ -114,6 +115,12 @@ export default async function handler(
     }> = [];
 
     for (const sub of due) {
+      // One address, one spelling: the stored value is normalized at
+      // every entry point, but normalize here too — the loop's
+      // lookups (purchase_emails, email_events, email_sends) and the
+      // gate check must all see the canonical form, never a stray
+      // casing from an older row.
+      const email = normalizeEmail(sub.email);
       // Send gate (Gavin 2026-11-23): while ON, only the allowlist
       // receives marketing email. Checked FIRST — a non-allowlisted
       // subscriber is never enrolled in winback either (winback is
@@ -121,10 +128,10 @@ export default async function handler(
       // subscriber advances to finished (step 5), the step does not
       // sit due for the day the gate lifts. Dry runs report the skip
       // without changing anything.
-      if (!marketingSendAllowed(sub.email)) {
+      if (!marketingSendAllowed(email)) {
         if (!dryRun) {
           await logEmailSend(sql, {
-            email: sub.email,
+            email: email,
             kind: `sequence-${sub.sequence_step}`,
             subject: "(skipped — send gate)",
             status: "skipped-not-allowlisted",
@@ -132,11 +139,11 @@ export default async function handler(
           await sql`
             UPDATE newsletter_subscribers
             SET sequence_step = 5, next_send_at = NULL
-            WHERE email = ${sub.email}
+            WHERE email = ${email}
           `;
         }
         results.push({
-          email: sub.email,
+          email: email,
           step: sub.sequence_step,
           status: "skipped-not-allowlisted",
           detail:
@@ -155,14 +162,14 @@ export default async function handler(
       try {
         const engagement = (await sql`
           SELECT 1 FROM email_events
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
             AND event_type IN ('open', 'click')
             AND created_at >= NOW() - make_interval(days => ${SUNSET_SILENT_DAYS})
           LIMIT 1
         `) as unknown as Array<Record<string, unknown>>;
         const firstSend = (await sql`
           SELECT sent_at FROM email_sends
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
           ORDER BY sent_at ASC LIMIT 1
         `) as unknown as Array<{ sent_at: string }>;
         if (
@@ -172,9 +179,9 @@ export default async function handler(
             SUNSET_SILENT_DAYS * 24 * 60 * 60 * 1000
         ) {
           if (!dryRun) {
-            await enrollWinback(sql, sub.email);
+            await enrollWinback(sql, email);
             await logEmailSend(sql, {
-              email: sub.email,
+              email: email,
               kind: "sunset-winback",
               subject: `(enrolled in winback — ${SUNSET_SILENT_DAYS} days silent)`,
               status: "winback-enrolled",
@@ -182,11 +189,11 @@ export default async function handler(
             await sql`
               UPDATE newsletter_subscribers
               SET sequence_step = 0, next_send_at = NULL
-              WHERE email = ${sub.email}
+              WHERE email = ${email}
             `;
           }
           results.push({
-            email: sub.email,
+            email: email,
             step: sub.sequence_step,
             status: "winback-enrolled",
             detail: `Silent ${SUNSET_SILENT_DAYS} days — enrolled in the winback sequence; suppression only after the third winback email.`,
@@ -197,7 +204,7 @@ export default async function handler(
         // No email_events table yet (Phase 2) or a transient error —
         // skip the sunset check for this subscriber, not the send.
         console.error(
-          `[email-sequence] sunset check failed for ${sub.email} (skipping check):`,
+          `[email-sequence] sunset check failed for ${email} (skipping check):`,
           err
         );
       }
@@ -206,14 +213,14 @@ export default async function handler(
       const emailDef = sequenceEmailForStep(step);
 
       if (!emailDef) {
-        results.push({ email: sub.email, step, status: "skipped-no-email" });
+        results.push({ email: email, step, status: "skipped-no-email" });
         continue;
       }
 
       // Gate 2: Gavin's approval. Never send an unapproved step.
       if (!emailDef.approved) {
         results.push({
-          email: sub.email,
+          email: email,
           step,
           status: "skipped-not-approved",
           detail: "Sequence step not approved yet — left due.",
@@ -228,14 +235,14 @@ export default async function handler(
       if (step === 3) {
         const bought = (await sql`
           SELECT 1 FROM purchase_emails
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
             AND status = 'sent'
           LIMIT 1
         `) as unknown as Array<Record<string, unknown>>;
         if (bought.length > 0) {
           if (!dryRun) {
             await logEmailSend(sql, {
-              email: sub.email,
+              email: email,
               kind: "sequence-3",
               subject: emailDef.subject,
               status: "skipped-bought",
@@ -246,11 +253,11 @@ export default async function handler(
             await sql`
               UPDATE newsletter_subscribers
               SET sequence_step = 4, next_send_at = now() + make_interval(days => ${gapDays})
-              WHERE email = ${sub.email}
+              WHERE email = ${email}
             `;
           }
           results.push({
-            email: sub.email,
+            email: email,
             step,
             status: "skipped-bought",
             detail:
@@ -262,7 +269,7 @@ export default async function handler(
 
       if (dryRun) {
         results.push({
-          email: sub.email,
+          email: email,
           step,
           status: "would-send",
           detail: `Subject: ${emailDef.subject}`,
@@ -273,7 +280,7 @@ export default async function handler(
       // Live send.
       try {
         await sendMarketingEmail(sql, {
-          to: sub.email,
+          to: email,
           firstName: sub.first_name ?? undefined,
           subject: emailDef.subject,
           bodyHtml: emailDef.html,
@@ -293,11 +300,11 @@ export default async function handler(
         // Logged as 'failed' inside sendMarketingEmail. Leave due —
         // tomorrow's run retries.
         console.error(
-          `[email-sequence] send failed for ${sub.email} step ${step}:`,
+          `[email-sequence] send failed for ${email} step ${step}:`,
           err
         );
         results.push({
-          email: sub.email,
+          email: email,
           step,
           status: "failed",
           detail: err instanceof Error ? err.message : "Send failed",
@@ -313,30 +320,30 @@ export default async function handler(
         await sql`
           UPDATE newsletter_subscribers
           SET sequence_step = 2, next_send_at = now() + make_interval(days => ${gapDays})
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
         `;
       } else if (step === 2) {
         const gapDays = sequenceGapDays(2, 3);
         await sql`
           UPDATE newsletter_subscribers
           SET sequence_step = 3, next_send_at = now() + make_interval(days => ${gapDays})
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
         `;
       } else if (step === 3) {
         const gapDays = sequenceGapDays(3, 4);
         await sql`
           UPDATE newsletter_subscribers
           SET sequence_step = 4, next_send_at = now() + make_interval(days => ${gapDays})
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
         `;
       } else {
         await sql`
           UPDATE newsletter_subscribers
           SET sequence_step = 5, next_send_at = NULL
-          WHERE email = ${sub.email}
+          WHERE email = ${email}
         `;
       }
-      results.push({ email: sub.email, step, status: "sent" });
+      results.push({ email: email, step, status: "sent" });
     }
 
     // Post-purchase due rows (research B7): own table, own state.

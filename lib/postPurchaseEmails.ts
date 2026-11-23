@@ -124,8 +124,10 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     sendAfterDays: 14,
     approved: true,
     // No button: the guide link sits inline in the body, and the PS
-    // carries the Google review link (template PS linkifier).
-    ps: "If the guide helped you, a quick Google review helps more people over 50 find us. [Leave a review on Google](https://www.google.com/maps/search/?api=1&query=FL+Best+Trainer)",
+    // carries the Google review link (template PS linkifier). The
+    // link is the short g.page review link Gavin sent 2026-11-23 —
+    // the Maps search URL it replaces is gone from the whole system.
+    ps: "If the guide helped you, a quick Google review helps more people over 50 find us. [Leave a review on Google](https://g.page/r/CaACepEsFdx0EBM/review)",
     preheader: "Send them the same 7 days you started with.",
     showReview: false,
     html: `
