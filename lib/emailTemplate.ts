@@ -65,6 +65,38 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// A PS / PPS line with its links live: escape first, then turn
+// [label](url) and bare https URLs into links (same shape as the
+// linkifier in lib/newsletter.ts textToHtml). Plain-text PS lines
+// have no links and render exactly as before — this only matters for
+// the post-purchase PS lines, which carry a blog link (email 2) and a
+// Google review link (email 4) inside the PS itself. Links to our
+// own site get the same UTM tags as body links (campaign passed in
+// by buildMarketingEmail) — an untagged link in the PS would read as
+// direct traffic instead of email.
+function psLinkUrl(url: string, campaign?: string): string {
+  const clean = url.replace(/&amp;/g, "&");
+  if (!campaign) return clean;
+  if (!clean.startsWith("https://flbesttrainer.com")) return clean;
+  if (clean.includes("utm_source=")) return clean;
+  const sep = clean.includes("?") ? "&" : "?";
+  return `${clean}${sep}utm_source=email&utm_medium=email&utm_campaign=${campaign}`;
+}
+
+function psHtml(s: string, campaign?: string): string {
+  const escaped = escapeHtml(s);
+  const linked = escaped.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_match, label: string, url: string) =>
+      `<a href="${psLinkUrl(url, campaign)}" style="color: #1D4ED8; text-decoration: underline;">${label}</a>`
+  );
+  return linked.replace(
+    /(?<!href=")(https?:\/\/[^\s<"]+)/g,
+    (url: string) =>
+      `<a href="${psLinkUrl(url, campaign)}" style="color: #1D4ED8; text-decoration: underline;">${url}</a>`
+  );
+}
+
 // The "why you get this" line, by signup source (audit M5). A homepage
 // box subscriber never downloaded the guide — telling them they did is
 // a lie. Every source gets its own true line.
@@ -77,6 +109,8 @@ export function whyYouGetThisLine(source?: string | null): string {
     case "starter":
     case "plans":
       return "You're getting this because you signed up on flbesttrainer.com.";
+    case "purchase":
+      return "You're getting this because you bought a program on flbesttrainer.com.";
     default:
       if ((source ?? "").toLowerCase().startsWith("niche-")) {
         return "You're getting this because you joined the list on flbesttrainer.com.";
@@ -264,6 +298,9 @@ export function renderEmailTemplate(opts: {
   // email: a weekly has a deal and no cta; a sequence email has a
   // cta and no deal.
   deal?: { line: string; cta: EmailCta };
+  // Campaign name for UTM tags on PS / PPS links (the body links are
+  // tagged by buildMarketingEmail before they reach the template).
+  utmCampaign?: string;
 }): string {
   const button = (cta: EmailCta) => `
     <table class="cta-btn" role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0 8px;">
@@ -274,10 +311,10 @@ export function renderEmailTemplate(opts: {
       </tr>
     </table>`;
   const ps = opts.ps
-    ? `<p style="margin: 16px 0 0;">P.S. ${escapeHtml(opts.ps)}</p>`
+    ? `<p style="margin: 16px 0 0;">P.S. ${psHtml(opts.ps, opts.utmCampaign)}</p>`
     : "";
   const pps = opts.pps
-    ? `<p style="margin: 8px 0 0;">P.P.S. ${escapeHtml(opts.pps)}</p>`
+    ? `<p style="margin: 8px 0 0;">P.P.S. ${psHtml(opts.pps, opts.utmCampaign)}</p>`
     : "";
   const preheader = opts.preheader
     ? `<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all; font-size: 1px; line-height: 1px; color: #F3F4F6;">${escapeHtml(opts.preheader)}</div>`

@@ -150,18 +150,29 @@ async function sendGuideEmail(
       to: email,
       firstName,
       subject: "Your free 7-Day Starter Guide is here",
+      // Guide email = email 0, restructured per Hormozi and APPROVED
+      // by Gavin 2026-11-23 ~14:32 ("guide email 0 good"). Headline
+      // is the immediate reward; the reply-yes line is the first
+      // reply (research B1); the PS restates the setup. No sign-off
+      // paragraph — the template's signature block closes the letter.
+      // Water-bottle line (Gavin ~14:32): "water bottles or your
+      // preferred dumbbell weight". Expectation line unchanged (audit
+      // M6): the sequence and the weekly are promised here, never a
+      // surprise.
       bodyHtml: `
         <p>Hi {first_name},</p>
         <p>Thanks for requesting the <strong>Independent for Life 7-Day Starter Guide</strong> — it's attached to this email as a PDF.</p>
         <p>You can also download it any time here:<br/>
         <a href="${GUIDE_PDF_URL}">${GUIDE_PDF_URL}</a></p>
-        <p>Start with Day 1 whenever you're ready. All you need is a sturdy chair, a clear wall, and two water bottles.</p>
+        <p>Start with Day 1 whenever you're ready. All you need is a sturdy chair, a clear wall, and water bottles or your preferred dumbbell weight.</p>
+        <p>Hit reply and tell me the one thing that hurts most when you try to lift. I read every reply.</p>
         <p>Over the next week I'll send you three short tips. After that, one useful idea a week.</p>
-        <p>Stay strong,<br/>Gavin Stanifer, NASM Certified Personal Trainer<br/>FL Best Trainer — Longboat Key, Florida</p>
       `,
       kind: "guide",
       campaign: "guide",
       cta: { label: "Download your guide", url: GUIDE_PDF_URL },
+      headline: "Your guide is attached. Start with Day 1.",
+      ps: "Start with Day 1 when you are ready. A chair, a wall, and water bottles or your preferred dumbbell weight is all you need.",
       // Audit M6: email 0 sets the expectation for the sequence and the
       // weekly. Audit S1: no review ask in email 0 — value first.
       // No hero photo — Hormozi's no-images rule (research Part B):

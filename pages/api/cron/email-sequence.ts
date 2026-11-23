@@ -5,6 +5,9 @@ import {
   ensureNewsletterTables,
   sendMarketingEmail,
   logEmailSend,
+  enrollWinback,
+  processPostPurchaseRow,
+  processWinbackRow,
 } from "../../../lib/newsletter";
 import { sequenceEmailForStep } from "../../../lib/sequenceEmails";
 
@@ -12,6 +15,9 @@ import { sequenceEmailForStep } from "../../../lib/sequenceEmails";
 // Picks up everyone whose next_send_at is due, sends the next step,
 // logs it in email_sends, and advances them. A failed send stays due
 // and retries the next day — nothing is lost, nothing is sent twice.
+// This route also processes the post-purchase and winback due rows
+// (their own tables, their own state) — one daily marketing cron, not
+// three.
 //
 // Gates, checked before EVERY send:
 //   1. The subscriber has not unsubscribed (query filters them out).
@@ -24,17 +30,23 @@ import { sequenceEmailForStep } from "../../../lib/sequenceEmails";
 //      never pitch DOWN the ladder — a Self-Study or monthly buyer
 //      who gets the Starter pitch would see a $37 offer for the thing
 //      they already bought past). A buyer skips the pitch: the send
-//      is logged as 'skipped-bought' and the sequence is marked
-//      finished.
+//      is logged as 'skipped-bought' and they advance to step 4, the
+//      Day-14 check-in — the check-in is not a pitch, buyers get it
+//      too.
 //
-// Sunset (research B6): a subscriber silent for 90 days (no opens or
-// clicks in email_events, and first send was 90+ days ago) is
-// suppressed in place — sequence_step 0, next_send_at NULL — and
-// logged as 'suppressed'. Suppression is a state, not a delete; the
+// Sunset (research B6, winback B9): a subscriber silent for 90 days
+// (no opens or clicks in email_events, and first send was 90+ days
+// ago) is enrolled in the winback sequence (3 emails, ~5 days apart)
+// instead of being suppressed in place — and suppressed only after
+// the third winback email. Suppression is a state, not a delete; the
 // row stays, and resubscribing restarts the sequence at step 1
-// (audit S16). With 4 subscribers the re-engage email is a
-// hand-written draft (see the design doc); once the list is bigger
-// this becomes an automated winback sequence.
+// (audit S16). LIMIT: email_events is a Phase 2 table; until it
+// exists the check throws and is skipped — a missing table must never
+// break the sequence for everyone else. And the check only runs for
+// subscribers who are DUE for a sequence step, so someone who
+// finished the sequence and then goes silent is never checked —
+// extending the sunset scan to the whole list is a follow-up, not
+// this build.
 //
 // Auth: same CRON_SECRET Bearer check as the other cron routes.
 // ?dryRun=1 logs what WOULD be sent and sends nothing — the safe way
@@ -82,7 +94,7 @@ export default async function handler(
       SELECT email, first_name, source, sequence_step
       FROM newsletter_subscribers
       WHERE unsubscribed_at IS NULL
-        AND sequence_step BETWEEN 1 AND 3
+        AND sequence_step BETWEEN 1 AND 4
         AND next_send_at IS NOT NULL
         AND next_send_at <= now()
       ORDER BY next_send_at ASC
@@ -96,7 +108,9 @@ export default async function handler(
     }> = [];
 
     for (const sub of due) {
-      // Sunset (research B6): silent 90 days → suppress in place.
+      // Sunset (research B6, winback B9): silent 90 days → enroll in
+      // the winback sequence, don't suppress in place. Suppression
+      // happens only after the third winback email gets no reply.
       // email_events is a Phase 2 table; until it exists the check
       // throws and is skipped — a missing table must never break the
       // sequence for everyone else.
@@ -120,11 +134,12 @@ export default async function handler(
             90 * 24 * 60 * 60 * 1000
         ) {
           if (!dryRun) {
+            await enrollWinback(sql, sub.email);
             await logEmailSend(sql, {
               email: sub.email,
-              kind: "sunset-suppress",
-              subject: "(suppressed — 90 days silent, no re-engage reply)",
-              status: "suppressed",
+              kind: "sunset-winback",
+              subject: "(enrolled in winback — 90 days silent)",
+              status: "winback-enrolled",
             });
             await sql`
               UPDATE newsletter_subscribers
@@ -135,9 +150,9 @@ export default async function handler(
           results.push({
             email: sub.email,
             step: sub.sequence_step,
-            status: "suppressed",
+            status: "winback-enrolled",
             detail:
-              "Silent 90 days — suppressed in place, row kept, resubscribe restarts the sequence.",
+              "Silent 90 days — enrolled in the winback sequence; suppression only after the third winback email.",
           });
           continue;
         }
@@ -170,7 +185,9 @@ export default async function handler(
       }
 
       // Gate 3: email 3 only — skip the pitch for existing buyers of
-      // ANY product (research B7: never pitch down the ladder).
+      // ANY product (research B7: never pitch down the ladder). They
+      // advance to step 4, the Day-14 check-in — it is not a pitch,
+      // so buyers get it too.
       if (step === 3) {
         const bought = (await sql`
           SELECT 1 FROM purchase_emails
@@ -188,7 +205,7 @@ export default async function handler(
             });
             await sql`
               UPDATE newsletter_subscribers
-              SET sequence_step = 4, next_send_at = NULL
+              SET sequence_step = 4, next_send_at = now() + interval '7 days'
               WHERE email = ${sub.email}
             `;
           }
@@ -196,7 +213,8 @@ export default async function handler(
             email: sub.email,
             step,
             status: "skipped-bought",
-            detail: "Already bought Starter — pitch skipped, sequence finished.",
+            detail:
+              "Already bought something — pitch skipped, Day-14 check-in still due in 7 days.",
           });
           continue;
         }
@@ -248,7 +266,7 @@ export default async function handler(
       }
 
       // Advance: step 1 -> due day 4 (+2d), step 2 -> due day 7 (+3d),
-      // step 3 -> finished.
+      // step 3 -> due day 14 (+7d), step 4 -> finished (step 5).
       if (step === 1) {
         await sql`
           UPDATE newsletter_subscribers
@@ -261,14 +279,53 @@ export default async function handler(
           SET sequence_step = 3, next_send_at = now() + interval '3 days'
           WHERE email = ${sub.email}
         `;
+      } else if (step === 3) {
+        await sql`
+          UPDATE newsletter_subscribers
+          SET sequence_step = 4, next_send_at = now() + interval '7 days'
+          WHERE email = ${sub.email}
+        `;
       } else {
         await sql`
           UPDATE newsletter_subscribers
-          SET sequence_step = 4, next_send_at = NULL
+          SET sequence_step = 5, next_send_at = NULL
           WHERE email = ${sub.email}
         `;
       }
       results.push({ email: sub.email, step, status: "sent" });
+    }
+
+    // Post-purchase due rows (research B7): own table, own state.
+    // A buyer may also be mid-sequence — the two run side by side.
+    const ppDue = (await sql`
+      SELECT email, product, step FROM post_purchase_sequences
+      WHERE step BETWEEN 1 AND 4
+        AND next_send_at IS NOT NULL
+        AND next_send_at <= now()
+      ORDER BY next_send_at ASC
+    `) as unknown as Array<{
+      email: string;
+      product: string | null;
+      step: number;
+    }>;
+    for (const row of ppDue) {
+      const r = await processPostPurchaseRow(sql, row, dryRun);
+      results.push({ ...r, step: r.step });
+    }
+
+    // Winback due rows (research B9): the re-engage step of the
+    // sunset policy. Suppression happens inside processWinbackRow,
+    // only after step 3.
+    const wbDue = (await sql`
+      SELECT email, step FROM winback_sequences
+      WHERE step BETWEEN 1 AND 3
+        AND next_send_at IS NOT NULL
+        AND next_send_at <= now()
+      ORDER BY next_send_at ASC
+    `) as unknown as Array<{ email: string; step: number }>;
+    for (const row of wbDue) {
+      const r = await processWinbackRow(sql, row, dryRun);
+      results.push({ ...r, step: r.step });
     }
 
     const sent = results.filter((r) => r.status === "sent").length;
@@ -278,7 +335,7 @@ export default async function handler(
     return res.status(200).json({
       ok: true,
       dryRun,
-      checked: due.length,
+      checked: due.length + ppDue.length + wbDue.length,
       sent,
       failed,
       skipped,

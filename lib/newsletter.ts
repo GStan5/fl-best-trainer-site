@@ -22,6 +22,14 @@ import {
   whyYouGetThisLine,
   type EmailCta,
 } from "./emailTemplate";
+import {
+  postPurchaseEmailForStep,
+  type PostPurchaseEmail,
+} from "./postPurchaseEmails";
+import {
+  winbackEmailForStep,
+  type WinbackEmail,
+} from "./winbackEmails";
 
 export type SqlTag = (
   strings: TemplateStringsArray,
@@ -126,6 +134,37 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
   await sql`
     ALTER TABLE newsletter_drafts
     ADD COLUMN IF NOT EXISTS item_url text
+  `;
+  // Post-purchase sequence (research B7, wired 2026-11-23): its own
+  // send state, NOT sequence_step — a buyer may also be mid-sequence
+  // and the two run side by side. step 1 = thank-you (due at
+  // purchase), 2 = Day 2, 3 = Day 7 (Self-Study nudge, Starter
+  // buyers only), 4 = Day 14 (referral ask), 5 = finished. product
+  // is the highest rung bought (see ladderRank) — a later purchase
+  // of a higher rung upgrades it, and the step-3 check reads it.
+  await sql`
+    CREATE TABLE IF NOT EXISTS post_purchase_sequences (
+      id serial primary key,
+      email text unique not null,
+      product text,
+      step integer default 0,
+      next_send_at timestamptz,
+      created_at timestamptz default now()
+    )
+  `;
+  // Winback sequence (research B9, wired 2026-11-23): the re-engage
+  // step of the sunset policy. step 1 = "It's been a while" (due at
+  // enrollment), 2 = one big useful thing (+5d), 3 = "Should I stop
+  // sending these?" (+5d), 4 = done — suppression happens only after
+  // step 3. Suppression is a state, never a delete.
+  await sql`
+    CREATE TABLE IF NOT EXISTS winback_sequences (
+      id serial primary key,
+      email text unique not null,
+      step integer default 0,
+      next_send_at timestamptz,
+      created_at timestamptz default now()
+    )
   `;
 }
 
@@ -384,25 +423,32 @@ export const WEEKLY_DEALS: Record<WeeklyDeal["key"], WeeklyDeal> = {
   },
 };
 
+// Product ladder rank (Hormozi Value Ladder, one rung at a time).
+// Shared by the weekly deal resolver and the post-purchase engine so
+// "highest rung bought" means the same thing in both places.
+// starter-plan = 1, self-study = 2, flagship / monthly = 3.
+// An unknown product ranks top — a product we don't recognise must
+// never cause a pitch DOWN the ladder.
+export function ladderRank(product: string): number {
+  switch (product) {
+    case "starter-plan":
+      return 1;
+    case "self-study":
+      return 2;
+    case "flagship":
+    case "monthly-97":
+    case "monthly-147":
+    case "monthly-197":
+      return 3;
+    default:
+      return 3;
+  }
+}
+
 // Pure function (unit-testable without a DB): highest rung wins.
 export function weeklyDealForProducts(products: string[]): WeeklyDeal {
-  const rank = (product: string): number => {
-    switch (product) {
-      case "starter-plan":
-        return 1;
-      case "self-study":
-        return 2;
-      case "flagship":
-      case "monthly-97":
-      case "monthly-147":
-      case "monthly-197":
-        return 3;
-      default:
-        return 3; // unknown product — never pitch down the ladder
-    }
-  };
   let best = 0;
-  for (const p of products) best = Math.max(best, rank(p));
+  for (const p of products) best = Math.max(best, ladderRank(p));
   if (best >= 3) return WEEKLY_DEALS["in-home"];
   if (best === 2) return WEEKLY_DEALS.classes;
   if (best === 1) return WEEKLY_DEALS["self-study"];
@@ -550,6 +596,7 @@ export function buildMarketingEmail(opts: {
     source: opts.source,
     forwardLine: opts.forwardLine,
     deal,
+    utmCampaign: opts.campaign,
   });
   // Research B14: Gmail clips messages at ~102KB of HTML — and hides
   // the footer and the unsubscribe link behind "view entire message".
@@ -562,7 +609,13 @@ export function buildMarketingEmail(opts: {
   }
   // Text version mirrors the HTML order: headline, body, deal,
   // signature, PS, PPS, CTA link, footer asks — so it is never a
-  // lesser email.
+  // lesser email. A PS that carries a markdown link renders in plain
+  // text as "label: url" (never raw "[label](url)" syntax).
+  const plainPs = (s: string): string =>
+    s.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      (_m, label: string, url: string) => `${label}: ${url}`
+    );
   const textParts = [
     ...(opts.headline ? [opts.headline, ""] : []),
     stripTags(body),
@@ -572,8 +625,8 @@ export function buildMarketingEmail(opts: {
     renderSignatureText(),
   ];
   if (cta) textParts.push(`\n${cta.label}: ${cta.url}`);
-  if (opts.ps) textParts.push(`\nP.S. ${opts.ps}`);
-  if (opts.pps) textParts.push(`\nP.P.S. ${opts.pps}`);
+  if (opts.ps) textParts.push(`\nP.S. ${plainPs(opts.ps)}`);
+  if (opts.pps) textParts.push(`\nP.P.S. ${plainPs(opts.pps)}`);
   const text =
     textParts.join("\n") +
     renderEmailFooterText({
@@ -744,4 +797,380 @@ export async function sendMarketingEmail(
     subject: opts.subject,
     status: "sent",
   });
+}
+
+// ---------------------------------------------------------------------------
+// Post-purchase + winback engines (research B7/B9, wired 2026-11-23)
+// ---------------------------------------------------------------------------
+//
+// Both engines mirror the sequence cron's shape: a due row, a def
+// lookup, a gate check, a send (or a dry-run report), an advance.
+// The cron route calls processPostPurchaseRow / processWinbackRow for
+// each due row; the purchase webhook calls enrollPostPurchase +
+// processPostPurchaseRow for step 1 so the thank-you goes out right
+// after the receipt instead of waiting for the next 9 AM cron run.
+// A failed send stays due and retries the next day — nothing is lost,
+// nothing is sent twice.
+
+// First name + source for an email, from the subscriber row if one
+// exists. Buyers are not always subscribers (they may have bought
+// without ever downloading the guide) — null means "there" and the
+// caller's default source.
+export async function subscriberInfo(
+  sql: SqlTag,
+  email: string
+): Promise<{ first_name: string | null; source: string | null } | null> {
+  try {
+    const rows = (await sql`
+      SELECT first_name, source FROM newsletter_subscribers
+      WHERE email = ${normalizeEmail(email)} LIMIT 1
+    `) as unknown as Array<{
+      first_name: string | null;
+      source: string | null;
+    }>;
+    return rows[0] ?? null;
+  } catch (err) {
+    console.error("[newsletter] subscriberInfo failed:", err);
+    return null;
+  }
+}
+
+export interface PostPurchaseRow {
+  email: string;
+  product: string | null;
+  step: number;
+  next_send_at?: string | null;
+}
+
+export interface EngineResult {
+  email: string;
+  step: number;
+  status: string;
+  detail?: string;
+}
+
+// Enrolls a buyer in the post-purchase sequence. The copy is written
+// for the Starter buyer (emails 1–2 say "do Day 1 / Day 2"), so a
+// Self-Study or monthly buyer enrolls at step 4 only — the referral
+// ask, which the draft sends to all buyers. A Starter buyer enrolls
+// at step 1, due now. A later purchase of a higher rung upgrades the
+// stored product (the step-3 check reads purchase_emails anyway, so
+// an upgrade after enrolling still skips the nudge). A finished buyer
+// (step 5) who buys again starts a fresh cycle.
+export async function enrollPostPurchase(
+  sql: SqlTag,
+  email: string,
+  product: string
+): Promise<PostPurchaseRow> {
+  const normalized = normalizeEmail(email);
+  const newRank = ladderRank(product);
+  const existing = (await sql`
+    SELECT email, product, step FROM post_purchase_sequences
+    WHERE email = ${normalized} LIMIT 1
+  `) as unknown as PostPurchaseRow[];
+
+  // Fresh enrollment: Starter buyers start at step 1 (due now);
+  // Self-Study / monthly buyers start at step 4 only — the referral
+  // ask, due in 14 days. Emails 1–3 are written for the Starter
+  // buyer ("do Day 1 / Day 2", the Self-Study nudge), so a higher-rung
+  // buyer never sees them.
+  const freshStep = newRank === 1 ? 1 : 4;
+  const freshDue = new Date(
+    Date.now() + (freshStep === 1 ? 0 : 14 * 24 * 60 * 60 * 1000)
+  ).toISOString();
+
+  if (existing.length === 0) {
+    const rows = (await sql`
+      INSERT INTO post_purchase_sequences (email, product, step, next_send_at)
+      VALUES (${normalized}, ${product}, ${freshStep}, ${freshDue})
+      RETURNING email, product, step
+    `) as unknown as PostPurchaseRow[];
+    return rows[0];
+  }
+
+  // Existing row: keep the higher-rung product. A finished buyer
+  // (step 5) who buys again starts a fresh cycle for that purchase;
+  // a mid-sequence buyer keeps their place, and the step-3 check
+  // reads purchase_emails, so an upgrade after enrolling still
+  // skips the Self-Study nudge.
+  const row = existing[0];
+  const bestProduct =
+    newRank >= ladderRank(row.product ?? "") ? product : row.product;
+  if (row.step >= 5) {
+    const rows = (await sql`
+      UPDATE post_purchase_sequences
+      SET product = ${bestProduct}, step = ${freshStep}, next_send_at = ${freshDue}
+      WHERE email = ${normalized}
+      RETURNING email, product, step
+    `) as unknown as PostPurchaseRow[];
+    return rows[0];
+  }
+  const rows = (await sql`
+    UPDATE post_purchase_sequences
+    SET product = ${bestProduct}
+    WHERE email = ${normalized}
+    RETURNING email, product, step
+  `) as unknown as PostPurchaseRow[];
+  return rows[0];
+}
+
+// One due post-purchase row, end to end: def lookup, step-3 product
+// check, send (or dry-run report), advance. A failed send stays due
+// and retries the next day. Returns a cron-shaped result.
+export async function processPostPurchaseRow(
+  sql: SqlTag,
+  row: PostPurchaseRow,
+  dryRun: boolean
+): Promise<EngineResult> {
+  const email = normalizeEmail(row.email);
+  const step = row.step;
+  const def = postPurchaseEmailForStep(step);
+  if (!def) {
+    return { email, step, status: "skipped-no-email" };
+  }
+  if (!def.approved) {
+    return {
+      email,
+      step,
+      status: "skipped-not-approved",
+      detail: "Post-purchase step not approved yet — left due.",
+    };
+  }
+
+  // Step 3 only — the Self-Study nudge goes to Starter buyers ONLY.
+  // Checked against BOTH the stored product and purchase_emails at
+  // send time (not just enrollment), so a buyer who upgrades after
+  // enrolling still skips it. Any product ranked above Starter skips.
+  if (step === 3) {
+    const bought = (await sql`
+      SELECT product FROM purchase_emails
+      WHERE email = ${email} AND status = 'sent'
+    `) as unknown as Array<{ product: string }>;
+    const highest = Math.max(
+      ladderRank(row.product ?? ""),
+      bought.reduce(
+        (best, b) => Math.max(best, ladderRank(b.product)),
+        0
+      )
+    );
+    if (highest >= 2) {
+      if (!dryRun) {
+        await logEmailSend(sql, {
+          email,
+          kind: "post-purchase-3",
+          subject: def.subject,
+          status: "skipped-not-starter",
+        });
+        await sql`
+          UPDATE post_purchase_sequences
+          SET step = 4, next_send_at = now() + interval '7 days'
+          WHERE email = ${email}
+        `;
+      }
+      return {
+        email,
+        step,
+        status: "skipped-not-starter",
+        detail:
+          "Already bought Self-Study or above — nudge skipped, referral ask still due Day 14.",
+      };
+    }
+  }
+
+  if (dryRun) {
+    return {
+      email,
+      step,
+      status: "would-send",
+      detail: `Subject: ${def.subject}`,
+    };
+  }
+
+  const info = await subscriberInfo(sql, email);
+  try {
+    await sendMarketingEmail(sql, {
+      to: email,
+      firstName: info?.first_name ?? undefined,
+      subject: def.subject,
+      bodyHtml: def.html,
+      kind: `post-purchase-${step}`,
+      campaign: def.campaign,
+      cta: def.cta,
+      ps: def.ps,
+      headline: def.headline,
+      preheader: def.preheader,
+      eyebrow: def.eyebrow,
+      showReview: def.showReview,
+      source: "purchase",
+    });
+  } catch (err) {
+    // Logged as 'failed' inside sendMarketingEmail. Leave due —
+    // tomorrow's run retries.
+    console.error(
+      `[post-purchase] send failed for ${email} step ${step}:`,
+      err
+    );
+    return {
+      email,
+      step,
+      status: "failed",
+      detail: err instanceof Error ? err.message : "Send failed",
+    };
+  }
+
+  // Advance: step 1 -> Day 2 (+2d), step 2 -> Day 7 (+5d),
+  // step 3 -> Day 14 (+7d), step 4 -> finished (step 5).
+  if (step === 1) {
+    await sql`
+      UPDATE post_purchase_sequences
+      SET step = 2, next_send_at = now() + interval '2 days'
+      WHERE email = ${email}
+    `;
+  } else if (step === 2) {
+    await sql`
+      UPDATE post_purchase_sequences
+      SET step = 3, next_send_at = now() + interval '5 days'
+      WHERE email = ${email}
+    `;
+  } else if (step === 3) {
+    await sql`
+      UPDATE post_purchase_sequences
+      SET step = 4, next_send_at = now() + interval '7 days'
+      WHERE email = ${email}
+    `;
+  } else {
+    await sql`
+      UPDATE post_purchase_sequences
+      SET step = 5, next_send_at = NULL
+      WHERE email = ${email}
+    `;
+  }
+  return { email, step, status: "sent" };
+}
+
+export interface WinbackRow {
+  email: string;
+  step: number;
+  next_send_at?: string | null;
+}
+
+// Enrolls a 90-day-silent subscriber in the winback sequence.
+// Step 1 due now, then ~5 days apart. Idempotent: an existing row is
+// left alone — a subscriber is enrolled once per silence, and a
+// second enrollment would restart the re-engage emails.
+export async function enrollWinback(
+  sql: SqlTag,
+  email: string
+): Promise<WinbackRow> {
+  const normalized = normalizeEmail(email);
+  const existing = (await sql`
+    SELECT email, step FROM winback_sequences
+    WHERE email = ${normalized} LIMIT 1
+  `) as unknown as WinbackRow[];
+  if (existing.length > 0) return existing[0];
+  const rows = (await sql`
+    INSERT INTO winback_sequences (email, step, next_send_at)
+    VALUES (${normalized}, 1, now())
+    RETURNING email, step
+  `) as unknown as WinbackRow[];
+  return rows[0];
+}
+
+// One due winback row, end to end. After step 3 the subscriber is
+// suppressed (logged as 'suppressed', sequence_step 0) — suppression
+// happens only after the third email, per the sunset policy. See the
+// limit note in lib/winbackEmails.ts: replies are not tracked in the
+// database yet, so suppression follows the send, and a reply is
+// caught by the manual inbox process.
+export async function processWinbackRow(
+  sql: SqlTag,
+  row: WinbackRow,
+  dryRun: boolean
+): Promise<EngineResult> {
+  const email = normalizeEmail(row.email);
+  const step = row.step;
+  const def = winbackEmailForStep(step);
+  if (!def) {
+    return { email, step, status: "skipped-no-email" };
+  }
+  if (!def.approved) {
+    return {
+      email,
+      step,
+      status: "skipped-not-approved",
+      detail: "Winback step not approved yet — left due.",
+    };
+  }
+  if (dryRun) {
+    return {
+      email,
+      step,
+      status: "would-send",
+      detail: `Subject: ${def.subject}`,
+    };
+  }
+
+  const info = await subscriberInfo(sql, email);
+  try {
+    await sendMarketingEmail(sql, {
+      to: email,
+      firstName: info?.first_name ?? undefined,
+      subject: def.subject,
+      bodyHtml: def.html,
+      kind: `winback-${step}`,
+      campaign: def.campaign,
+      cta: def.cta,
+      ps: def.ps,
+      headline: def.headline,
+      preheader: def.preheader,
+      eyebrow: def.eyebrow,
+      showReview: def.showReview,
+      source: info?.source ?? "guide",
+    });
+  } catch (err) {
+    console.error(
+      `[winback] send failed for ${email} step ${step}:`,
+      err
+    );
+    return {
+      email,
+      step,
+      status: "failed",
+      detail: err instanceof Error ? err.message : "Send failed",
+    };
+  }
+
+  // Advance: step 1 -> +5d, step 2 -> +5d, step 3 -> done AND
+  // suppressed (the re-engage got no reply — see the limit note).
+  if (step === 1) {
+    await sql`
+      UPDATE winback_sequences
+      SET step = 2, next_send_at = now() + interval '5 days'
+      WHERE email = ${email}
+    `;
+  } else if (step === 2) {
+    await sql`
+      UPDATE winback_sequences
+      SET step = 3, next_send_at = now() + interval '5 days'
+      WHERE email = ${email}
+    `;
+  } else {
+    await sql`
+      UPDATE winback_sequences
+      SET step = 4, next_send_at = NULL
+      WHERE email = ${email}
+    `;
+    await logEmailSend(sql, {
+      email,
+      kind: "sunset-suppress",
+      subject: "(suppressed — winback got no reply)",
+      status: "suppressed",
+    });
+    await sql`
+      UPDATE newsletter_subscribers
+      SET sequence_step = 0, next_send_at = NULL
+      WHERE email = ${email}
+    `;
+  }
+  return { email, step, status: "sent" };
 }

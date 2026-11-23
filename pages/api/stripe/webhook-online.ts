@@ -148,6 +148,36 @@ export default async function handler(
     }
     await sendPurchaseEmail(product, email, session.id);
     await setStatus(event.id, "sent");
+    // Post-purchase sequence (research B7, wired 2026-11-23): enroll
+    // the buyer and send step 1 (the thank-you) right now, so it
+    // lands with the receipt instead of waiting for the 9 AM cron.
+    // Best-effort and NEVER fatal: the receipt already went out, and
+    // a marketing failure must never fail the webhook (Stripe would
+    // retry and re-send the receipt). On failure the row stays due
+    // and tomorrow's cron retries it.
+    try {
+      if (process.env.DATABASE_URL) {
+        const { default: sql } = await import("../../../lib/database");
+        const {
+          ensureNewsletterTables,
+          enrollPostPurchase,
+          processPostPurchaseRow,
+        } = await import("../../../lib/newsletter");
+        await ensureNewsletterTables(sql);
+        const enrolled = await enrollPostPurchase(sql, email, product);
+        if (enrolled.step === 1) {
+          const result = await processPostPurchaseRow(sql, enrolled, false);
+          console.log(
+            `[webhook-online] post-purchase step 1 for ${email}: ${result.status}`
+          );
+        }
+      }
+    } catch (err) {
+      console.error(
+        "[webhook-online] post-purchase enroll/send failed (receipt already sent, cron will retry):",
+        err
+      );
+    }
     return res.status(200).json({ received: true, emailed: product });
   } catch (err) {
     console.error("[webhook-online] delivery failed:", err);
