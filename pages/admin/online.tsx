@@ -128,6 +128,11 @@ interface NewsletterStats {
     status: string;
     cta_label: string | null;
     cta_url: string | null;
+    idea: string | null;
+    strategy: string | null;
+    item_name: string | null;
+    item_body: string | null;
+    item_url: string | null;
     created_at: string | null;
     sent_at: string | null;
   }>;
@@ -171,9 +176,11 @@ export default function AdminOnlinePage() {
   const [news, setNews] = useState<NewsletterStats | null>(null);
   const [newsError, setNewsError] = useState(false);
   const [draftSubject, setDraftSubject] = useState("");
-  const [draftBody, setDraftBody] = useState("");
-  const [draftCtaLabel, setDraftCtaLabel] = useState("");
-  const [draftCtaUrl, setDraftCtaUrl] = useState("");
+  const [draftIdea, setDraftIdea] = useState("");
+  const [draftStrategy, setDraftStrategy] = useState("");
+  const [draftItemName, setDraftItemName] = useState("");
+  const [draftItemBody, setDraftItemBody] = useState("");
+  const [draftItemUrl, setDraftItemUrl] = useState("");
   const [draftMsg, setDraftMsg] = useState("");
   const [sendingId, setSendingId] = useState<number | null>(null);
 
@@ -659,6 +666,11 @@ export default function AdminOnlinePage() {
                           Button: {d.cta_label} → {d.cta_url}
                         </div>
                       )}
+                      {d.item_name && (
+                        <div className="text-white/50 text-xs mt-0.5">
+                          Item: {d.item_name}
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -722,6 +734,11 @@ export default function AdminOnlinePage() {
             <h3 className="font-heading font-bold text-white mb-2">
               New weekly draft
             </h3>
+            <p className="text-white/50 text-sm mb-3">
+              Four blocks, in order: one idea, one focus, one item, one
+              deal. The deal at the end is picked per reader from what
+              they have already bought — you don&apos;t write it.
+            </p>
             <div className="space-y-3 max-w-2xl">
               <input
                 type="text"
@@ -731,33 +748,40 @@ export default function AdminOnlinePage() {
                 className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
               />
               <textarea
-                value={draftBody}
-                onChange={(e) => setDraftBody(e.target.value)}
-                placeholder="Body — one useful idea, then one nudge. Blank lines make paragraphs. Paste a link and it becomes clickable."
-                rows={5}
+                value={draftIdea}
+                onChange={(e) => setDraftIdea(e.target.value)}
+                placeholder="One idea — one useful idea, in your words."
+                rows={3}
                 className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
               />
-              <p className="text-white/50 text-xs">
-                Tip: write the three sections on their own lines — One
-                idea, From class this week, One nudge — and they render
-                as headings in the email.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={draftCtaLabel}
-                  onChange={(e) => setDraftCtaLabel(e.target.value)}
-                  placeholder="Button label (optional)"
-                  className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
-                />
-                <input
-                  type="text"
-                  value={draftCtaUrl}
-                  onChange={(e) => setDraftCtaUrl(e.target.value)}
-                  placeholder="Button link (optional)"
-                  className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
-                />
-              </div>
+              <textarea
+                value={draftStrategy}
+                onChange={(e) => setDraftStrategy(e.target.value)}
+                placeholder="One focus — one focus or strategy that helps with every single workout."
+                rows={3}
+                className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <input
+                type="text"
+                value={draftItemName}
+                onChange={(e) => setDraftItemName(e.target.value)}
+                placeholder="One item — name, e.g. Amazon Basics Hex Dumbbell, 30 lb"
+                className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <textarea
+                value={draftItemBody}
+                onChange={(e) => setDraftItemBody(e.target.value)}
+                placeholder="One item — why it helps, and what it helps with."
+                rows={3}
+                className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <input
+                type="text"
+                value={draftItemUrl}
+                onChange={(e) => setDraftItemUrl(e.target.value)}
+                placeholder="One item — link, our tag included, e.g. https://www.amazon.com/dp/B074DYLY5V?tag=flbesttrainer-20"
+                className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
               {draftMsg && (
                 <p className="text-red-400 text-sm" role="alert">
                   {draftMsg}
@@ -771,16 +795,20 @@ export default function AdminOnlinePage() {
                       "/api/newsletter-drafts",
                       {
                         subject: draftSubject,
-                        body: draftBody,
-                        ctaLabel: draftCtaLabel,
-                        ctaUrl: draftCtaUrl,
+                        idea: draftIdea,
+                        strategy: draftStrategy,
+                        itemName: draftItemName,
+                        itemBody: draftItemBody,
+                        itemUrl: draftItemUrl,
                       }
                     );
                     if (ok) {
                       setDraftSubject("");
-                      setDraftBody("");
-                      setDraftCtaLabel("");
-                      setDraftCtaUrl("");
+                      setDraftIdea("");
+                      setDraftStrategy("");
+                      setDraftItemName("");
+                      setDraftItemBody("");
+                      setDraftItemUrl("");
                     }
                   }}
                   className="bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-2.5 rounded-xl transition"

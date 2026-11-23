@@ -229,7 +229,10 @@ export function renderSignatureText(): string {
 }
 
 // Full email HTML: navy header band (wordmark + tagline), optional
-// progress eyebrow ("Tip 1 of 3"), headline, body slot, signature,
+// progress eyebrow ("Tip 1 of 3"), headline, body slot, optional
+// "One deal" block (weekly only — the per-recipient deal, resolved
+// from purchase_emails; renders as the fourth weekly block with its
+// own button, after the body and before the signature), signature,
 // optional PS / PPS, optional primary button (repeated once in the
 // long email 3 — see ctaRepeat), footer. Body HTML is the email's
 // content as written — paragraphs inherit the font from the wrapping
@@ -256,12 +259,17 @@ export function renderEmailTemplate(opts: {
   showReview?: boolean;
   source?: string | null;
   forwardLine?: boolean;
+  // Weekly only: block 4 — the per-recipient deal (see
+  // resolveWeeklyDeal in lib/newsletter.ts). One primary button per
+  // email: a weekly has a deal and no cta; a sequence email has a
+  // cta and no deal.
+  deal?: { line: string; cta: EmailCta };
 }): string {
-  const button = () => `
+  const button = (cta: EmailCta) => `
     <table class="cta-btn" role="presentation" cellpadding="0" cellspacing="0" style="margin: 24px 0 8px;">
       <tr>
         <td align="center" style="background-color: #4169E1; border-radius: 6px;">
-          <a href="${opts.cta!.url}" style="display: inline-block; padding: 14px 28px; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none;">${opts.cta!.label}</a>
+          <a href="${cta.url}" style="display: inline-block; padding: 14px 28px; font-family: ${FONT_STACK}; font-size: 16px; font-weight: 700; color: #ffffff; text-decoration: none;">${cta.label}</a>
         </td>
       </tr>
     </table>`;
@@ -291,8 +299,18 @@ export function renderEmailTemplate(opts: {
   const [bodyBefore, bodyAfter] = hasMarker
     ? (opts.bodyHtml.split(CTA_MARKER) as [string, string])
     : [opts.bodyHtml, ""];
-  const firstButton = hasMarker && opts.cta ? button() : "";
-  const endButton = opts.cta ? button() : "";
+  const firstButton = hasMarker && opts.cta ? button(opts.cta) : "";
+  const endButton = opts.cta ? button(opts.cta) : "";
+  // The deal block (weekly only): the fourth block of the weekly
+  // container — "One deal", the one-line why, and its button. It
+  // renders after the body (blocks 1–3) and before the signature, so
+  // the pitch sits last, after the teaching.
+  const dealBlock = opts.deal
+    ? `
+    <p style="margin: 16px 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #4169E1;">One deal</p>
+    <p>${escapeHtml(opts.deal.line)}</p>
+    ${button(opts.deal.cta)}`
+    : "";
   const tagline = opts.headerTagline ?? "Independent for Life";
   return `<!doctype html>
 <html>
@@ -345,6 +363,7 @@ ${preheader}
 ${eyebrow}${headline}${bodyBefore}
 ${firstButton}
 ${bodyAfter}
+${dealBlock}
 ${renderSignatureHtml()}
 ${ps}
 ${pps}

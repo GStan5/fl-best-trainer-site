@@ -4,8 +4,16 @@ import { mailerConfigured } from "../../lib/mailer";
 import {
   ensureNewsletterTables,
   sendMarketingEmail,
+  resolveWeeklyDeal,
+  weeklyBodyHtml,
+  textToHtml,
   TEST_RECIPIENTS,
 } from "../../lib/newsletter";
+
+// Re-exported for the drafts preview action, which renders through
+// the same function (pages/api/newsletter-drafts.ts imports it from
+// here). The implementation lives in lib/newsletter.ts.
+export { textToHtml } from "../../lib/newsletter";
 
 // Weekly send — the Send button on the admin screen. Admin only.
 // POST { draftId }            -> send to every subscriber
@@ -20,50 +28,15 @@ import {
 // out. A weekly that fails for EVERYONE is NOT marked sent (audit
 // M4) — the draft stays approved so it can be retried, and the failed
 // addresses come back in the response instead of being swallowed.
-
-// Draft bodies are stored as plain text (Grim writes them in chat
-// voice); at send time, blank-line-separated blocks become paragraphs.
-// Bare URLs are linkified (audit M3) — the weekly's nudge has to be
-// clickable, or the blog -> trust -> gear + plans loop is a dead end.
-// A block that is exactly one of the fixed weekly section names
-// (research F7 — "One idea", "From class this week", "One nudge",
-// case-insensitive, optional trailing colon) renders as a bold
-// uppercase 14px heading instead of a body paragraph, so the fixed
-// container reads as a container and not three stray paragraphs.
-const WEEKLY_SECTION_HEADINGS = [
-  "one idea",
-  "from class this week",
-  "one nudge",
-];
-
-export function textToHtml(body: string): string {
-  const escaped = body
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  const linkified = escaped.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    (url: string) => {
-      // Un-escape &amp; inside the href only — the visible text keeps
-      // the escaped form so a pasted URL still reads correctly.
-      const href = url.replace(/&amp;/g, "&");
-      return `<a href="${href}">${url}</a>`;
-    }
-  );
-  return linkified
-    .split(/\n\s*\n/)
-    .map((block) => {
-      const headingText = block.trim().replace(/:$/, "");
-      if (
-        WEEKLY_SECTION_HEADINGS.includes(headingText.toLowerCase()) &&
-        !block.includes("<br />")
-      ) {
-        return `<p style="margin: 16px 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #4169E1;">${headingText}</p>`;
-      }
-      return `<p>${block.replace(/\n/g, "<br />")}</p>`;
-    })
-    .join("\n");
-}
+//
+// The weekly is four blocks (Gavin 2026-11-23): One idea, One focus,
+// One item, One deal. Blocks 1–3 come from the draft; block 4 (the
+// deal) is resolved PER RECIPIENT at send time from purchase_emails
+// (resolveWeeklyDeal) — two readers can get the same weekly with a
+// different deal. That is also the audit S5 fix, done properly:
+// buyers never get pitched what they already own, because the deal
+// is the next rung up from what they bought — never the Starter
+// pitch to a Starter buyer, never two rungs up.
 
 // First paragraph, plain text, for the inbox preheader (audit S4).
 function preheaderFromBody(body: string): string {
@@ -104,15 +77,21 @@ export default async function handler(
     await ensureNewsletterTables(sql);
 
     const drafts = (await sql`
-      SELECT id, subject, body, status, cta_label, cta_url
+      SELECT id, subject, body, status, cta_label, cta_url,
+             idea, strategy, item_name, item_body, item_url
       FROM newsletter_drafts WHERE id = ${draftId} LIMIT 1
     `) as unknown as Array<{
       id: number;
       subject: string;
-      body: string;
+      body: string | null;
       status: string;
       cta_label: string | null;
       cta_url: string | null;
+      idea: string | null;
+      strategy: string | null;
+      item_name: string | null;
+      item_body: string | null;
+      item_url: string | null;
     }>;
     const draft = drafts[0];
     if (!draft) {
@@ -154,20 +133,42 @@ export default async function handler(
     let sent = 0;
     let failed = 0;
     const failedEmails: string[] = [];
+    // A structured draft (idea set) renders the 4-block weekly:
+    // blocks 1–3 from the draft, block 4 (the deal) resolved per
+    // recipient. A legacy draft (body only, no idea) renders the old
+    // way — body + its own CTA button — so drafts written before the
+    // restructure still send.
+    const structured = Boolean(draft.idea && draft.idea.trim());
     for (const r of recipients) {
       try {
+        const deal = structured
+          ? await resolveWeeklyDeal(sql, r.email)
+          : undefined;
         await sendMarketingEmail(sql, {
           to: r.email,
           firstName: r.first_name ?? undefined,
           subject: draft.subject,
-          bodyHtml: textToHtml(draft.body),
+          bodyHtml: structured
+            ? weeklyBodyHtml({
+                idea: draft.idea as string,
+                strategy: (draft.strategy ?? "") as string,
+                itemName: (draft.item_name ?? "") as string,
+                itemBody: (draft.item_body ?? "") as string,
+                itemUrl: (draft.item_url ?? "") as string,
+              })
+            : textToHtml(draft.body ?? ""),
           kind: test ? "weekly-test" : "weekly",
           campaign: "weekly",
           cta:
-            draft.cta_label && draft.cta_url
+            !structured && draft.cta_label && draft.cta_url
               ? { label: draft.cta_label, url: draft.cta_url }
               : undefined,
-          preheader: preheaderFromBody(draft.body),
+          deal: deal
+            ? { line: deal.line, cta: { label: deal.label, url: deal.url } }
+            : undefined,
+          preheader: preheaderFromBody(
+            structured ? (draft.idea as string) : (draft.body ?? "")
+          ),
           // Research F7: the weekly carries the blog's name, "The
           // Daily Rep", as its header tagline. B10: the forward line
           // in the footer (weekly only) — the zero-infrastructure

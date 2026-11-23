@@ -102,6 +102,31 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
     ALTER TABLE newsletter_drafts
     ADD COLUMN IF NOT EXISTS cta_url text
   `;
+  // Weekly 4-block structure (Gavin 2026-11-23): a weekly draft is
+  // an idea, a focus/strategy, and a gear item — not a free-form
+  // body. The deal (block 4) is NOT in the draft: it is resolved per
+  // recipient at send time from purchase_emails (see
+  // resolveWeeklyDeal). Same additive shape as above.
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS idea text
+  `;
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS strategy text
+  `;
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS item_name text
+  `;
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS item_body text
+  `;
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS item_url text
+  `;
 }
 
 // ---------------------------------------------------------------------------
@@ -238,6 +263,203 @@ export function withUtm(html: string, campaign: string): string {
   );
 }
 
+// Draft bodies are stored as plain text (Grim writes them in chat
+// voice); at render time, blank-line-separated blocks become
+// paragraphs. Bare URLs are linkified — a pasted link has to be
+// clickable, or the blog -> trust -> gear + plans loop is a dead end
+// (audit M3). Markdown links [label](url) render as a labelled link.
+// A block that is exactly one of the fixed weekly section names
+// ("One idea", "One focus", "One item", "One deal" — the weekly's
+// 4-block container, Gavin 2026-11-23) renders as a bold uppercase
+// 14px heading instead of a body paragraph, so the fixed container
+// reads as a container and not stray paragraphs.
+const WEEKLY_SECTION_HEADINGS = [
+  "one idea",
+  "one focus",
+  "one item",
+  "one deal",
+];
+
+export function textToHtml(body: string): string {
+  const escaped = body
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  // Markdown links first: [Check the price](https://...) becomes a
+  // labelled link. The bare-URL pass below must not re-link the URL
+  // inside the href it just created — the lookbehind skips any URL
+  // immediately after href=".
+  const linked = escaped.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_match, label: string, url: string) =>
+      `<a href="${url}">${label}</a>`
+  );
+  const linkified = linked.replace(
+    /(?<!href=")(https?:\/\/[^\s<"]+)/g,
+    (url: string) => {
+      // Un-escape &amp; inside the href only — the visible text keeps
+      // the escaped form so a pasted URL still reads correctly.
+      const href = url.replace(/&amp;/g, "&");
+      return `<a href="${href}">${url}</a>`;
+    }
+  );
+  return linkified
+    .split(/\n\s*\n/)
+    .map((block) => {
+      const headingText = block.trim().replace(/:$/, "");
+      if (
+        WEEKLY_SECTION_HEADINGS.includes(headingText.toLowerCase()) &&
+        !block.includes("<br />")
+      ) {
+        return `<p style="margin: 16px 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #4169E1;">${headingText}</p>`;
+      }
+      return `<p>${block.replace(/\n/g, "<br />")}</p>`;
+    })
+    .join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Weekly — the 4-block container + the per-recipient deal
+// ---------------------------------------------------------------------------
+//
+// The weekly (Gavin 2026-11-23) is four blocks, in this order:
+//   1. One idea — one useful idea.
+//   2. One focus — one focus or strategy that helps with every single
+//      workout.
+//   3. One item — one gear pick (bought via OUR affiliate link) + why
+//      it helps / what it helps with.
+//   4. One deal — the next-rung offer for THAT reader, resolved per
+//      recipient at send time from purchase_emails. "Deal" means the
+//      next rung, NOT a discount — never discount to convert (Hormozi).
+//      Blocks 1–2 teach (value first), blocks 3–4 sell (pitch last).
+// The draft carries blocks 1–3 only. The deal is never in the draft.
+//
+// Deal table — the Value Ladder, one rung at a time. Never pitch what
+// they already own, never pitch two rungs up (Hormozi). Highest rung
+// purchased wins:
+//   bought nothing          -> Starter $37 (/starter)
+//   bought Starter          -> Self-Study $197 (/self-study)
+//   bought Self-Study        -> classes / 10-class pack, $420 online (/classes)
+//   bought flagship/monthly  -> in-home training, $160/session (/training)
+// An unknown product in purchase_emails ranks top (in-home) — a
+// product we don't recognise must never cause a pitch DOWN the
+// ladder. A failed purchase lookup falls back to Starter (non-buyer
+// default) — never to no deal, never to a wrong-rung pitch.
+// Known limit: purchase_emails only sees ONLINE buys. Someone who
+// bought classes or training in person (never through Stripe) reads
+// as a non-buyer and gets the Starter deal until their purchase is
+// recorded online.
+
+export interface WeeklyDeal {
+  key: "starter" | "self-study" | "classes" | "in-home";
+  label: string;
+  url: string;
+  line: string;
+}
+
+export const WEEKLY_DEALS: Record<WeeklyDeal["key"], WeeklyDeal> = {
+  starter: {
+    key: "starter",
+    label: "Start the Starter plan — $37",
+    url: `${SITE}/starter`,
+    line: "The Starter plan is $37, one time. Four weeks, 12 sessions, 30 minutes each. A chair, a wall, water bottles — that's all you need.",
+  },
+  "self-study": {
+    key: "self-study",
+    label: "Get the Self-Study plan — $197",
+    url: `${SITE}/self-study`,
+    line: "You finished Starter. Self-Study is the full 6 weeks — the same sessions, on your own schedule, $197 once.",
+  },
+  classes: {
+    key: "classes",
+    label: "Get the 10-class pack — $420",
+    url: `${SITE}/classes`,
+    line: "You know the movements now. The next step is doing them with me watching your form — small-group classes, 5 people max.",
+  },
+  "in-home": {
+    key: "in-home",
+    label: "Book in-home training",
+    url: `${SITE}/training`,
+    line: "The next step is one-on-one — me, in your home, working on exactly what you need. One session is $160.",
+  },
+};
+
+// Pure function (unit-testable without a DB): highest rung wins.
+export function weeklyDealForProducts(products: string[]): WeeklyDeal {
+  const rank = (product: string): number => {
+    switch (product) {
+      case "starter-plan":
+        return 1;
+      case "self-study":
+        return 2;
+      case "flagship":
+      case "monthly-97":
+      case "monthly-147":
+      case "monthly-197":
+        return 3;
+      default:
+        return 3; // unknown product — never pitch down the ladder
+    }
+  };
+  let best = 0;
+  for (const p of products) best = Math.max(best, rank(p));
+  if (best >= 3) return WEEKLY_DEALS["in-home"];
+  if (best === 2) return WEEKLY_DEALS.classes;
+  if (best === 1) return WEEKLY_DEALS["self-study"];
+  return WEEKLY_DEALS.starter;
+}
+
+export async function resolveWeeklyDeal(
+  sql: SqlTag,
+  email: string
+): Promise<WeeklyDeal> {
+  try {
+    const rows = (await sql`
+      SELECT product FROM purchase_emails
+      WHERE email = ${normalizeEmail(email)} AND status = 'sent'
+    `) as unknown as Array<{ product: string }>;
+    return weeklyDealForProducts(rows.map((r) => r.product));
+  } catch (err) {
+    console.error(
+      "[newsletter] resolveWeeklyDeal failed (Starter fallback):",
+      err
+    );
+    return WEEKLY_DEALS.starter;
+  }
+}
+
+export interface WeeklyDraftContent {
+  idea: string;
+  strategy: string;
+  itemName: string;
+  itemBody: string;
+  itemUrl: string;
+}
+
+// Composes blocks 1–3 of the weekly (idea, focus, item) into HTML
+// through textToHtml, so the section headings render as headings and
+// the item link renders as a labelled "Check the price" link. The
+// deal (block 4) is NOT composed here — it is resolved per recipient
+// and passed to buildMarketingEmail as `deal`.
+export function weeklyBodyHtml(content: WeeklyDraftContent): string {
+  const body = [
+    "One idea",
+    "",
+    content.idea.trim(),
+    "",
+    "One focus",
+    "",
+    content.strategy.trim(),
+    "",
+    "One item",
+    "",
+    `${content.itemName.trim()} — ${content.itemBody.trim()}`,
+    "",
+    `[Check the price](${content.itemUrl.trim()})`,
+  ].join("\n");
+  return textToHtml(body);
+}
+
 function stripTags(html: string): string {
   return html
     .replace(/<br\s*\/?>/gi, "\n")
@@ -287,6 +509,12 @@ export function buildMarketingEmail(opts: {
   source?: string | null;
   // Weekly only (research B10): the forward/share line in the footer.
   forwardLine?: boolean;
+  // Weekly only: block 4 — the per-recipient deal, resolved from
+  // purchase_emails (resolveWeeklyDeal). Renders as the "One deal"
+  // section with its own button, after the body and before the
+  // signature. A weekly has a deal and no cta; a sequence email has
+  // a cta and no deal — one primary button per email either way.
+  deal?: { line: string; cta: EmailCta };
   // Preview only: render with a placeholder unsubscribe URL instead
   // of signing one (the admin draft preview has no real recipient).
   unsubscribeUrlOverride?: string;
@@ -295,6 +523,15 @@ export function buildMarketingEmail(opts: {
   const body = withUtm(opts.bodyHtml, opts.campaign);
   const cta = opts.cta
     ? { label: opts.cta.label, url: withUtmUrl(opts.cta.url, opts.campaign) }
+    : undefined;
+  const deal = opts.deal
+    ? {
+        line: opts.deal.line,
+        cta: {
+          label: opts.deal.cta.label,
+          url: withUtmUrl(opts.deal.cta.url, opts.campaign),
+        },
+      }
     : undefined;
   const html = renderEmailTemplate({
     bodyHtml: body,
@@ -312,6 +549,7 @@ export function buildMarketingEmail(opts: {
     showReview: opts.showReview,
     source: opts.source,
     forwardLine: opts.forwardLine,
+    deal,
   });
   // Research B14: Gmail clips messages at ~102KB of HTML — and hides
   // the footer and the unsubscribe link behind "view entire message".
@@ -322,11 +560,15 @@ export function buildMarketingEmail(opts: {
       `[newsletter] WARNING: rendered email "${opts.subject}" is ${Math.round(html.length / 1024)}KB — over the 100KB Gmail clipping guardrail.`
     );
   }
-  // Text version mirrors the HTML order: headline, body, signature,
-  // PS, PPS, CTA link, footer asks — so it is never a lesser email.
+  // Text version mirrors the HTML order: headline, body, deal,
+  // signature, PS, PPS, CTA link, footer asks — so it is never a
+  // lesser email.
   const textParts = [
     ...(opts.headline ? [opts.headline, ""] : []),
     stripTags(body),
+    ...(deal
+      ? [`\nOne deal\n${deal.line}\n${deal.cta.label}: ${deal.cta.url}`]
+      : []),
     renderSignatureText(),
   ];
   if (cta) textParts.push(`\n${cta.label}: ${cta.url}`);
@@ -442,6 +684,7 @@ export async function sendMarketingEmail(
     showReview?: boolean;
     source?: string | null;
     forwardLine?: boolean;
+    deal?: { line: string; cta: EmailCta };
     attachments?: Array<{
       filename: string;
       path?: string;
@@ -475,6 +718,7 @@ export async function sendMarketingEmail(
     showReview: opts.showReview,
     source: opts.source,
     forwardLine: opts.forwardLine,
+    deal: opts.deal,
   });
   try {
     await sendMail({
