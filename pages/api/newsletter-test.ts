@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getSql } from "../../lib/programAdmin";
+import { getSql, requireAdmin } from "../../lib/programAdmin";
 import { mailerConfigured } from "../../lib/mailer";
 import {
   ensureNewsletterTables,
@@ -15,8 +15,10 @@ import { winbackEmailForStep } from "../../lib/winbackEmails";
 
 // Test route — send any sequence, post-purchase, or winback step to a
 // TEST address on demand, so the dry run covers every email in one
-// sitting instead of waiting weeks. Same CRON_SECRET Bearer check as
-// the cron routes.
+// sitting instead of waiting weeks. Auth is EITHER the CRON_SECRET
+// Bearer <redacted> (same as the cron routes) OR a signed-in admin session
+// (Gavin 2026-11-23: testing must be a button on the admin screen, not
+// a secret — the admin's Test block calls this route with the session).
 //
 // POST { email, kind, step, dryRun }
 //   kind: "sequence" (default, steps 1–4), "post-purchase" (1–5),
@@ -84,8 +86,11 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Auth: the CRON_SECRET Bearer <redacted> (cron + scripts) OR a signed-in
+  // admin session (the admin screen's Test block). Either one is enough.
   if (!verifyCron(req)) {
-    return res.status(401).json({ error: "Unauthorized" });
+    const adminEmail = await requireAdmin(req, res);
+    if (!adminEmail) return; // requireAdmin already sent the 401
   }
 
   const email =
@@ -183,7 +188,10 @@ export default async function handler(
       to: email,
       subject: emailDef.subject,
       bodyHtml: emailDef.html,
-      kind: `${kind}-${emailDef.step}`,
+      // Test sends are logged with a -test kind (same as weekly-test),
+      // so the audit log never mistakes a test for a real send — the
+      // Nov 26 first-send check reads kind 'sequence-1', not this.
+      kind: `${kind}-${emailDef.step}-test`,
       campaign: emailDef.campaign,
       cta: emailDef.cta,
       ctaRepeat: emailDef.ctaRepeat,

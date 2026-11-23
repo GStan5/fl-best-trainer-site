@@ -183,6 +183,10 @@ export default function AdminOnlinePage() {
   const [draftItemUrl, setDraftItemUrl] = useState("");
   const [draftMsg, setDraftMsg] = useState("");
   const [sendingId, setSendingId] = useState<number | null>(null);
+  const [testKind, setTestKind] = useState("sequence");
+  const [testStep, setTestStep] = useState(1);
+  const [testSending, setTestSending] = useState(false);
+  const [testMsg, setTestMsg] = useState("");
 
   // Preview a draft exactly as it would send (audit M8) — opens the
   // rendered email in a new tab. Nothing is sent.
@@ -240,6 +244,61 @@ export default function AdminOnlinePage() {
       loadNewsletter();
     } catch {
       setDraftMsg("Something went wrong — try again.");
+    }
+  };
+
+  // Steps per email kind (matches the test route's KINDS).
+  const TEST_STEPS: Record<string, number[]> = {
+    sequence: [1, 2, 3, 4],
+    "post-purchase": [1, 2, 3, 4, 5],
+    winback: [1, 2, 3],
+  };
+  const TEST_ADDRESSES = [
+    "gavinstanifer@live.com",
+    "grim1051990@gmail.com",
+  ];
+
+  // Test-send a sequence, post-purchase, or winback email to the two
+  // test addresses only (Gavin 2026-11-23: testing is a button, not a
+  // secret). The route refuses any other address and logs the send as
+  // kind-…-test, so a test never looks like a real send.
+  const testEmail = async () => {
+    if (
+      !window.confirm(
+        `Send a test of ${testKind} step ${testStep} to the two test addresses only?`
+      )
+    )
+      return;
+    setTestSending(true);
+    setTestMsg("");
+    try {
+      let sent = 0;
+      let lastError = "";
+      for (const email of TEST_ADDRESSES) {
+        const res = await fetch("/api/newsletter-test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            kind: testKind,
+            step: testStep,
+            dryRun: 0,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.sent) sent += 1;
+        else lastError = data.error || `Send to ${email} failed.`;
+      }
+      setTestMsg(
+        sent === TEST_ADDRESSES.length
+          ? `Test sent to ${sent} of ${TEST_ADDRESSES.length} test addresses — check your inbox.`
+          : `Test sent to ${sent} of ${TEST_ADDRESSES.length}. ${lastError}`
+      );
+      loadNewsletter();
+    } catch {
+      setTestMsg("Something went wrong — try again.");
+    } finally {
+      setTestSending(false);
     }
   };
 
@@ -821,6 +880,51 @@ export default function AdminOnlinePage() {
                 press Send — and only an approved draft can be sent.
               </p>
             </div>
+
+            <h3 className="font-heading font-bold text-white mt-6 mb-2">
+              Test an email
+            </h3>
+            <p className="text-white/50 text-sm mb-3">
+              Send any follow-up email to the two test addresses only —
+              yours and Grim&apos;s — and check it lands and reads right
+              before the real send. Nothing goes to anyone else, ever.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 max-w-2xl">
+              <select
+                value={testKind}
+                onChange={(e) => {
+                  setTestKind(e.target.value);
+                  setTestStep(1);
+                }}
+                className="rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white focus:outline-none focus:border-royal"
+              >
+                <option value="sequence">Welcome sequence</option>
+                <option value="post-purchase">Post-purchase</option>
+                <option value="winback">Winback</option>
+              </select>
+              <select
+                value={testStep}
+                onChange={(e) => setTestStep(Number(e.target.value))}
+                className="rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white focus:outline-none focus:border-royal"
+              >
+                {TEST_STEPS[testKind].map((s) => (
+                  <option key={s} value={s}>
+                    Step {s}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={testSending}
+                onClick={testEmail}
+                className="bg-white/10 hover:bg-white/20 disabled:opacity-60 text-white font-semibold px-5 py-2.5 rounded-xl transition"
+              >
+                {testSending ? "Sending…" : "Send test"}
+              </button>
+            </div>
+            {testMsg && (
+              <p className="text-white/70 text-sm mt-3">{testMsg}</p>
+            )}
 
             {(news?.recentSends.length ?? 0) > 0 && (
               <>
