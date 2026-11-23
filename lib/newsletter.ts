@@ -115,8 +115,17 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
       kind text,
       subject text,
       sent_at timestamptz default now(),
-      status text
+      status text,
+      channel text default 'email'
     )
+  `;
+  // SMS seam (Gavin 2026-11-23: texting is NOT built now, but the
+  // audit log is ready for it): every send records its channel.
+  // 'email' is the only channel today; a future SMS sender writes
+  // 'sms' here. Same additive shape as the other ALTERs.
+  await sql`
+    ALTER TABLE email_sends
+    ADD COLUMN IF NOT EXISTS channel text DEFAULT 'email'
   `;
   await sql`
     CREATE TABLE IF NOT EXISTS newsletter_drafts (
@@ -667,13 +676,22 @@ export async function starterBuyersFromEmail(
 
 export async function logEmailSend(
   sql: SqlTag | null,
-  opts: { email: string; kind: string; subject: string; status: string }
+  opts: {
+    email: string;
+    kind: string;
+    subject: string;
+    status: string;
+    // SMS seam: the channel this send went out on. 'email' is the
+    // only channel today — every existing caller omits it and gets
+    // 'email'. A future SMS sender passes 'sms'.
+    channel?: string;
+  }
 ): Promise<void> {
   if (!sql) return; // no DB (e.g. guide signup without DATABASE_URL) — skip the log
   try {
     await sql`
-      INSERT INTO email_sends (email, kind, subject, status)
-      VALUES (${normalizeEmail(opts.email)}, ${opts.kind}, ${opts.subject}, ${opts.status})
+      INSERT INTO email_sends (email, kind, subject, status, channel)
+      VALUES (${normalizeEmail(opts.email)}, ${opts.kind}, ${opts.subject}, ${opts.status}, ${opts.channel ?? "email"})
     `;
   } catch (err) {
     // The audit log must never break a send.

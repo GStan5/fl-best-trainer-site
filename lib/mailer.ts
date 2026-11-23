@@ -34,6 +34,21 @@ export function mailerConfigured(): boolean {
   return Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS);
 }
 
+// Channel sender — the seam for SMS later (Gavin 2026-11-23: texting
+// is NOT built now, but the email system is built so it can be wired
+// in easily later). A channel sender is anything that can deliver one
+// message: email today, SMS later. The Gmail sender below is the
+// `email` implementation. A future Twilio sender implements this same
+// interface — no call site changes, the engine picks the sender by
+// channel. There is no Twilio code anywhere yet, no phone field on
+// any table, and no SMS sending path.
+export type ChannelName = "email";
+
+export interface ChannelSender {
+  channel: ChannelName;
+  send(opts: MailOptions): Promise<void>;
+}
+
 export function defaultFrom(): string {
   // Research B2: the sender NAME is the person, not the brand — a
   // first-name sender lifts opens; "FL Best Trainer" alone sounds
@@ -54,21 +69,32 @@ function getTransporter() {
   });
 }
 
+// The Gmail sender — the `email` implementation of ChannelSender.
 // Sends one email. Throws when Gmail env is missing or the send fails —
 // callers decide whether a failure is fatal (waiver, purchase delivery)
 // or logged-and-retried (sequence cron).
+export const emailSender: ChannelSender = {
+  channel: "email",
+  async send(opts: MailOptions): Promise<void> {
+    const transporter = getTransporter();
+    if (!transporter) {
+      throw new Error("Gmail env not set — cannot send email");
+    }
+    await transporter.sendMail({
+      from: opts.from ?? defaultFrom(),
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+      attachments: opts.attachments,
+      headers: opts.headers,
+    });
+  },
+};
+
+// Sends one email, through the Gmail sender. Kept so every existing
+// call site works unchanged — the sender interface is the seam, this
+// function is the email door through it.
 export async function sendMail(opts: MailOptions): Promise<void> {
-  const transporter = getTransporter();
-  if (!transporter) {
-    throw new Error("Gmail env not set — cannot send email");
-  }
-  await transporter.sendMail({
-    from: opts.from ?? defaultFrom(),
-    to: opts.to,
-    subject: opts.subject,
-    html: opts.html,
-    text: opts.text,
-    attachments: opts.attachments,
-    headers: opts.headers,
-  });
+  return emailSender.send(opts);
 }
