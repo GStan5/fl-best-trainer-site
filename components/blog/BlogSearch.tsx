@@ -7,13 +7,18 @@ export default function BlogSearch({
   activeCategory,
   setActiveCategory,
   totalResults = 0,
+  seriesOnly = false,
+  setSeriesOnly = () => {},
+  seriesCount = 0,
 }) {
   const clearFilters = () => {
     setSearchTerm("");
     setActiveCategory("all");
+    setSeriesOnly(false);
   };
 
-  const hasActiveFilters = searchTerm || activeCategory !== "all";
+  const hasActiveFilters =
+    searchTerm || activeCategory !== "all" || seriesOnly;
 
   return (
     <div className="mb-12">
@@ -48,6 +53,23 @@ export default function BlogSearch({
               </button>
             ))}
           </div>
+          {/* Series filter — browse every post in The Daily Rep as a list
+              (Gavin 2026-11-23), instead of opening one post. */}
+          {seriesCount > 0 && (
+            <div className="flex bg-black/20 backdrop-blur-sm rounded-lg p-1 border border-white/10 ml-2">
+              <button
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap
+                  ${
+                    seriesOnly
+                      ? "bg-white/10 text-white border border-white/20"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                  }`}
+                onClick={() => setSeriesOnly(!seriesOnly)}
+              >
+                The Daily Rep ({seriesCount})
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

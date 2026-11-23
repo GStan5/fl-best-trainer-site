@@ -47,6 +47,7 @@ export default function BlogSection({ posts = [] }) {
   });
 
   const [activeCategory, setActiveCategory] = useState("all");
+  const [seriesOnly, setSeriesOnly] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   // Starts null so the first client render matches the server render; a
   // previously open post is restored in the mount effect below.
@@ -147,16 +148,17 @@ export default function BlogSection({ posts = [] }) {
   // Get series posts (newest first, matching array order)
   const seriesPosts = safePosts.filter((post) => post.series);
 
-  // Filter posts based on category and search term
+  // Filter posts based on category, series, and search term
   const filteredPosts = safePosts.filter((post) => {
     const matchesCategory =
       activeCategory === "all" ||
       post.category?.toLowerCase() === activeCategory.toLowerCase();
+    const matchesSeries = !seriesOnly || Boolean(post.series);
     const matchesSearch =
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesCategory && matchesSearch;
+    return matchesCategory && matchesSeries && matchesSearch;
   });
 
   // Get unique categories for filter
@@ -210,6 +212,25 @@ export default function BlogSection({ posts = [] }) {
   const handleClearFilters = () => {
     setSearchTerm("");
     setActiveCategory("all");
+    setSeriesOnly(false);
+  };
+
+  // Browse the series: show every post in The Daily Rep as a list,
+  // instead of opening one post (Gavin 2026-11-23). Resets the other
+  // filters so the series is all you see.
+  const handleBrowseSeries = () => {
+    setSelectedPost(null);
+    setPostLoadError(false);
+    setSearchTerm("");
+    setActiveCategory("all");
+    setSeriesOnly(true);
+    // Don't restore the open post on the next reload.
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("selectedBlogPost");
+    }
+    if (blogSectionRef.current) {
+      blogSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   // Handle escape key to close post
@@ -357,6 +378,9 @@ export default function BlogSection({ posts = [] }) {
                       activeCategory={activeCategory}
                       setActiveCategory={setActiveCategory}
                       totalResults={filteredPosts.length}
+                      seriesOnly={seriesOnly}
+                      setSeriesOnly={setSeriesOnly}
+                      seriesCount={seriesPosts.length}
                     />
 
                     {/* New-series strip: introduces The Daily Rep + latest post */}
@@ -365,13 +389,15 @@ export default function BlogSection({ posts = [] }) {
                         latestPost={seriesPosts[0]}
                         count={seriesPosts.length}
                         onSelect={handlePostSelect}
+                        onBrowseSeries={handleBrowseSeries}
                       />
                     )}
 
                     {/* Show featured posts at the top only when not viewing "all" or "featured" category */}
                     {featuredPosts.length > 0 &&
                       activeCategory !== "featured" &&
-                      activeCategory !== "all" && (
+                      activeCategory !== "all" &&
+                      !seriesOnly && (
                         <div className="mb-12">
                           <h2 className="text-2xl font-bold text-white mb-6">
                             Featured
@@ -392,12 +418,14 @@ export default function BlogSection({ posts = [] }) {
                     ) : (
                       <div className="mt-8">
                         <h2 className="text-2xl font-bold text-white mb-6">
-                          {activeCategory === "all"
-                            ? "All Posts"
-                            : `${
-                                activeCategory.charAt(0).toUpperCase() +
-                                activeCategory.slice(1)
-                              } Posts`}
+                          {seriesOnly
+                            ? "The Daily Rep"
+                            : activeCategory === "all"
+                              ? "All Posts"
+                              : `${
+                                  activeCategory.charAt(0).toUpperCase() +
+                                  activeCategory.slice(1)
+                                } Posts`}
                         </h2>
                         {filteredPosts.length > 0 ? (
                           <BlogList

@@ -1,7 +1,12 @@
 import { motion } from "framer-motion";
 import { FaArrowRight } from "react-icons/fa";
 
-export default function SeriesStrip({ latestPost, count = 0, onSelect }) {
+export default function SeriesStrip({
+  latestPost,
+  count = 0,
+  onSelect,
+  onBrowseSeries,
+}) {
   if (!latestPost) {
     return null;
   }
@@ -32,6 +37,18 @@ export default function SeriesStrip({ latestPost, count = 0, onSelect }) {
               </span>
             )}
           </p>
+          {/* Browse the whole series as a list, instead of opening one
+              post (Gavin 2026-11-23). */}
+          {count > 0 && onBrowseSeries && (
+            <button
+              type="button"
+              onClick={onBrowseSeries}
+              className="mt-2 inline-flex items-center gap-1.5 text-royal-light hover:text-white text-sm font-medium"
+            >
+              See all {count} posts in {seriesName}
+              <FaArrowRight size={12} />
+            </button>
+          )}
         </div>
         <a
           href={`/blog/${latestPost.id}`}
