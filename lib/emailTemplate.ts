@@ -48,12 +48,13 @@ export const SOCIAL_INSTAGRAM_URL =
   "https://www.instagram.com/flbesttrainer/";
 export const SOCIAL_YOUTUBE_URL = "https://www.youtube.com/@FLBestTrainer";
 
-// Signature headshot — brandphoto12.jpg, verified by looking at it:
-// Gavin facing the camera head-on, arms crossed, face clear. The other
-// brand photos crop the face out or show him looking away. Gavin picks
-// the photo if he disagrees with this one.
+// Signature headshot — the homepage hero photo (brandphoto11.jpg),
+// Gavin's pick 2026-11-23: the same picture as the hero on the home
+// page. The old one (brandphoto12.jpg) never showed: the template
+// pointed at the apex domain, which 404s for everything — the site
+// lives on www. All email URLs use www.flbesttrainer.com.
 export const SIGNATURE_PHOTO_URL =
-  "https://flbesttrainer.com/images/brandphoto12.jpg";
+  "https://www.flbesttrainer.com/images/brandphoto11.jpg";
 
 const FONT_STACK =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -78,7 +79,7 @@ function escapeHtml(s: string): string {
 function psLinkUrl(url: string, campaign?: string): string {
   const clean = url.replace(/&amp;/g, "&");
   if (!campaign) return clean;
-  if (!clean.startsWith("https://flbesttrainer.com")) return clean;
+  if (!clean.startsWith("https://www.flbesttrainer.com")) return clean;
   if (clean.includes("utm_source=")) return clean;
   const sep = clean.includes("?") ? "&" : "?";
   return `${clean}${sep}utm_source=email&utm_medium=email&utm_campaign=${campaign}`;
@@ -160,7 +161,7 @@ function socialLinksText(): string {
 // referral: one line, no per-subscriber links, no tracking, no
 // rewards. The real referral program waits for Phase 2 tracking.
 export const FORWARD_LINE =
-  "Know someone over 50 who'd like this? Forward it — or send them to flbesttrainer.com/start.";
+  "Know someone over 50 who'd like this? Forward it — or send them to www.flbesttrainer.com/start.";
 
 // The footer block — review ask (gated: only once value has been
 // delivered — audit S1), follow-along, forward line (weekly only),

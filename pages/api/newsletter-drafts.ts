@@ -152,7 +152,7 @@ export default async function handler(
           showReview: true,
           source: "newsletter",
           unsubscribeUrlOverride:
-            "https://flbesttrainer.com/api/newsletter-unsubscribe?token=preview",
+            "https://www.flbesttrainer.com/api/newsletter-unsubscribe?token=preview",
         });
       } catch (err) {
         return res.status(503).json({

@@ -22,7 +22,7 @@ import { NEWSLETTER_SEND_GATE_ON } from "../../lib/ladder";
 // return success: the on-page download is the chain that must never break.
 
 const GUIDE_PDF_URL =
-  "https://flbesttrainer.com/downloads/independent-for-life-guide.pdf";
+  "https://www.flbesttrainer.com/downloads/independent-for-life-guide.pdf";
 
 // Signup sources (Phase 2: flagship waitlist joins through this same
 // route; waitlist members also receive the free guide. Phase 5: the

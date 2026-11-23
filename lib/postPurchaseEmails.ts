@@ -72,7 +72,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     approved: true,
     cta: {
       label: "Open your Starter plan",
-      url: "https://flbesttrainer.com/starter",
+      url: "https://www.flbesttrainer.com/starter",
     },
     ps: "If anything in the plan is confusing, hit reply and tell me what. I would rather fix it now than have you stuck on Day 3.",
     preheader: "You did the hard part — you started.",
@@ -93,7 +93,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     approved: true,
     // No button: the PS carries the blog link (rendered as a link by
     // the template's PS linkifier — see lib/emailTemplate.ts).
-    ps: "I wrote more about it here, if you want the full version: [Why Slowing Down Gets You Stronger After 50](https://flbesttrainer.com/blog/slow-down-form-first-after-50).",
+    ps: "I wrote more about it here, if you want the full version: [Why Slowing Down Gets You Stronger After 50](https://www.flbesttrainer.com/blog/slow-down-form-first-after-50).",
     preheader: "Slow down. That is the whole trick.",
     showReview: false,
     html: `
@@ -113,7 +113,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     pitchProduct: "self-study",
     cta: {
       label: "See Self-Study — $197",
-      url: "https://flbesttrainer.com/self-study",
+      url: "https://www.flbesttrainer.com/self-study",
     },
     ps: "If you are not sure, finish Starter first. The Day 28 retest will tell you more than I can.",
     preheader: "Starter is complete on its own. This is for when you want more.",
@@ -143,7 +143,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
 <p>Hi {first_name},</p>
 <p>Two weeks in. You know what this is now — not a gym, not a bootcamp. Slow, a little at a time, and it adds up.</p>
 <p>Do you know someone over 50 who is getting weaker and more afraid of moving? A parent, a neighbor, someone at church? Send them the free guide. It is the same 7 days you started with, and it costs them nothing.</p>
-<p><a href="https://flbesttrainer.com/start">https://flbesttrainer.com/start</a></p>
+<p><a href="https://www.flbesttrainer.com/start">https://www.flbesttrainer.com/start</a></p>
 <p>That is it. No ask for you, just for them.</p>
 `,
   },

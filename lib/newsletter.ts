@@ -340,7 +340,7 @@ export function withUtmUrl(url: string, campaign: string): string {
 
 export function withUtm(html: string, campaign: string): string {
   return html.replace(
-    /href="(https:\/\/flbesttrainer\.com[^"]*)"/g,
+    /href="(https:\/\/www\.flbesttrainer\.com[^"]*)"/g,
     (_match, url: string) => `href="${withUtmUrl(url, campaign)}"`
   );
 }

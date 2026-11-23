@@ -77,7 +77,7 @@ export const WINBACK_EMAILS: WinbackEmail[] = [
 <p>If we met today and you asked me for the one thing that matters most after 50, it would be this.</p>
 <p>Slow down. Take two to three seconds on the way down of every rep. If you can not control it on the way down, it is too heavy. Drop the weight.</p>
 <p>That one change does more than any program, any gym, any piece of equipment. It is the difference between an exercise that makes you stronger and one that hurts you.</p>
-<p>I wrote the full version here: <a href="https://flbesttrainer.com/blog/slow-down-form-first-after-50">Why Slowing Down Gets You Stronger After 50</a>.</p>
+<p>I wrote the full version here: <a href="https://www.flbesttrainer.com/blog/slow-down-form-first-after-50">Why Slowing Down Gets You Stronger After 50</a>.</p>
 <p>No ask in this one either. Just the thing that works.</p>
 `,
   },

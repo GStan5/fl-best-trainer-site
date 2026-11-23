@@ -12,7 +12,7 @@ import { sendMail, mailerConfigured } from "./mailer";
 //                   session-verified download link (never a public URL)
 //   monthly-*     → welcome email (Steady Letter + form-check links)
 
-const SITE = "https://flbesttrainer.com";
+const SITE = "https://www.flbesttrainer.com";
 
 export const ONLINE_PRODUCTS = [
   "starter-plan",

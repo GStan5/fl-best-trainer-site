@@ -23,7 +23,7 @@
 // recognise (an unknown product must never cause a pitch DOWN the
 // ladder — no pitch at all is the safe side).
 
-export const SITE = "https://flbesttrainer.com";
+export const SITE = "https://www.flbesttrainer.com";
 
 export interface LadderRung {
   /** Rank on the ladder, ascending. 0 = the free guide (owns nothing yet). */

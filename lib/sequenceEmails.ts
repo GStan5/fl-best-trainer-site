@@ -92,7 +92,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     approved: SEQUENCE_APPROVED,
     cta: {
       label: "Read the full post",
-      url: "https://flbesttrainer.com/blog/slow-down-form-first-after-50",
+      url: "https://www.flbesttrainer.com/blog/slow-down-form-first-after-50",
     },
     headline: "Rushing the rep is how people get hurt.",
     ps: "Slow is the whole trick. Do Day 1 that way and you will feel it.",
@@ -111,7 +111,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <li><strong>If you can not control it on the way down, it is too heavy.</strong> Drop the weight.</li>
 </ul>
 <p>There is no shame in a lighter dumbbell.</p>
-<p>A lighter weight, lifted with control, builds more strength than a heavy one you have to heave around. I wrote more about it here: <a href="https://flbesttrainer.com/blog/slow-down-form-first-after-50">Why Slowing Down Gets You Stronger After 50</a>.</p>
+<p>A lighter weight, lifted with control, builds more strength than a heavy one you have to heave around. I wrote more about it here: <a href="https://www.flbesttrainer.com/blog/slow-down-form-first-after-50">Why Slowing Down Gets You Stronger After 50</a>.</p>
 <p>That is it for today. Do the guide slow, and it will work better.</p>
 `,
   },
@@ -123,7 +123,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     approved: SEQUENCE_APPROVED,
     cta: {
       label: "Read the full post",
-      url: "https://flbesttrainer.com/blog/farmer-carries-every-class",
+      url: "https://www.flbesttrainer.com/blog/farmer-carries-every-class",
     },
     headline: "Carry the groceries in. That is the test.",
     ps: "Next time you carry the groceries in, pay attention to your grip. That is your training working.",
@@ -139,7 +139,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>Here is something most people do not know. Farmer carries stretch out your shoulders and traps. That can help with neck pain, and neck pain can cause headaches.</p>
 <p>If you are thinking you are too old for this, or that lifting will hurt you, you are not the only one. That is the worry almost everyone walks in with. Going slow is what keeps it safe.</p>
 <p>So next time you bring the groceries in, pay attention. When the bags do not feel as heavy and your grip does not quit halfway and you are not out of breath at the door, that is your training working.</p>
-<p>I wrote the full thing here: <a href="https://flbesttrainer.com/blog/farmer-carries-every-class">Why I Make Every Class Do Farmer Carries</a>.</p>
+<p>I wrote the full thing here: <a href="https://www.flbesttrainer.com/blog/farmer-carries-every-class">Why I Make Every Class Do Farmer Carries</a>.</p>
 `,
   },
   {
@@ -150,7 +150,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     approved: SEQUENCE_APPROVED,
     cta: {
       label: "Start the Starter plan — $37",
-      url: "https://flbesttrainer.com/starter",
+      url: "https://www.flbesttrainer.com/starter",
     },
     ctaRepeat: true,
     headline: "Seven days proves you can do it. Four weeks changes your strength.",
@@ -175,7 +175,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>Starter won't make you 25 again. It'll make the stairs easier.</p>
 <p><strong>One session with me is $160. Twelve sessions one-on-one would be $1,920. The Starter plan is $37.</strong> One time. Yours forever, including future updates.</p>
 <p>And the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
-<p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. If you want the full 4 weeks, it is here: <a href="https://flbesttrainer.com/starter">Start the Starter plan</a>.</p>
+<p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. If you want the full 4 weeks, it is here: <a href="https://www.flbesttrainer.com/starter">Start the Starter plan</a>.</p>
 `,
   },
   {

@@ -17,7 +17,7 @@ import {
 // programmatic use.
 
 function page(title: string, body: string): string {
-  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${title}</title></head><body style="font-family: Georgia, serif; max-width: 560px; margin: 80px auto; padding: 0 20px; color: #222;"><h1>${title}</h1><p>${body}</p><p><a href="https://flbesttrainer.com">FL Best Trainer</a></p></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${title}</title></head><body style="font-family: Georgia, serif; max-width: 560px; margin: 80px auto; padding: 0 20px; color: #222;"><h1>${title}</h1><p>${body}</p><p><a href="https://www.flbesttrainer.com">FL Best Trainer</a></p></body></html>`;
 }
 
 export default async function handler(
