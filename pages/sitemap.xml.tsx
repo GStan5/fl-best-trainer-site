@@ -1,4 +1,5 @@
 import { GetServerSideProps } from 'next';
+import { getAllPosts } from '../utils/markdown';
 
 const EXTERNAL_DATA_URL = 'https://flbesttrainer.com';
 
@@ -25,12 +26,17 @@ function SiteMap() {
 
 export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // Define all your page URLs
+  // Every blog post gets its own URL (see pages/blog/[id].tsx), plus the
+  // start-here hub, so search engines can find and rank single posts.
+  const postPages = getAllPosts().map((post) => `/blog/${post.id}`);
   const pages = [
     '/',
     '/about',
     '/training',
     '/plans',
     '/blog',
+    '/blog/start-here',
+    ...postPages,
     '/contact',
     '/privacy',
     '/terms',

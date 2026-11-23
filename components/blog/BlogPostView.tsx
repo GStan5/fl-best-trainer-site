@@ -25,6 +25,9 @@ export default function BlogPostView({
   toggleFocusMode,
   isFocusMode,
   loadError = false,
+  // On a standalone /blog/[id] page the article scrolls with the page
+  // itself, so the modal's inner scroll box is switched off.
+  standalone = false,
 }) {
   return (
     <>
@@ -42,7 +45,14 @@ export default function BlogPostView({
             />
             <meta property="article:section" content={selectedPost.category} />
             {selectedPost.image && (
-              <meta property="og:image" content={selectedPost.image} />
+              <meta
+                property="og:image"
+                content={
+                  selectedPost.image.startsWith("http")
+                    ? selectedPost.image
+                    : `https://flbesttrainer.com${selectedPost.image}`
+                }
+              />
             )}
           </>
         )}
@@ -92,8 +102,10 @@ export default function BlogPostView({
         {/* Blog post content */}
         <div
           ref={blogContentRef}
-          className="overflow-y-auto"
-          style={{ maxHeight: "calc(100vh - 100px)" }}
+          className={standalone ? undefined : "overflow-y-auto"}
+          style={
+            standalone ? undefined : { maxHeight: "calc(100vh - 100px)" }
+          }
         >
           {/* Featured image */}
           <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] relative">

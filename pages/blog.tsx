@@ -34,7 +34,7 @@ export default function Blog({ posts }) {
       jobTitle: "NASM Certified Personal Trainer",
       url: "https://flbesttrainer.com/about",
     },
-    blogPost: posts.slice(0, 10).map((post) => ({
+    blogPost: posts.map((post) => ({
       "@type": "BlogPosting",
       headline: post.title,
       description: post.excerpt || "",
@@ -43,7 +43,7 @@ export default function Blog({ posts }) {
         "@type": "Person",
         name: "Gavin Stanifer",
       },
-      url: `https://flbesttrainer.com/blog/${post.slug}`,
+      url: `https://flbesttrainer.com/blog/${post.id}`,
     })),
   };
 

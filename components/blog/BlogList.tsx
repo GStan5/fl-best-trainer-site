@@ -27,15 +27,22 @@ export default function BlogList({ filteredPosts, handlePostSelect }) {
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {currentPosts.map((post) => (
-          <motion.div
+          // Real link to the post's own page; the click still opens it
+          // in-page (preventDefault), so the list behaves exactly as
+          // before while crawlers and right-clicks get a real URL.
+          <motion.a
             key={post.id}
-            className="group bg-black/20 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden hover:border-royal/30 hover:shadow-lg hover:shadow-royal/10 transition-all duration-300"
+            href={`/blog/${post.id}`}
+            className="group block bg-black/20 backdrop-blur-sm border border-white/5 rounded-xl overflow-hidden hover:border-royal/30 hover:shadow-lg hover:shadow-royal/10 transition-all duration-300 cursor-pointer"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.2 }}
-            onClick={() => handlePostSelect(post)}
+            onClick={(e) => {
+              e.preventDefault();
+              handlePostSelect(post);
+            }}
           >
             {/* Replace standard img with BlogImage component for fallback icons */}
             <div className="relative h-48">
@@ -76,7 +83,7 @@ export default function BlogList({ filteredPosts, handlePostSelect }) {
                 <span>{post.readTime}</span>
               </div>
             </div>
-          </motion.div>
+          </motion.a>
         ))}
       </div>
 

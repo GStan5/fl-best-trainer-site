@@ -1,5 +1,5 @@
 export const macronutrients = {
-  id: "post-2",
+  id: "understanding-macronutrients",
   title: "Understanding Macronutrients for Optimal Performance",
   category: "Nutrition",
   excerpt: "Learn how protein, carbohydrates, and fats affect your performance and how to balance them for your specific goals.",

@@ -1,5 +1,5 @@
 export const beginnerTrainingTips = {
-  id: "post-1",
+  id: "5-essential-training-tips-for-beginners",
   title: "5 Essential Training Tips for Beginners",
   category: "Training",
   excerpt:

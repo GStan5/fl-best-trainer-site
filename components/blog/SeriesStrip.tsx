@@ -33,8 +33,12 @@ export default function SeriesStrip({ latestPost, count = 0, onSelect }) {
             )}
           </p>
         </div>
-        <button
-          onClick={() => onSelect(latestPost)}
+        <a
+          href={`/blog/${latestPost.id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            onSelect(latestPost);
+          }}
           className="group flex-shrink-0 text-left bg-black/30 hover:bg-black/50 border border-white/10 hover:border-royal/40 rounded-lg px-4 py-3 transition-all duration-200 max-w-full md:max-w-xs w-full md:w-auto"
         >
           <span className="block text-xs uppercase tracking-wider text-white/50 mb-1">
@@ -50,7 +54,7 @@ export default function SeriesStrip({ latestPost, count = 0, onSelect }) {
               className="transition-transform duration-200 group-hover:translate-x-0.5"
             />
           </span>
-        </button>
+        </a>
       </div>
     </motion.div>
   );

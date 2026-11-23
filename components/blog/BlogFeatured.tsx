@@ -26,11 +26,16 @@ export default function BlogFeatured({ posts = [], handlePostSelect }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      {/* Added onClick handler to the entire container and cursor-pointer class */}
+      {/* Real link to the featured post's own page; the click still opens
+          it in-page (preventDefault), so behavior is unchanged. */}
       <div className="featured-post-border-container">
-        <div
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-black/40 to-navy/40 backdrop-blur-sm shadow-xl cursor-pointer hover:shadow-royal/10 transition-all duration-300"
-          onClick={() => handlePostSelect(featuredPost)}
+        <a
+          href={`/blog/${featuredPost.id}`}
+          className="block relative overflow-hidden rounded-2xl bg-gradient-to-b from-black/40 to-navy/40 backdrop-blur-sm shadow-xl cursor-pointer hover:shadow-royal/10 transition-all duration-300"
+          onClick={(e) => {
+            e.preventDefault();
+            handlePostSelect(featuredPost);
+          }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-royal/10 to-transparent opacity-30"></div>
 
@@ -83,7 +88,7 @@ export default function BlogFeatured({ posts = [], handlePostSelect }) {
               </div>
             </div>
           </div>
-        </div>
+        </a>
       </div>
     </motion.div>
   );

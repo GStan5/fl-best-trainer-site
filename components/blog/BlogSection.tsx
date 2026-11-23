@@ -342,6 +342,14 @@ export default function BlogSection({ posts = [] }) {
                 {!selectedPost ? (
                   <>
                     <BlogHeader totalPosts={safePosts.length} />
+                    <div className="mb-6 -mt-2">
+                      <a
+                        href="/blog/start-here"
+                        className="text-royal-light hover:text-white text-sm font-medium"
+                      >
+                        New here? Start here — posts grouped by topic
+                      </a>
+                    </div>
                     <BlogSearch
                       searchTerm={searchTerm}
                       setSearchTerm={setSearchTerm}
