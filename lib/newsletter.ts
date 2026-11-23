@@ -18,6 +18,7 @@ import { sendMail, mailerConfigured } from "./mailer";
 import {
   renderEmailTemplate,
   renderEmailFooterText,
+  renderSignatureText,
   whyYouGetThisLine,
   type EmailCta,
 } from "./emailTemplate";
@@ -271,13 +272,21 @@ export function buildMarketingEmail(opts: {
   email: string;
   campaign: string;
   cta?: EmailCta;
+  // Repeat the button once when the body carries a <!--cta--> marker
+  // (research F8 — long email 3 only).
+  ctaRepeat?: boolean;
   ps?: string;
+  pps?: string;
+  headline?: string;
   preheader?: string;
-  heroImageUrl?: string;
-  heroAlt?: string;
+  // Header tagline under the wordmark. Default "Independent for Life";
+  // the weekly ("The Daily Rep") passes its own name.
+  headerTagline?: string;
   eyebrow?: string;
   showReview?: boolean;
   source?: string | null;
+  // Weekly only (research B10): the forward/share line in the footer.
+  forwardLine?: boolean;
   // Preview only: render with a placeholder unsubscribe URL instead
   // of signing one (the admin draft preview has no real recipient).
   unsubscribeUrlOverride?: string;
@@ -290,20 +299,39 @@ export function buildMarketingEmail(opts: {
   const html = renderEmailTemplate({
     bodyHtml: body,
     cta,
+    ctaRepeat: opts.ctaRepeat,
     ps: opts.ps,
+    pps: opts.pps,
+    headline: opts.headline,
     preheader: opts.preheader,
-    heroImageUrl: opts.heroImageUrl,
-    heroAlt: opts.heroAlt,
+    headerTagline: opts.headerTagline,
     eyebrow: opts.eyebrow,
     unsubscribeUrl: unsub,
     footerBusiness: FOOTER_BUSINESS,
     footerAddress: FOOTER_ADDRESS,
     showReview: opts.showReview,
     source: opts.source,
+    forwardLine: opts.forwardLine,
   });
-  const textParts = [stripTags(body)];
+  // Research B14: Gmail clips messages at ~102KB of HTML — and hides
+  // the footer and the unsubscribe link behind "view entire message".
+  // Our emails are ~7KB; warn loudly if one ever approaches the
+  // limit instead of silently shipping a clipped email.
+  if (html.length > 100 * 1024) {
+    console.warn(
+      `[newsletter] WARNING: rendered email "${opts.subject}" is ${Math.round(html.length / 1024)}KB — over the 100KB Gmail clipping guardrail.`
+    );
+  }
+  // Text version mirrors the HTML order: headline, body, signature,
+  // PS, PPS, CTA link, footer asks — so it is never a lesser email.
+  const textParts = [
+    ...(opts.headline ? [opts.headline, ""] : []),
+    stripTags(body),
+    renderSignatureText(),
+  ];
   if (cta) textParts.push(`\n${cta.label}: ${cta.url}`);
   if (opts.ps) textParts.push(`\nP.S. ${opts.ps}`);
+  if (opts.pps) textParts.push(`\nP.P.S. ${opts.pps}`);
   const text =
     textParts.join("\n") +
     renderEmailFooterText({
@@ -312,6 +340,7 @@ export function buildMarketingEmail(opts: {
       footerAddress: FOOTER_ADDRESS,
       showReview: opts.showReview,
       source: opts.source,
+      forwardLine: opts.forwardLine,
     });
   return {
     subject: opts.subject,
@@ -330,6 +359,48 @@ export function buildMarketingEmail(opts: {
 // ---------------------------------------------------------------------------
 // Sending + audit log
 // ---------------------------------------------------------------------------
+
+// Monthly closed loop (audit S14, research B5): Starter buyers whose
+// email is (or was) a newsletter subscriber, and when they subscribed.
+// Clicks are the primary metric now (Apple MPP inflated opens ~13
+// points) — this query is the revenue half of the monthly report:
+// delivered, bounces, clicks, unsubscribes, spam complaints, Starter
+// sales from email, list size. Run it monthly; do not guess at
+// conversion. Returns [] if purchase_emails does not exist yet, so
+// the admin stats never break on a fresh database.
+export async function starterBuyersFromEmail(
+  sql: SqlTag
+): Promise<
+  Array<{
+    email: string;
+    purchased_at: string | null;
+    subscribed_at: string | null;
+    source: string | null;
+  }>
+> {
+  try {
+    const rows = (await sql`
+      SELECT pe.email, pe.created_at AS purchased_at,
+             ns.subscribed_at, ns.source
+      FROM purchase_emails pe
+      LEFT JOIN newsletter_subscribers ns ON ns.email = pe.email
+      WHERE pe.product = 'starter-plan' AND pe.status = 'sent'
+      ORDER BY pe.created_at DESC
+    `) as unknown as Array<{
+      email: string;
+      purchased_at: string | null;
+      subscribed_at: string | null;
+      source: string | null;
+    }>;
+    return rows;
+  } catch (err) {
+    console.error(
+      "[newsletter] starterBuyersFromEmail failed (returning []):",
+      err
+    );
+    return [];
+  }
+}
 
 export async function logEmailSend(
   sql: SqlTag | null,
@@ -361,13 +432,16 @@ export async function sendMarketingEmail(
     kind: string;
     campaign: string;
     cta?: EmailCta;
+    ctaRepeat?: boolean;
     ps?: string;
+    pps?: string;
+    headline?: string;
     preheader?: string;
-    heroImageUrl?: string;
-    heroAlt?: string;
+    headerTagline?: string;
     eyebrow?: string;
     showReview?: boolean;
     source?: string | null;
+    forwardLine?: boolean;
     attachments?: Array<{
       filename: string;
       path?: string;
@@ -391,13 +465,16 @@ export async function sendMarketingEmail(
     email: to,
     campaign: opts.campaign,
     cta: opts.cta,
+    ctaRepeat: opts.ctaRepeat,
     ps: opts.ps,
+    pps: opts.pps,
+    headline: opts.headline,
     preheader: opts.preheader,
-    heroImageUrl: opts.heroImageUrl,
-    heroAlt: opts.heroAlt,
+    headerTagline: opts.headerTagline,
     eyebrow: opts.eyebrow,
     showReview: opts.showReview,
     source: opts.source,
+    forwardLine: opts.forwardLine,
   });
   try {
     await sendMail({

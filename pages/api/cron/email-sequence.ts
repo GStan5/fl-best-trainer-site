@@ -18,11 +18,23 @@ import { sequenceEmailForStep } from "../../../lib/sequenceEmails";
 //   2. The step is approved by Gavin (lib/sequenceEmails.ts). An
 //      unapproved step is skipped and left due — nothing sends before
 //      his yes, even if this cron is live.
-//   3. Before email 3 only: they have not already bought Starter.
-//      Online buys live in purchase_emails (product = 'starter-plan',
-//      status = 'sent') — NOT the purchases table. A buyer skips the
-//      pitch: the send is logged as 'skipped-bought' and the sequence
-//      is marked finished.
+//   3. Before email 3 only: they have not already bought anything.
+//      Online buys live in purchase_emails (status = 'sent') — NOT the
+//      purchases table. Any product counts (research B7's ladder rule:
+//      never pitch DOWN the ladder — a Self-Study or monthly buyer
+//      who gets the Starter pitch would see a $37 offer for the thing
+//      they already bought past). A buyer skips the pitch: the send
+//      is logged as 'skipped-bought' and the sequence is marked
+//      finished.
+//
+// Sunset (research B6): a subscriber silent for 90 days (no opens or
+// clicks in email_events, and first send was 90+ days ago) is
+// suppressed in place — sequence_step 0, next_send_at NULL — and
+// logged as 'suppressed'. Suppression is a state, not a delete; the
+// row stays, and resubscribing restarts the sequence at step 1
+// (audit S16). With 4 subscribers the re-engage email is a
+// hand-written draft (see the design doc); once the list is bigger
+// this becomes an automated winback sequence.
 //
 // Auth: same CRON_SECRET Bearer check as the other cron routes.
 // ?dryRun=1 logs what WOULD be sent and sends nothing — the safe way
@@ -84,6 +96,60 @@ export default async function handler(
     }> = [];
 
     for (const sub of due) {
+      // Sunset (research B6): silent 90 days → suppress in place.
+      // email_events is a Phase 2 table; until it exists the check
+      // throws and is skipped — a missing table must never break the
+      // sequence for everyone else.
+      try {
+        const engagement = (await sql`
+          SELECT 1 FROM email_events
+          WHERE email = ${sub.email}
+            AND event_type IN ('open', 'click')
+            AND created_at >= NOW() - INTERVAL '90 days'
+          LIMIT 1
+        `) as unknown as Array<Record<string, unknown>>;
+        const firstSend = (await sql`
+          SELECT sent_at FROM email_sends
+          WHERE email = ${sub.email}
+          ORDER BY sent_at ASC LIMIT 1
+        `) as unknown as Array<{ sent_at: string }>;
+        if (
+          engagement.length === 0 &&
+          firstSend.length > 0 &&
+          Date.now() - new Date(firstSend[0].sent_at).getTime() >
+            90 * 24 * 60 * 60 * 1000
+        ) {
+          if (!dryRun) {
+            await logEmailSend(sql, {
+              email: sub.email,
+              kind: "sunset-suppress",
+              subject: "(suppressed — 90 days silent, no re-engage reply)",
+              status: "suppressed",
+            });
+            await sql`
+              UPDATE newsletter_subscribers
+              SET sequence_step = 0, next_send_at = NULL
+              WHERE email = ${sub.email}
+            `;
+          }
+          results.push({
+            email: sub.email,
+            step: sub.sequence_step,
+            status: "suppressed",
+            detail:
+              "Silent 90 days — suppressed in place, row kept, resubscribe restarts the sequence.",
+          });
+          continue;
+        }
+      } catch (err) {
+        // No email_events table yet (Phase 2) or a transient error —
+        // skip the sunset check for this subscriber, not the send.
+        console.error(
+          `[email-sequence] sunset check failed for ${sub.email} (skipping check):`,
+          err
+        );
+      }
+
       const step = sub.sequence_step;
       const emailDef = sequenceEmailForStep(step);
 
@@ -103,12 +169,12 @@ export default async function handler(
         continue;
       }
 
-      // Gate 3: email 3 only — skip the pitch for existing buyers.
+      // Gate 3: email 3 only — skip the pitch for existing buyers of
+      // ANY product (research B7: never pitch down the ladder).
       if (step === 3) {
         const bought = (await sql`
           SELECT 1 FROM purchase_emails
           WHERE email = ${sub.email}
-            AND product = 'starter-plan'
             AND status = 'sent'
           LIMIT 1
         `) as unknown as Array<Record<string, unknown>>;
@@ -156,10 +222,11 @@ export default async function handler(
           kind: `sequence-${step}`,
           campaign: emailDef.campaign,
           cta: emailDef.cta,
+          ctaRepeat: emailDef.ctaRepeat,
           ps: emailDef.ps,
+          pps: emailDef.pps,
+          headline: emailDef.headline,
           preheader: emailDef.preheader,
-          heroImageUrl: emailDef.heroImageUrl,
-          heroAlt: emailDef.heroAlt,
           eyebrow: emailDef.eyebrow,
           showReview: emailDef.showReview,
           source: sub.source,

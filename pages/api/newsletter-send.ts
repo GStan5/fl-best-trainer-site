@@ -25,6 +25,17 @@ import {
 // voice); at send time, blank-line-separated blocks become paragraphs.
 // Bare URLs are linkified (audit M3) — the weekly's nudge has to be
 // clickable, or the blog -> trust -> gear + plans loop is a dead end.
+// A block that is exactly one of the fixed weekly section names
+// (research F7 — "One idea", "From class this week", "One nudge",
+// case-insensitive, optional trailing colon) renders as a bold
+// uppercase 14px heading instead of a body paragraph, so the fixed
+// container reads as a container and not three stray paragraphs.
+const WEEKLY_SECTION_HEADINGS = [
+  "one idea",
+  "from class this week",
+  "one nudge",
+];
+
 export function textToHtml(body: string): string {
   const escaped = body
     .replace(/&/g, "&amp;")
@@ -41,7 +52,16 @@ export function textToHtml(body: string): string {
   );
   return linkified
     .split(/\n\s*\n/)
-    .map((block) => `<p>${block.replace(/\n/g, "<br />")}</p>`)
+    .map((block) => {
+      const headingText = block.trim().replace(/:$/, "");
+      if (
+        WEEKLY_SECTION_HEADINGS.includes(headingText.toLowerCase()) &&
+        !block.includes("<br />")
+      ) {
+        return `<p style="margin: 16px 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #4169E1;">${headingText}</p>`;
+      }
+      return `<p>${block.replace(/\n/g, "<br />")}</p>`;
+    })
     .join("\n");
 }
 
@@ -148,6 +168,12 @@ export default async function handler(
               ? { label: draft.cta_label, url: draft.cta_url }
               : undefined,
           preheader: preheaderFromBody(draft.body),
+          // Research F7: the weekly carries the blog's name, "The
+          // Daily Rep", as its header tagline. B10: the forward line
+          // in the footer (weekly only) — the zero-infrastructure
+          // referral, one line, no per-subscriber links.
+          headerTagline: "The Daily Rep",
+          forwardLine: true,
           showReview: true,
           source: r.source,
         });

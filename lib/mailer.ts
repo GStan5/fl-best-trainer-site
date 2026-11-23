@@ -35,7 +35,14 @@ export function mailerConfigured(): boolean {
 }
 
 export function defaultFrom(): string {
-  return `"FL Best Trainer" <${process.env.GMAIL_USER}>`;
+  // Research B2: the sender NAME is the person, not the brand — a
+  // first-name sender lifts opens; "FL Best Trainer" alone sounds
+  // like a company sending a blast. The "Name <address>" form renders
+  // as "Gavin from FL Best Trainer" in the inbox and still passes
+  // DMARC on the address. Note: lib/purchaseDelivery.ts hardcodes its
+  // own brand from-name for transactional receipts — this change
+  // affects marketing sends only, not receipts.
+  return `"Gavin from FL Best Trainer" <${process.env.GMAIL_USER}>`;
 }
 
 function getTransporter() {

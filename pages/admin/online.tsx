@@ -120,6 +120,7 @@ interface NewsletterStats {
   subscribed: number;
   joined7d: number;
   unsubscribed: number;
+  starterSalesFromEmail: number;
   byStep: Array<{ step: number; count: number }>;
   drafts: Array<{
     id: number;
@@ -598,6 +599,10 @@ export default function AdminOnlinePage() {
                 { label: "Subscribers", value: news?.subscribed ?? 0 },
                 { label: "Joined last 7 days", value: news?.joined7d ?? 0 },
                 { label: "Unsubscribed", value: news?.unsubscribed ?? 0 },
+                {
+                  label: "Starter sales from email",
+                  value: news?.starterSalesFromEmail ?? 0,
+                },
               ].map((s) => (
                 <div key={s.label} className="flex items-baseline gap-2">
                   <span className="font-heading text-2xl font-bold text-white">
@@ -732,6 +737,11 @@ export default function AdminOnlinePage() {
                 rows={5}
                 className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
               />
+              <p className="text-white/50 text-xs">
+                Tip: write the three sections on their own lines — One
+                idea, From class this week, One nudge — and they render
+                as headings in the email.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   type="text"

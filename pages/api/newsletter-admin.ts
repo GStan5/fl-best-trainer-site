@@ -1,10 +1,21 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { requireAdmin, getSql } from "../../lib/programAdmin";
-import { ensureNewsletterTables } from "../../lib/newsletter";
+import {
+  ensureNewsletterTables,
+  starterBuyersFromEmail,
+} from "../../lib/newsletter";
 
 // Newsletter admin stats — powers the newsletter section on
 // pages/admin/online.tsx. Admin only (same gate as the other admin
 // routes). Read-only: never sends anything.
+//
+// Metrics (research B5): clicks are the primary metric now — opens
+// are approximate since Apple Mail Privacy Protection inflates them
+// (~13 points). The closed loop is the monthly review: delivered,
+// bounces, clicks, unsubscribes, spam complaints, Starter sales from
+// email (starterBuyersFromEmail), list size. Opens stay in the
+// admin numbers only as a rough sense of reach, never as the
+// decision metric.
 
 export default async function handler(
   req: NextApiRequest,
@@ -74,10 +85,20 @@ export default async function handler(
       status: string;
     }>;
 
+    // Closed loop (audit S14, research B5): Starter buyers whose
+    // email is (or was) a newsletter subscriber. The count is the
+    // number of buyers who were subscribers when they bought —
+    // the revenue half of the monthly report.
+    const buyers = await starterBuyersFromEmail(sql);
+    const starterSalesFromEmail = buyers.filter(
+      (b) => b.subscribed_at !== null
+    ).length;
+
     return res.status(200).json({
       subscribed: Number(totals[0]?.subscribed ?? 0),
       joined7d: Number(totals[0]?.joined7d ?? 0),
       unsubscribed: Number(totals[0]?.unsubscribed ?? 0),
+      starterSalesFromEmail,
       byStep: byStep.map((r) => ({
         step: Number(r.sequence_step),
         count: Number(r.n),

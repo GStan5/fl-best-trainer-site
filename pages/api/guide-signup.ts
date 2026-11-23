@@ -164,10 +164,9 @@ async function sendGuideEmail(
       cta: { label: "Download your guide", url: GUIDE_PDF_URL },
       // Audit M6: email 0 sets the expectation for the sequence and the
       // weekly. Audit S1: no review ask in email 0 — value first.
+      // No hero photo — Hormozi's no-images rule (research Part B):
+      // the template renders the signature headshot only.
       preheader: "Your free guide is attached — start with Day 1.",
-      heroImageUrl:
-        "https://flbesttrainer.com/images/brandphoto16.jpg",
-      heroAlt: "Gavin Stanifer, FL Best Trainer",
       showReview: false,
       source,
       attachments,

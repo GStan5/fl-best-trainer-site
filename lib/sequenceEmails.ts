@@ -10,6 +10,17 @@
 // here, in this file, when Gavin says yes in chat — it is a human
 // gate, not an automatic one.
 //
+// RESTRUCTURE (2026-11-23, Hormozi-first, research Part B) — the
+// `headline`, `ps`, `pps`, and `htmlDraft` fields are DRAFT copy:
+// restructured per Hormozi's email body structure (immediate reward
+// → problem → solution → bullets → CTA → PS → PPS), they need
+// Gavin's RE-APPROVAL before they ship. The `html` field is the
+// previously APPROVED body and is untouched. `htmlDraft` is used ONLY
+// by the preview renderer — the cron and the test route send `html`.
+// WHEN Gavin re-approves a restructured draft, copy its `htmlDraft`
+// into `html` (and keep the headline/ps/pps as written). Until then,
+// SEQUENCE_APPROVED stays false and nothing sends.
+//
 // Email 3's guarantee is the sales page's exact words — no second
 // version of the guarantee anywhere ("email me" in Gavin's voice,
 // where the page says "email us").
@@ -24,20 +35,32 @@ export interface SequenceEmail {
   // The email's one primary button — the email's existing link, rendered
   // as a visual button by the template (UTM tags added at send time).
   cta: { label: string; url: string };
-  // Optional postscript, rendered between the body and the button.
-  // Only email 3 has one. It restates the OFFER, never the guarantee —
+  // Repeat the button once (research F8 — long email 3 only): renders
+  // after the <!--cta--> marker in the body AND at the end.
+  ctaRepeat?: boolean;
+  // Headline (research F1) — the email's one idea, bold 20px above
+  // the first paragraph. DRAFT — needs Gavin's re-approval.
+  headline?: string;
+  // Optional postscript, rendered between the signature and the
+  // button. Email 3's PS restates the OFFER, never the guarantee —
   // the guarantee lives in the body only, in the page's exact words
   // (audit S11: no second version of the guarantee anywhere).
+  // PS lines on emails 1–2 are DRAFT — need Gavin's re-approval.
   ps?: string;
-  // Inbox preview line (audit S4), progress eyebrow, hero photo, and
-  // whether the footer review ask shows (audit S1: value first — the
-  // review ask starts at email 2, never in email 1).
+  // Optional second postscript (research F5 — email 3 only, the
+  // third most-read line). DRAFT — needs Gavin's re-approval.
+  pps?: string;
+  // Inbox preview line (audit S4), progress eyebrow, and whether the
+  // footer review ask shows (audit S1: value first — the review ask
+  // starts at email 2, never in email 1).
   preheader: string;
   eyebrow: string;
-  heroImageUrl: string;
-  heroAlt: string;
   showReview: boolean;
+  // The APPROVED body — what sends today if the gate were flipped.
   html: string;
+  // RESTRUCTURED body (Hormozi, research F1–F3) — preview ONLY, see
+  // the header note. DRAFT — needs Gavin's re-approval.
+  htmlDraft?: string;
 }
 
 export const SEQUENCE_NAME = "Your First Week";
@@ -56,11 +79,10 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
       label: "Read the full post",
       url: "https://flbesttrainer.com/blog/slow-down-form-first-after-50",
     },
+    headline: "Rushing the rep is how people get hurt.",
+    ps: "Slow is the whole trick. Do Day 1 that way and you will feel it.",
     preheader: "The one mistake I see people over 50 make.",
     eyebrow: "Tip 1 of 3",
-    heroImageUrl:
-      "https://flbesttrainer.com/images/brandphoto13.jpg",
-    heroAlt: "Slow, controlled strength training",
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
@@ -71,6 +93,26 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>A lighter weight, lifted with control, builds more strength than a heavy one you have to heave around. I wrote more about it here: <a href="https://flbesttrainer.com/blog/slow-down-form-first-after-50">Why Slowing Down Gets You Stronger After 50</a>.</p>
 <p>That is it for today. Do the guide slow, and it will work better.</p>
 <p>Gavin</p>
+`,
+    // RESTRUCTURED (DRAFT — needs Gavin's re-approval). Hormozi
+    // structure: headline is the immediate reward; the who-I-am block
+    // is the missing story slot (research A3.3); the how-to is 2
+    // bullets (F3); the takeaway is bold in place (F2). No sign-off
+    // line — the template's signature block closes the letter (F4).
+    htmlDraft: `
+<p>Hi {first_name},</p>
+<p>I'm Gavin. I train people over 50 in their homes and in small classes, and everything I teach is about staying independent for life.</p>
+<p>You got the guide. Good. Here is the one thing I want you to take from it first.</p>
+<p>The biggest mistake I see people over 50 make is rushing. They try to move the weight and get the workout over with as fast as possible.</p>
+<p>When you rush a rep, momentum takes over. The weight moves. Your muscles barely work. And the weight you are rushing through is usually too heavy to control, so your joints and your lower back pick up what your muscles were supposed to do. That is how people get hurt doing exercises that should have been safe.</p>
+<p>Slow it down.</p>
+<ul>
+<li>Take 2–3 seconds on the way down.</li>
+<li><strong>If you can not control it on the way down, it is too heavy.</strong> Drop the weight.</li>
+</ul>
+<p>There is no shame in a lighter dumbbell.</p>
+<p>A lighter weight, lifted with control, builds more strength than a heavy one you have to heave around. I wrote more about it here: <a href="https://flbesttrainer.com/blog/slow-down-form-first-after-50">Why Slowing Down Gets You Stronger After 50</a>.</p>
+<p>That is it for today. Do the guide slow, and it will work better.</p>
 `,
   },
   {
@@ -83,11 +125,10 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
       label: "Read the full post",
       url: "https://flbesttrainer.com/blog/farmer-carries-every-class",
     },
+    headline: "Carry the groceries in. That is the test.",
+    ps: "Next time you carry the groceries in, pay attention to your grip. That is your training working.",
     preheader: "Watch them carry the groceries in.",
     eyebrow: "Tip 2 of 3",
-    heroImageUrl:
-      "https://flbesttrainer.com/images/brandphoto14.jpg",
-    heroAlt: "Farmer carries",
     showReview: true,
     html: `
 <p>Hi {first_name},</p>
@@ -100,6 +141,22 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>I wrote the full thing here: <a href="https://flbesttrainer.com/blog/farmer-carries-every-class">Why I Make Every Class Do Farmer Carries</a>.</p>
 <p>Gavin</p>
 `,
+    // RESTRUCTURED (DRAFT — needs Gavin's re-approval). The objection
+    // line is the missing objection slot (research A3.3): the top
+    // objection in this market, answered in one line. The takeaway is
+    // bold in place (F2). No sign-off line — the signature block
+    // closes the letter (F4).
+    htmlDraft: `
+<p>Hi {first_name},</p>
+<p>If you want to know how strong someone really is, watch them carry groceries in from the car.</p>
+<p>Bags in both hands. A door to deal with. Maybe stairs. No warm-up. That is real life, and it is harder than most people admit.</p>
+<p>That is why every class I teach does farmer carries. All of them. It uses your whole body at once. Balance, posture, grip, core, legs. And because everything has to work together, one side can not cover for the other when both hands are full.</p>
+<p>Two things make it work. <strong>Go slow. And squeeze.</strong> Squeeze the weight with your hands, and squeeze your back so you stand tall. The grip work alone is worth it. Jars, bags, anything you pick up all day.</p>
+<p>Here is something most people do not know. Farmer carries stretch out your shoulders and traps. That can help with neck pain, and neck pain can cause headaches.</p>
+<p>If you are thinking you are too old for this, or that lifting will hurt you, you are not the only one. That is the worry almost everyone walks in with. Going slow is what keeps it safe.</p>
+<p>So next time you bring the groceries in, pay attention. When the bags do not feel as heavy and your grip does not quit halfway and you are not out of breath at the door, that is your training working.</p>
+<p>I wrote the full thing here: <a href="https://flbesttrainer.com/blog/farmer-carries-every-class">Why I Make Every Class Do Farmer Carries</a>.</p>
+`,
   },
   {
     step: 3,
@@ -111,12 +168,12 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
       label: "Start the Starter plan — $37",
       url: "https://flbesttrainer.com/starter",
     },
+    ctaRepeat: true,
+    headline: "Seven days proves you can do it. Four weeks changes your strength.",
     ps: "$37 once, yours forever — the full 4 weeks, the 14-exercise library, and the Day 1 and Day 28 retest.",
+    pps: "The guide stays yours either way.",
     preheader: "Four weeks. Twelve sessions. One plan.",
     eyebrow: "Tip 3 of 3",
-    heroImageUrl:
-      "https://flbesttrainer.com/images/brandphoto17.jpg",
-    heroAlt: "Gavin training on the lat pulldown machine",
     showReview: true,
     html: `
 <p>Hi {first_name},</p>
@@ -132,6 +189,33 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>And the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
 <p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. The guide stays yours either way. If you want the full 4 weeks, it is here: <a href="https://flbesttrainer.com/starter">Start the Starter plan</a>.</p>
 <p>Gavin</p>
+`,
+    // RESTRUCTURED (DRAFT — needs Gavin's re-approval). Hormozi
+    // structure: the stack is a real bulleted list (F3), the damaging
+    // admission sits just before the price anchor (A3.4), the price
+    // anchor is bold in place (F2), the button repeats after the
+    // stack via the <!--cta--> marker (F8). "The guide stays yours
+    // either way." moves out of the closing paragraph and into the
+    // PPS, so it is said once. No sign-off line — the signature block
+    // closes the letter (F4). The guarantee is untouched, word for
+    // word.
+    htmlDraft: `
+<p>Hi {first_name},</p>
+<p>The guide was 7 days. It was meant to prove you can do this. And you can.</p>
+<p>But 7 days does not change your strength. A system does. That is what the Starter plan is. Four weeks, 12 sessions, 3 times a week, 30 minutes each. Same setup as the guide. A chair, a wall, water bottles.</p>
+<p>Here is what you get.</p>
+<ul>
+<li>The full 12-session program, Weeks 1 through 4, progressive. Every session builds on the last one.</li>
+<li>The movement library. 14 exercises, every one with the setup, the one key cue, the common mistake, and an easier and a harder version.</li>
+<li>The exercise videos as they are filmed. Every buyer gets them free as each one publishes.</li>
+<li>Your one-page tracker. Print it, stick it on the fridge.</li>
+<li>And the Week 4 retest, so you can prove to yourself it worked. You test yourself on Day 1 and Day 28. Your numbers are the proof.</li>
+</ul>
+<!--cta-->
+<p>Starter won't make you 25 again. It'll make the stairs easier.</p>
+<p><strong>One session with me is $160. Twelve sessions one-on-one would be $1,920. The Starter plan is $37.</strong> One time. Yours forever, including future updates.</p>
+<p>And the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
+<p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. If you want the full 4 weeks, it is here: <a href="https://flbesttrainer.com/starter">Start the Starter plan</a>.</p>
 `,
   },
 ];

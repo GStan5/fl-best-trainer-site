@@ -99,6 +99,10 @@ export default async function handler(
             .replace(/\s+/g, " ")
             .trim()
             .slice(0, 120),
+          // Research F7: the weekly preview carries "The Daily Rep"
+          // as its header tagline; B10: the forward line (weekly only).
+          headerTagline: "The Daily Rep",
+          forwardLine: true,
           showReview: true,
           source: "newsletter",
           unsubscribeUrlOverride:
