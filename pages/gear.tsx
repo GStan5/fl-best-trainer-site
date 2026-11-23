@@ -14,7 +14,7 @@ export default function GearPage({ groups }) {
     <Layout>
       <SEO
         title="Gear I Use | FL Best Trainer"
-        description="The gear I use with my clients, and the top picks I'm proposing for them. Tested picks were used in class with people your age; proposed picks are marked as such."
+        description="The gear I use with my clients, and the picks I'm proposing for them. Tested picks were used in class with people your age; proposed picks are marked as such."
         keywords="home gym gear over 50, hex dumbbells, resistance bands, kettlebells, treadmill, exercise bike, rower, elliptical, sauna, cold plunge, massage gun, foam roller, garmin watch walking, travel backpack trainer"
         url="/gear"
       />
@@ -26,7 +26,7 @@ export default function GearPage({ groups }) {
               Gear I use
             </h1>
             <p className="text-white/75 text-lg leading-relaxed mt-3 mb-2 max-w-2xl">
-              This is the gear I use with my clients, plus the top picks
+              This is the gear I use with my clients, plus the picks
               I&apos;m proposing for them. Not a store, not sponsored picks,
               the things I&apos;d hand to my own clients. Picks I&apos;ve
               tested in class say so. Picks I haven&apos;t tested yet are

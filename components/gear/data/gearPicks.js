@@ -15,6 +15,9 @@ import { theragunPrime } from "./picks/theragunPrime";
 import { sereneLifePortableSauna } from "./picks/sereneLifePortableSauna";
 import { hypervoltGo2 } from "./picks/hypervoltGo2";
 import { amazonBasicsFoamRoller } from "./picks/amazonBasicsFoamRoller";
+import { iceBarrel300 } from "./picks/iceBarrel300";
+import { bobAndBradIMasterPro } from "./picks/bobAndBradIMasterPro";
+import { assaultAirBikeClassic } from "./picks/assaultAirBikeClassic";
 
 // Gear picks, file-based, mirroring the blog (components/blog/data).
 // No database table — if the blog ever moves to the DB, gear moves with
@@ -38,6 +41,9 @@ export const gearPicks = [
   sereneLifePortableSauna,
   hypervoltGo2,
   amazonBasicsFoamRoller,
+  iceBarrel300,
+  bobAndBradIMasterPro,
+  assaultAirBikeClassic,
 ];
 
 export const getPickBySlug = (slug) =>

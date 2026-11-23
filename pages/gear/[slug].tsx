@@ -53,15 +53,27 @@ export default function GearPickPage({ pick }) {
             {/* 2. Gavin's Pick label — or Proposed Pick. A proposed pick
                 is a Garage Gym Reviews roundup winner put here for Gavin
                 to confirm; he has not tested it in class yet, and the
-                page says so instead of pretending otherwise. */}
+                page says so instead of pretending otherwise. A pick with
+                slotSource: "none" holds no GGR slot (the Ice Barrel 300:
+                the cold plunge roundup is retired), so the page must not
+                print the GGR sentence for it. */}
             <p className="text-white/80 mt-6 mb-2">
               {pick.proposed ? (
-                <>
-                  <span className="font-bold text-white">Proposed Pick.</span>{" "}
-                  This is Garage Gym Reviews&apos; top pick in this category,
-                  proposed here for me to confirm. I have not tested this one
-                  in class yet.
-                </>
+                pick.slotSource === "none" ? (
+                  <>
+                    <span className="font-bold text-white">Proposed Pick.</span>{" "}
+                    This one is proposed here for me to confirm. It is not
+                    a Garage Gym Reviews roundup winner, and I have not
+                    tested this one in class yet.
+                  </>
+                ) : (
+                  <>
+                    <span className="font-bold text-white">Proposed Pick.</span>{" "}
+                    This is Garage Gym Reviews&apos; top pick in this category,
+                    proposed here for me to confirm. I have not tested this one
+                    in class yet.
+                  </>
+                )
               ) : (
                 <>
                   <span className="font-bold text-white">Gavin&apos;s Pick.</span>{" "}
@@ -279,12 +291,20 @@ export default function GearPickPage({ pick }) {
               I&apos;m Gavin Stanifer, NASM-CPT. I train adults 50+ every day,
               in-home and in small-group form classes, three times a week.{" "}
               {pick.proposed ? (
-                <>
-                  I have not used this one in class yet. This pick comes from
-                  Garage Gym Reviews&apos; testing, proposed here for me to
-                  confirm, and the scores are my starting point, not a verdict
-                  from use.
-                </>
+                pick.slotSource === "none" ? (
+                  <>
+                    I have not used this one in class yet. This pick is
+                    proposed here for me to confirm, and the scores are my
+                    starting point, not a verdict from use.
+                  </>
+                ) : (
+                  <>
+                    I have not used this one in class yet. This pick comes from
+                    Garage Gym Reviews&apos; testing, proposed here for me to
+                    confirm, and the scores are my starting point, not a verdict
+                    from use.
+                  </>
+                )
               ) : (
                 <>
                   I bought this gear myself and I use it in class.
