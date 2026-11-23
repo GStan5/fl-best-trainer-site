@@ -16,7 +16,7 @@ import {
 
 const howItWorks = [
   "3 sessions a week, 30 minutes each, on your schedule",
-  "A sturdy chair, a wall, water bottles — that's the equipment list",
+  "A sturdy chair, a wall, water bottles or your preferred dumbbell weight — that's the equipment list",
   "Every exercise has a setup, one key cue, and an easier + harder version",
   "Safety rules built in: pain is a stop sign, load is earned, balance work is always protected",
 ];
@@ -40,7 +40,7 @@ const faqs = [
   },
   {
     q: "What equipment do I need?",
-    a: "A sturdy chair, a wall or counter, water bottles. That's it for the full 4 weeks.",
+    a: "A sturdy chair, a wall or counter, water bottles or your preferred dumbbell weight. That's it for the full 4 weeks.",
   },
   {
     q: "How is this different from the free guide?",
