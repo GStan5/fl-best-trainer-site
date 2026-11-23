@@ -81,7 +81,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>The exercise videos as they are filmed. Every buyer gets them free as each one publishes.</p>
 <p>Your one-page tracker. Print it, stick it on the fridge.</p>
 <p>And the Week 4 retest, so you can prove to yourself it worked. You test yourself on Day 1 and Day 28. Your numbers are the proof.</p>
-<p>One session with me is $55. Twelve sessions one-on-one would be $660. The Starter plan is $37, one time. Yours forever, including future updates.</p>
+<p>One session with me is $160. Twelve sessions one-on-one would be $1,920. The Starter plan is $37, one time. Yours forever, including future updates.</p>
 <p>And the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
 <p>This is the last email in the series. The guide stays yours either way. If you want the full 4 weeks, it is here: <a href="https://flbesttrainer.com/starter">Start the Starter plan</a>.</p>
 <p>Gavin</p>
