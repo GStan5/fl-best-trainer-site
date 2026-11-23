@@ -47,7 +47,7 @@ export default async function handler(
     `) as unknown as Array<{ sequence_step: number; n: number }>;
 
     const drafts = (await sql`
-      SELECT id, subject, status, created_at, sent_at
+      SELECT id, subject, status, cta_label, cta_url, created_at, sent_at
       FROM newsletter_drafts
       ORDER BY created_at DESC
       LIMIT 10
@@ -55,6 +55,8 @@ export default async function handler(
       id: number;
       subject: string;
       status: string;
+      cta_label: string | null;
+      cta_url: string | null;
       created_at: string | null;
       sent_at: string | null;
     }>;

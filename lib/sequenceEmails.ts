@@ -25,8 +25,18 @@ export interface SequenceEmail {
   // as a visual button by the template (UTM tags added at send time).
   cta: { label: string; url: string };
   // Optional postscript, rendered between the body and the button.
-  // Only email 3 has one.
+  // Only email 3 has one. It restates the OFFER, never the guarantee —
+  // the guarantee lives in the body only, in the page's exact words
+  // (audit S11: no second version of the guarantee anywhere).
   ps?: string;
+  // Inbox preview line (audit S4), progress eyebrow, hero photo, and
+  // whether the footer review ask shows (audit S1: value first — the
+  // review ask starts at email 2, never in email 1).
+  preheader: string;
+  eyebrow: string;
+  heroImageUrl: string;
+  heroAlt: string;
+  showReview: boolean;
   html: string;
 }
 
@@ -46,6 +56,12 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
       label: "Read the full post",
       url: "https://flbesttrainer.com/blog/slow-down-form-first-after-50",
     },
+    preheader: "The one mistake I see people over 50 make.",
+    eyebrow: "Tip 1 of 3",
+    heroImageUrl:
+      "https://flbesttrainer.com/images/brandphoto13.jpg",
+    heroAlt: "Slow, controlled strength training",
+    showReview: false,
     html: `
 <p>Hi {first_name},</p>
 <p>You got the guide. Good. Here is the one thing I want you to take from it first.</p>
@@ -67,6 +83,12 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
       label: "Read the full post",
       url: "https://flbesttrainer.com/blog/farmer-carries-every-class",
     },
+    preheader: "Watch them carry the groceries in.",
+    eyebrow: "Tip 2 of 3",
+    heroImageUrl:
+      "https://flbesttrainer.com/images/brandphoto14.jpg",
+    heroAlt: "Farmer carries",
+    showReview: true,
     html: `
 <p>Hi {first_name},</p>
 <p>If you want to know how strong someone really is, watch them carry groceries in from the car.</p>
@@ -89,7 +111,13 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
       label: "Start the Starter plan — $37",
       url: "https://flbesttrainer.com/starter",
     },
-    ps: "$37 once, yours forever — and if you finish all 12 sessions and your numbers don't improve, email me for a full refund.",
+    ps: "$37 once, yours forever — the full 4 weeks, the 14-exercise library, and the Day 1 and Day 28 retest.",
+    preheader: "Four weeks. Twelve sessions. One plan.",
+    eyebrow: "Tip 3 of 3",
+    heroImageUrl:
+      "https://flbesttrainer.com/images/brandphoto17.jpg",
+    heroAlt: "Gavin training on the lat pulldown machine",
+    showReview: true,
     html: `
 <p>Hi {first_name},</p>
 <p>The guide was 7 days. It was meant to prove you can do this. And you can.</p>
@@ -102,7 +130,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>And the Week 4 retest, so you can prove to yourself it worked. You test yourself on Day 1 and Day 28. Your numbers are the proof.</p>
 <p>One session with me is $160. Twelve sessions one-on-one would be $1,920. The Starter plan is $37, one time. Yours forever, including future updates.</p>
 <p>And the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
-<p>This is the last email in the series. The guide stays yours either way. If you want the full 4 weeks, it is here: <a href="https://flbesttrainer.com/starter">Start the Starter plan</a>.</p>
+<p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. The guide stays yours either way. If you want the full 4 weeks, it is here: <a href="https://flbesttrainer.com/starter">Start the Starter plan</a>.</p>
 <p>Gavin</p>
 `,
   },

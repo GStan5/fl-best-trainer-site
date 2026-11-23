@@ -125,6 +125,8 @@ interface NewsletterStats {
     id: number;
     subject: string;
     status: string;
+    cta_label: string | null;
+    cta_url: string | null;
     created_at: string | null;
     sent_at: string | null;
   }>;
@@ -169,8 +171,69 @@ export default function AdminOnlinePage() {
   const [newsError, setNewsError] = useState(false);
   const [draftSubject, setDraftSubject] = useState("");
   const [draftBody, setDraftBody] = useState("");
+  const [draftCtaLabel, setDraftCtaLabel] = useState("");
+  const [draftCtaUrl, setDraftCtaUrl] = useState("");
   const [draftMsg, setDraftMsg] = useState("");
   const [sendingId, setSendingId] = useState<number | null>(null);
+
+  // Preview a draft exactly as it would send (audit M8) — opens the
+  // rendered email in a new tab. Nothing is sent.
+  const previewDraft = async (id: number) => {
+    setDraftMsg("");
+    try {
+      const res = await fetch("/api/newsletter-drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preview", id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.html) {
+        setDraftMsg(data.error || "Preview didn't work — try again.");
+        return;
+      }
+      const win = window.open("", "_blank");
+      if (!win) {
+        setDraftMsg("Pop-up blocked — allow pop-ups to preview.");
+        return;
+      }
+      win.document.write(data.html);
+      win.document.close();
+    } catch {
+      setDraftMsg("Something went wrong — try again.");
+    }
+  };
+
+  // Test-send a draft to the two test addresses only (audit M8).
+  const testDraft = async (id: number, subject: string) => {
+    if (
+      !window.confirm(
+        `Send a test of "${subject}" to the two test addresses only?`
+      )
+    )
+      return;
+    setDraftMsg("");
+    try {
+      const res = await fetch("/api/newsletter-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draftId: id, test: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setDraftMsg(
+          data.error ||
+            `Test send failed${data.failedEmails?.length ? ` — failed: ${data.failedEmails.join(", ")}` : ""}.`
+        );
+        return;
+      }
+      setDraftMsg(
+        `Test sent to ${data.sent} of ${data.total} test address(es).`
+      );
+      loadNewsletter();
+    } catch {
+      setDraftMsg("Something went wrong — try again.");
+    }
+  };
 
   const loadNewsletter = () => {
     fetch("/api/newsletter-admin")
@@ -586,8 +649,29 @@ export default function AdminOnlinePage() {
                         {d.sent_at ? ` · sent ${formatDate(d.sent_at)}` : ""}
                         {` · ${formatDate(d.created_at)}`}
                       </div>
+                      {d.cta_label && d.cta_url && (
+                        <div className="text-white/50 text-xs mt-0.5">
+                          Button: {d.cta_label} → {d.cta_url}
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => previewDraft(d.id)}
+                        className="bg-white/10 hover:bg-white/20 text-white font-semibold px-4 py-2 rounded-xl transition"
+                      >
+                        Preview
+                      </button>
+                      {d.status !== "sent" && (
+                        <button
+                          type="button"
+                          onClick={() => testDraft(d.id, d.subject)}
+                          className="bg-white/10 hover:bg-white/20 text-white font-semibold px-4 py-2 rounded-xl transition"
+                        >
+                          Test
+                        </button>
+                      )}
                       {d.status === "draft" && (
                         <button
                           type="button"
@@ -644,10 +728,26 @@ export default function AdminOnlinePage() {
               <textarea
                 value={draftBody}
                 onChange={(e) => setDraftBody(e.target.value)}
-                placeholder="Body — one useful idea, then one nudge. Blank lines make paragraphs."
+                placeholder="Body — one useful idea, then one nudge. Blank lines make paragraphs. Paste a link and it becomes clickable."
                 rows={5}
                 className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
               />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={draftCtaLabel}
+                  onChange={(e) => setDraftCtaLabel(e.target.value)}
+                  placeholder="Button label (optional)"
+                  className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+                />
+                <input
+                  type="text"
+                  value={draftCtaUrl}
+                  onChange={(e) => setDraftCtaUrl(e.target.value)}
+                  placeholder="Button link (optional)"
+                  className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+                />
+              </div>
               {draftMsg && (
                 <p className="text-red-400 text-sm" role="alert">
                   {draftMsg}
@@ -659,11 +759,18 @@ export default function AdminOnlinePage() {
                   onClick={async () => {
                     const ok = await newsletterAction(
                       "/api/newsletter-drafts",
-                      { subject: draftSubject, body: draftBody }
+                      {
+                        subject: draftSubject,
+                        body: draftBody,
+                        ctaLabel: draftCtaLabel,
+                        ctaUrl: draftCtaUrl,
+                      }
                     );
                     if (ok) {
                       setDraftSubject("");
                       setDraftBody("");
+                      setDraftCtaLabel("");
+                      setDraftCtaUrl("");
                     }
                   }}
                   className="bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-2.5 rounded-xl transition"

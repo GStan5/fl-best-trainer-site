@@ -101,7 +101,11 @@ async function saveSubscriber(
   }
 }
 
-async function sendGuideEmail(firstName: string, email: string): Promise<void> {
+async function sendGuideEmail(
+  firstName: string,
+  email: string,
+  source: string
+): Promise<void> {
   const { GMAIL_USER, GMAIL_PASS } = process.env;
   if (!GMAIL_USER || !GMAIL_PASS) {
     console.log(
@@ -152,11 +156,20 @@ async function sendGuideEmail(firstName: string, email: string): Promise<void> {
         <p>You can also download it any time here:<br/>
         <a href="${GUIDE_PDF_URL}">${GUIDE_PDF_URL}</a></p>
         <p>Start with Day 1 whenever you're ready. All you need is a sturdy chair, a clear wall, and two water bottles.</p>
+        <p>Over the next week I'll send you three short tips. After that, one useful idea a week.</p>
         <p>Stay strong,<br/>Gavin Stanifer, NASM Certified Personal Trainer<br/>FL Best Trainer — Longboat Key, Florida</p>
       `,
       kind: "guide",
       campaign: "guide",
       cta: { label: "Download your guide", url: GUIDE_PDF_URL },
+      // Audit M6: email 0 sets the expectation for the sequence and the
+      // weekly. Audit S1: no review ask in email 0 — value first.
+      preheader: "Your free guide is attached — start with Day 1.",
+      heroImageUrl:
+        "https://flbesttrainer.com/images/brandphoto16.jpg",
+      heroAlt: "Gavin Stanifer, FL Best Trainer",
+      showReview: false,
+      source,
       attachments,
     });
   } catch (err) {
@@ -187,7 +200,7 @@ export default async function handler(
 
   await saveLead(firstName, email, source);
   await saveSubscriber(firstName, email, source);
-  await sendGuideEmail(firstName, email);
+  await sendGuideEmail(firstName, email, source);
 
   return res.status(200).json({
     ok: true,

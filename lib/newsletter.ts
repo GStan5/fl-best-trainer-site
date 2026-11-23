@@ -18,6 +18,7 @@ import { sendMail, mailerConfigured } from "./mailer";
 import {
   renderEmailTemplate,
   renderEmailFooterText,
+  whyYouGetThisLine,
   type EmailCta,
 } from "./emailTemplate";
 
@@ -36,6 +37,21 @@ export const FOOTER_ADDRESS =
   "FL Best Trainer LLC, 336 E. College Avenue, Suite 301, Tallahassee, FL 32301";
 
 export const FOOTER_BUSINESS = "FL Best Trainer LLC";
+
+// Test sends go ONLY to these two addresses (Gavin 2026-11-23) —
+// Gavin's, and Grim's so he can open it and see what a client sees.
+// Enforced in the test routes; a live send to any other address is
+// refused. Dry runs may use any address.
+export const TEST_RECIPIENTS = [
+  "gavinstanifer@live.com",
+  "grim1051990@gmail.com",
+] as const;
+
+export function isTestRecipient(email: string): boolean {
+  return (TEST_RECIPIENTS as readonly string[]).includes(
+    normalizeEmail(email)
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Tables (additive, same safe shape as `leads`)
@@ -73,6 +89,17 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
       created_at timestamptz default now(),
       sent_at timestamptz
     )
+  `;
+  // Weekly CTA (audit M3): a draft can carry its own primary button.
+  // ADD COLUMN IF NOT EXISTS so tables created before this column
+  // existed get it on the next call — same safe additive shape.
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS cta_label text
+  `;
+  await sql`
+    ALTER TABLE newsletter_drafts
+    ADD COLUMN IF NOT EXISTS cta_url text
   `;
 }
 
@@ -167,6 +194,11 @@ export function verifyUnsubscribeToken(token: string): string | null {
   try {
     const [encoded, sig] = token.split(".");
     if (!encoded || !sig) return null;
+    // Strict shape: the signature must be exactly 64 hex chars.
+    // Without this, Buffer.from(sig, "hex") silently truncates at
+    // the first non-hex character — so a valid token with junk
+    // appended to it would still verify.
+    if (!/^[0-9a-f]{64}$/.test(sig)) return null;
     const email = Buffer.from(encoded, "base64url").toString("utf8");
     if (!isValidEmail(email)) return null;
     const expected = createHmac("sha256", unsubscribeSecret())
@@ -240,8 +272,17 @@ export function buildMarketingEmail(opts: {
   campaign: string;
   cta?: EmailCta;
   ps?: string;
+  preheader?: string;
+  heroImageUrl?: string;
+  heroAlt?: string;
+  eyebrow?: string;
+  showReview?: boolean;
+  source?: string | null;
+  // Preview only: render with a placeholder unsubscribe URL instead
+  // of signing one (the admin draft preview has no real recipient).
+  unsubscribeUrlOverride?: string;
 }): BuiltMarketingEmail {
-  const unsub = unsubscribeUrl(opts.email);
+  const unsub = opts.unsubscribeUrlOverride ?? unsubscribeUrl(opts.email);
   const body = withUtm(opts.bodyHtml, opts.campaign);
   const cta = opts.cta
     ? { label: opts.cta.label, url: withUtmUrl(opts.cta.url, opts.campaign) }
@@ -250,9 +291,15 @@ export function buildMarketingEmail(opts: {
     bodyHtml: body,
     cta,
     ps: opts.ps,
+    preheader: opts.preheader,
+    heroImageUrl: opts.heroImageUrl,
+    heroAlt: opts.heroAlt,
+    eyebrow: opts.eyebrow,
     unsubscribeUrl: unsub,
     footerBusiness: FOOTER_BUSINESS,
     footerAddress: FOOTER_ADDRESS,
+    showReview: opts.showReview,
+    source: opts.source,
   });
   const textParts = [stripTags(body)];
   if (cta) textParts.push(`\n${cta.label}: ${cta.url}`);
@@ -263,12 +310,20 @@ export function buildMarketingEmail(opts: {
       unsubscribeUrl: unsub,
       footerBusiness: FOOTER_BUSINESS,
       footerAddress: FOOTER_ADDRESS,
+      showReview: opts.showReview,
+      source: opts.source,
     });
   return {
     subject: opts.subject,
     html,
     text,
-    headers: { "List-Unsubscribe": `<${unsub}>` },
+    // List-Unsubscribe-Post (audit S17): RFC 8058 one-click. The route
+    // already unsubscribes on GET with no confirmation, so this header
+    // is truthful — Gmail can offer unsubscribe without a confirm step.
+    headers: {
+      "List-Unsubscribe": `<${unsub}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   };
 }
 
@@ -307,6 +362,12 @@ export async function sendMarketingEmail(
     campaign: string;
     cta?: EmailCta;
     ps?: string;
+    preheader?: string;
+    heroImageUrl?: string;
+    heroAlt?: string;
+    eyebrow?: string;
+    showReview?: boolean;
+    source?: string | null;
     attachments?: Array<{
       filename: string;
       path?: string;
@@ -331,6 +392,12 @@ export async function sendMarketingEmail(
     campaign: opts.campaign,
     cta: opts.cta,
     ps: opts.ps,
+    preheader: opts.preheader,
+    heroImageUrl: opts.heroImageUrl,
+    heroAlt: opts.heroAlt,
+    eyebrow: opts.eyebrow,
+    showReview: opts.showReview,
+    source: opts.source,
   });
   try {
     await sendMail({

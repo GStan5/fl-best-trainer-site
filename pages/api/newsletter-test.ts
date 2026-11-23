@@ -6,18 +6,20 @@ import {
   sendMarketingEmail,
   isValidEmail,
   normalizeEmail,
+  isTestRecipient,
 } from "../../lib/newsletter";
 import { sequenceEmailForStep } from "../../lib/sequenceEmails";
 
-// Test route — send any sequence step to any address on demand, so the
-// dry run covers all 3 emails in one sitting instead of waiting a week.
-// Same CRON_SECRET Bearer check as the cron routes.
+// Test route — send any sequence step to a TEST address on demand, so
+// the dry run covers all 3 emails in one sitting instead of waiting a
+// week. Same CRON_SECRET Bearer check as the cron routes.
 //
 // Dry run is the default (?dryRun=1, or omit it): builds the email and
 // reports what WOULD be sent, sends nothing, logs nothing. Pass
 // dryRun=0 for a real send — which needs the step to be approved by
-// Gavin first, and a real test address (there is no test address yet;
-// do not use this on any real person's address).
+// Gavin first, and a test address only: live sends are refused to any
+// address outside the two test recipients (audit M2). Dry runs may
+// keep any address.
 
 function verifyCron(req: NextApiRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;
@@ -68,7 +70,16 @@ export default async function handler(
     });
   }
 
-  // Real send: needs Gavin's approval and a configured mailer.
+  // Real send: needs Gavin's approval, a configured mailer, and a
+  // test address only (audit M2 — a typo must never send a live
+  // sequence email to a stranger). Checked before the mailer, so the
+  // refusal holds even without Gmail env.
+  if (!isTestRecipient(email)) {
+    return res.status(400).json({
+      error:
+        "Test sends go only to gavinstanifer@live.com and grim1051990@gmail.com — nothing sent.",
+    });
+  }
   if (!emailDef.approved) {
     return res.status(400).json({
       error: "Sequence step not approved yet — nothing sent.",
@@ -96,6 +107,12 @@ export default async function handler(
       campaign: emailDef.campaign,
       cta: emailDef.cta,
       ps: emailDef.ps,
+      preheader: emailDef.preheader,
+      heroImageUrl: emailDef.heroImageUrl,
+      heroAlt: emailDef.heroAlt,
+      eyebrow: emailDef.eyebrow,
+      showReview: emailDef.showReview,
+      source: "guide",
     });
     return res.status(200).json({ ok: true, dryRun: false, sent: true });
   } catch (err) {

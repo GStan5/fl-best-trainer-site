@@ -37,6 +37,7 @@ function verifyCron(req: NextApiRequest): boolean {
 interface DueRow {
   email: string;
   first_name: string | null;
+  source: string | null;
   sequence_step: number;
 }
 
@@ -66,7 +67,7 @@ export default async function handler(
     await ensureNewsletterTables(sql);
 
     const due = (await sql`
-      SELECT email, first_name, sequence_step
+      SELECT email, first_name, source, sequence_step
       FROM newsletter_subscribers
       WHERE unsubscribed_at IS NULL
         AND sequence_step BETWEEN 1 AND 3
@@ -156,6 +157,12 @@ export default async function handler(
           campaign: emailDef.campaign,
           cta: emailDef.cta,
           ps: emailDef.ps,
+          preheader: emailDef.preheader,
+          heroImageUrl: emailDef.heroImageUrl,
+          heroAlt: emailDef.heroAlt,
+          eyebrow: emailDef.eyebrow,
+          showReview: emailDef.showReview,
+          source: sub.source,
         });
       } catch (err) {
         // Logged as 'failed' inside sendMarketingEmail. Leave due —

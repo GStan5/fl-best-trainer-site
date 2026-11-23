@@ -201,7 +201,8 @@ export default function GuidePopup() {
           </button>
           <p className="text-white/40 text-xs text-center">
             Free forever. No spam, no pressure. I&apos;ll also send you a few
-            short tips over the next week. Unsubscribe anytime.
+            short tips over the next week, then one short email a week.
+            Unsubscribe anytime.
           </p>
         </>
       )}
