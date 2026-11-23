@@ -23,20 +23,39 @@ import {
   type EmailCta,
 } from "./emailTemplate";
 import {
+  SITE,
+  ladderRank,
+  nextRungAfterProducts,
+  weeklyDealForProducts,
+  marketingSendAllowed,
+  type WeeklyDeal,
+} from "./ladder";
+// Re-exported so existing import sites keep working: the ladder is
+// the single source of truth, this file just passes it through.
+export { SITE } from "./ladder";
+export type { WeeklyDeal } from "./ladder";
+export { ladderRank, weeklyDealForProducts } from "./ladder";
+import {
   postPurchaseEmailForStep,
+  postPurchaseDueInDays,
+  postPurchaseGapDays,
   type PostPurchaseEmail,
 } from "./postPurchaseEmails";
 import {
   winbackEmailForStep,
+  winbackGapDays,
   type WinbackEmail,
 } from "./winbackEmails";
+import { sequenceDueInDays } from "./sequenceEmails";
 
 export type SqlTag = (
   strings: TemplateStringsArray,
   ...values: unknown[]
 ) => Promise<Record<string, unknown>[]>;
 
-export const SITE = "https://flbesttrainer.com";
+// SITE, WeeklyDeal, ladderRank, weeklyDealForProducts live in
+// lib/ladder.ts (the single source of truth) and are re-exported
+// above so existing import sites keep working.
 
 // Footer address — config constant, one-line swap later. DECIDED
 // (Gavin 2026-11-23): the LLC's registered agent address for now.
@@ -217,10 +236,13 @@ export async function upsertSubscriber(
   `;
 
   if (opts.enrollSequence) {
+    // Due date comes from the sequence def (step 1's sendAfterDays),
+    // not a literal — the defs are the timing config.
+    const dueInDays = sequenceDueInDays(1);
     await sql`
       UPDATE newsletter_subscribers
       SET sequence_step = 1,
-          next_send_at = now() + interval '2 days'
+          next_send_at = now() + make_interval(days => ${dueInDays})
       WHERE email = ${email}
         AND sequence_step = 0
     `;
@@ -373,87 +395,17 @@ export function textToHtml(body: string): string {
 //      Blocks 1–2 teach (value first), blocks 3–4 sell (pitch last).
 // The draft carries blocks 1–3 only. The deal is never in the draft.
 //
-// Deal table — the Value Ladder, one rung at a time. Never pitch what
-// they already own, never pitch two rungs up (Hormozi). Highest rung
-// purchased wins:
-//   bought nothing          -> Starter $37 (/starter)
-//   bought Starter          -> Self-Study $197 (/self-study)
-//   bought Self-Study        -> classes / 10-class pack, $420 online (/classes)
-//   bought flagship/monthly  -> in-home training, $160/session (/training)
-// An unknown product in purchase_emails ranks top (in-home) — a
-// product we don't recognise must never cause a pitch DOWN the
-// ladder. A failed purchase lookup falls back to Starter (non-buyer
+// The deal comes from lib/ladder.ts — the Value Ladder, ONLINE
+// PROGRAMS ONLY (guide → Starter → Self-Study → Flagship → Monthly).
+// The resolver below reads the ladder; nothing in this file names a
+// rung, a price, or a deal. A buyer who owns the top rung, or a
+// product we don't recognise, gets the referral ask instead of a
+// pitch. A failed purchase lookup falls back to Starter (non-buyer
 // default) — never to no deal, never to a wrong-rung pitch.
 // Known limit: purchase_emails only sees ONLINE buys. Someone who
 // bought classes or training in person (never through Stripe) reads
 // as a non-buyer and gets the Starter deal until their purchase is
 // recorded online.
-
-export interface WeeklyDeal {
-  key: "starter" | "self-study" | "classes" | "in-home";
-  label: string;
-  url: string;
-  line: string;
-}
-
-export const WEEKLY_DEALS: Record<WeeklyDeal["key"], WeeklyDeal> = {
-  starter: {
-    key: "starter",
-    label: "Start the Starter plan — $37",
-    url: `${SITE}/starter`,
-    line: "The Starter plan is $37, one time. Four weeks, 12 sessions, 30 minutes each. A chair, a wall, water bottles — that's all you need.",
-  },
-  "self-study": {
-    key: "self-study",
-    label: "Get the Self-Study plan — $197",
-    url: `${SITE}/self-study`,
-    line: "You finished Starter. Self-Study is the full 6 weeks — the same sessions, on your own schedule, $197 once.",
-  },
-  classes: {
-    key: "classes",
-    label: "Get the 10-class pack — $420",
-    url: `${SITE}/classes`,
-    line: "You know the movements now. The next step is doing them with me watching your form — small-group classes, 5 people max.",
-  },
-  "in-home": {
-    key: "in-home",
-    label: "Book in-home training",
-    url: `${SITE}/training`,
-    line: "The next step is one-on-one — me, in your home, working on exactly what you need. One session is $160.",
-  },
-};
-
-// Product ladder rank (Hormozi Value Ladder, one rung at a time).
-// Shared by the weekly deal resolver and the post-purchase engine so
-// "highest rung bought" means the same thing in both places.
-// starter-plan = 1, self-study = 2, flagship / monthly = 3.
-// An unknown product ranks top — a product we don't recognise must
-// never cause a pitch DOWN the ladder.
-export function ladderRank(product: string): number {
-  switch (product) {
-    case "starter-plan":
-      return 1;
-    case "self-study":
-      return 2;
-    case "flagship":
-    case "monthly-97":
-    case "monthly-147":
-    case "monthly-197":
-      return 3;
-    default:
-      return 3;
-  }
-}
-
-// Pure function (unit-testable without a DB): highest rung wins.
-export function weeklyDealForProducts(products: string[]): WeeklyDeal {
-  let best = 0;
-  for (const p of products) best = Math.max(best, ladderRank(p));
-  if (best >= 3) return WEEKLY_DEALS["in-home"];
-  if (best === 2) return WEEKLY_DEALS.classes;
-  if (best === 1) return WEEKLY_DEALS["self-study"];
-  return WEEKLY_DEALS.starter;
-}
 
 export async function resolveWeeklyDeal(
   sql: SqlTag,
@@ -470,7 +422,9 @@ export async function resolveWeeklyDeal(
       "[newsletter] resolveWeeklyDeal failed (Starter fallback):",
       err
     );
-    return WEEKLY_DEALS.starter;
+    // Non-buyer deal — the ladder's first rung, read from the
+    // config, not a literal.
+    return weeklyDealForProducts([]);
   }
 }
 
@@ -870,13 +824,16 @@ export async function enrollPostPurchase(
   `) as unknown as PostPurchaseRow[];
 
   // Fresh enrollment: Starter buyers start at step 1 (due now);
-  // Self-Study / monthly buyers start at step 4 only — the referral
-  // ask, due in 14 days. Emails 1–3 are written for the Starter
-  // buyer ("do Day 1 / Day 2", the Self-Study nudge), so a higher-rung
-  // buyer never sees them.
+  // Self-Study / flagship / monthly buyers start at step 4 only —
+  // the referral ask, due on step 4's sendAfterDays. Emails 1–3 are
+  // written for the Starter buyer ("do Day 1 / Day 2", the Self-Study
+  // nudge), so a higher-rung buyer never sees them. "Starter buyer"
+  // means the lowest paid rung on the ladder (lib/ladder.ts) — the
+  // rank comes from the config, not a literal.
   const freshStep = newRank === 1 ? 1 : 4;
   const freshDue = new Date(
-    Date.now() + (freshStep === 1 ? 0 : 14 * 24 * 60 * 60 * 1000)
+    Date.now() +
+      (freshStep === 1 ? 0 : postPurchaseDueInDays(4) * 24 * 60 * 60 * 1000)
   ).toISOString();
 
   if (existing.length === 0) {
@@ -937,23 +894,51 @@ export async function processPostPurchaseRow(
     };
   }
 
-  // Step 3 only — the Self-Study nudge goes to Starter buyers ONLY.
-  // Checked against BOTH the stored product and purchase_emails at
-  // send time (not just enrollment), so a buyer who upgrades after
-  // enrolling still skips it. Any product ranked above Starter skips.
+  // Send gate (Gavin 2026-11-23): while ON, only the allowlist
+  // receives marketing email. A gated skip is terminal — the row
+  // advances to finished, it does not sit due for the day the gate
+  // lifts. No suppression or other side effect here: this is a
+  // blackout, not a re-engage outcome.
+  if (!marketingSendAllowed(email)) {
+    if (!dryRun) {
+      await logEmailSend(sql, {
+        email,
+        kind: `post-purchase-${step}`,
+        subject: def.subject,
+        status: "skipped-not-allowlisted",
+      });
+      await sql`
+        UPDATE post_purchase_sequences
+        SET step = 5, next_send_at = NULL
+        WHERE email = ${email}
+      `;
+    }
+    return {
+      email,
+      step,
+      status: "skipped-not-allowlisted",
+      detail: "Send gate is ON — only the allowlist receives marketing email.",
+    };
+  }
+
+  // Step 3 only — the nudge goes to buyers whose NEXT rung on the
+  // ladder is the product this email pitches (def.pitchProduct,
+  // "self-study" — the approved copy names Self-Study). Checked
+  // against BOTH the stored product and purchase_emails at send time
+  // (not just enrollment), so a buyer who upgrades after enrolling
+  // still skips it. A buyer already past the pitch, at the top, or
+  // holding an unrecognised product skips — the ladder decides, the
+  // engine never hardcodes a rank.
   if (step === 3) {
     const bought = (await sql`
       SELECT product FROM purchase_emails
       WHERE email = ${email} AND status = 'sent'
     `) as unknown as Array<{ product: string }>;
-    const highest = Math.max(
-      ladderRank(row.product ?? ""),
-      bought.reduce(
-        (best, b) => Math.max(best, ladderRank(b.product)),
-        0
-      )
-    );
-    if (highest >= 2) {
+    const nextRung = nextRungAfterProducts([
+      row.product ?? "",
+      ...bought.map((b) => b.product),
+    ]);
+    if (!nextRung || nextRung.product !== def.pitchProduct) {
       if (!dryRun) {
         await logEmailSend(sql, {
           email,
@@ -961,9 +946,10 @@ export async function processPostPurchaseRow(
           subject: def.subject,
           status: "skipped-not-starter",
         });
+        const gapDays = postPurchaseGapDays(3, 4);
         await sql`
           UPDATE post_purchase_sequences
-          SET step = 4, next_send_at = now() + interval '7 days'
+          SET step = 4, next_send_at = now() + make_interval(days => ${gapDays})
           WHERE email = ${email}
         `;
       }
@@ -972,7 +958,7 @@ export async function processPostPurchaseRow(
         step,
         status: "skipped-not-starter",
         detail:
-          "Already bought Self-Study or above — nudge skipped, referral ask still due Day 14.",
+          "Next rung is not the pitched product — nudge skipped, referral ask still due Day 14.",
       };
     }
   }
@@ -1018,24 +1004,28 @@ export async function processPostPurchaseRow(
     };
   }
 
-  // Advance: step 1 -> Day 2 (+2d), step 2 -> Day 7 (+5d),
-  // step 3 -> Day 14 (+7d), step 4 -> finished (step 5).
+  // Advance — gaps come from the defs' sendAfterDays (the defs are
+  // the timing config), never literals: step 1 -> Day 2, step 2 ->
+  // Day 7, step 3 -> Day 14, step 4 -> finished (step 5).
   if (step === 1) {
+    const gapDays = postPurchaseGapDays(1, 2);
     await sql`
       UPDATE post_purchase_sequences
-      SET step = 2, next_send_at = now() + interval '2 days'
+      SET step = 2, next_send_at = now() + make_interval(days => ${gapDays})
       WHERE email = ${email}
     `;
   } else if (step === 2) {
+    const gapDays = postPurchaseGapDays(2, 3);
     await sql`
       UPDATE post_purchase_sequences
-      SET step = 3, next_send_at = now() + interval '5 days'
+      SET step = 3, next_send_at = now() + make_interval(days => ${gapDays})
       WHERE email = ${email}
     `;
   } else if (step === 3) {
+    const gapDays = postPurchaseGapDays(3, 4);
     await sql`
       UPDATE post_purchase_sequences
-      SET step = 4, next_send_at = now() + interval '7 days'
+      SET step = 4, next_send_at = now() + make_interval(days => ${gapDays})
       WHERE email = ${email}
     `;
   } else {
@@ -1101,6 +1091,35 @@ export async function processWinbackRow(
       detail: "Winback step not approved yet — left due.",
     };
   }
+
+  // Send gate (Gavin 2026-11-23): while ON, only the allowlist
+  // receives marketing email. A gated skip is terminal — the row
+  // advances to done, it does not sit due for the day the gate
+  // lifts. NO suppression here: suppression follows a completed
+  // winback that got no reply, and a gated skip is a blackout, not
+  // a completed re-engage.
+  if (!marketingSendAllowed(email)) {
+    if (!dryRun) {
+      await logEmailSend(sql, {
+        email,
+        kind: `winback-${step}`,
+        subject: def.subject,
+        status: "skipped-not-allowlisted",
+      });
+      await sql`
+        UPDATE winback_sequences
+        SET step = 4, next_send_at = NULL
+        WHERE email = ${email}
+      `;
+    }
+    return {
+      email,
+      step,
+      status: "skipped-not-allowlisted",
+      detail: "Send gate is ON — only the allowlist receives marketing email.",
+    };
+  }
+
   if (dryRun) {
     return {
       email,
@@ -1140,18 +1159,22 @@ export async function processWinbackRow(
     };
   }
 
-  // Advance: step 1 -> +5d, step 2 -> +5d, step 3 -> done AND
-  // suppressed (the re-engage got no reply — see the limit note).
+  // Advance — gaps come from the defs' sendAfterDays (the defs are
+  // the timing config), never literals: step 1 -> +5d, step 2 -> +5d,
+  // step 3 -> done AND suppressed (the re-engage got no reply — see
+  // the limit note).
   if (step === 1) {
+    const gapDays = winbackGapDays(1, 2);
     await sql`
       UPDATE winback_sequences
-      SET step = 2, next_send_at = now() + interval '5 days'
+      SET step = 2, next_send_at = now() + make_interval(days => ${gapDays})
       WHERE email = ${email}
     `;
   } else if (step === 2) {
+    const gapDays = winbackGapDays(2, 3);
     await sql`
       UPDATE winback_sequences
-      SET step = 3, next_send_at = now() + interval '5 days'
+      SET step = 3, next_send_at = now() + make_interval(days => ${gapDays})
       WHERE email = ${email}
     `;
   } else {

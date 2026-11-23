@@ -103,3 +103,18 @@ export const WINBACK_EMAILS: WinbackEmail[] = [
 export function winbackEmailForStep(step: number): WinbackEmail | null {
   return WINBACK_EMAILS.find((e) => e.step === step) ?? null;
 }
+
+// Timing helpers — the defs ARE the timing config (no hardcoding,
+// Principle 25): the engine derives every gap from sendAfterDays
+// instead of repeating the numbers as literals. Throws on an unknown
+// step — a missing def is a broken sequence, and failing loud beats
+// silently sending on the wrong day.
+export function winbackDueInDays(step: number): number {
+  const def = winbackEmailForStep(step);
+  if (!def) throw new Error(`No winback def for step ${step}`);
+  return def.sendAfterDays;
+}
+
+export function winbackGapDays(fromStep: number, toStep: number): number {
+  return winbackDueInDays(toStep) - winbackDueInDays(fromStep);
+}

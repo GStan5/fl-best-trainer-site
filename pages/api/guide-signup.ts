@@ -7,6 +7,7 @@ import {
   sendMarketingEmail,
   type SqlTag,
 } from "../../lib/newsletter";
+import { NEWSLETTER_SEND_GATE_ON } from "../../lib/ladder";
 
 // NOTE: lib/database is imported lazily inside saveLead, not at the top
 // level. The shared module throws at import time when DATABASE_URL is
@@ -90,11 +91,17 @@ async function saveSubscriber(
     await ensureNewsletterTables(sql);
     // Only guide signups enroll in the follow-up sequence (design doc,
     // gap 2). Flagship / niche / plans signups land on the list only.
+    // Send gate (Gavin 2026-11-23): while the gate is ON, NOBODY
+    // enrolls — new guide signups land on the list at step 0 with no
+    // sequence and no next_send_at (like the flagship lead today), so
+    // nobody silently queues up for the day the gate lifts. The guide
+    // email itself still sends (transactional — the PDF they asked
+    // for); only the sequence enrollment is gated.
     await upsertSubscriber(sql, {
       email,
       firstName,
       source,
-      enrollSequence: source === "guide",
+      enrollSequence: source === "guide" && !NEWSLETTER_SEND_GATE_ON,
     });
   } catch (err) {
     console.error("[guide-signup] Subscriber save failed (continuing):", err);

@@ -8,6 +8,7 @@ import {
   normalizeEmail,
   isTestRecipient,
 } from "../../lib/newsletter";
+import { marketingSendAllowed } from "../../lib/ladder";
 import { sequenceEmailForStep } from "../../lib/sequenceEmails";
 import { postPurchaseEmailForStep } from "../../lib/postPurchaseEmails";
 import { winbackEmailForStep } from "../../lib/winbackEmails";
@@ -111,10 +112,25 @@ export default async function handler(
   }
 
   if (dryRun) {
+    // Send gate (Gavin 2026-11-23): a dry run reports what WOULD
+    // happen live — and live, a non-allowlisted address is skipped,
+    // not sent. So the dry run reports the skip, with wouldSend null.
+    if (!marketingSendAllowed(email)) {
+      return res.status(200).json({
+        ok: true,
+        dryRun: true,
+        sent: false,
+        status: "skipped-not-allowlisted",
+        detail:
+          "Send gate is ON — only the allowlist receives marketing email.",
+        wouldSend: null,
+      });
+    }
     return res.status(200).json({
       ok: true,
       dryRun: true,
       sent: false,
+      status: "would-send",
       wouldSend: {
         to: email,
         kind,
@@ -128,11 +144,20 @@ export default async function handler(
   // Real send: needs Gavin's approval, a configured mailer, and a
   // test address only (audit M2 — a typo must never send a live
   // sequence email to a stranger). Checked before the mailer, so the
-  // refusal holds even without Gmail env.
+  // refusal holds even without Gmail env. The send gate is checked
+  // too — it is unreachable while the test recipients are all
+  // allowlisted, but the gate must hold even if that list ever
+  // changes.
   if (!isTestRecipient(email)) {
     return res.status(400).json({
       error:
         "Test sends go only to gavinstanifer@live.com and grim1051990@gmail.com — nothing sent.",
+    });
+  }
+  if (!marketingSendAllowed(email)) {
+    return res.status(400).json({
+      error:
+        "Send gate is ON — only the allowlist receives marketing email. Nothing sent.",
     });
   }
   if (!emailDef.approved) {

@@ -9,7 +9,14 @@ import {
   processPostPurchaseRow,
   processWinbackRow,
 } from "../../../lib/newsletter";
-import { sequenceEmailForStep } from "../../../lib/sequenceEmails";
+import {
+  SUNSET_SILENT_DAYS,
+  marketingSendAllowed,
+} from "../../../lib/ladder";
+import {
+  sequenceEmailForStep,
+  sequenceGapDays,
+} from "../../../lib/sequenceEmails";
 
 // Follow-up sequence cron — daily, 9:00 AM (vercel.json).
 // Picks up everyone whose next_send_at is due, sends the next step,
@@ -34,11 +41,10 @@ import { sequenceEmailForStep } from "../../../lib/sequenceEmails";
 //      Day-14 check-in — the check-in is not a pitch, buyers get it
 //      too.
 //
-// Sunset (research B6, winback B9): a subscriber silent for 90 days
-// (no opens or clicks in email_events, and first send was 90+ days
-// ago) is enrolled in the winback sequence (3 emails, ~5 days apart)
-// instead of being suppressed in place — and suppressed only after
-// the third winback email. Suppression is a state, not a delete; the
+// Sunset (research B6, winback B9): a subscriber silent for
+// SUNSET_SILENT_DAYS (lib/ladder.ts, 90) is enrolled in the winback
+// sequence (3 emails, ~5 days apart) instead of being suppressed in
+// place — and suppressed only after the third winback email. Suppression is a state, not a delete; the
 // row stays, and resubscribing restarts the sequence at step 1
 // (audit S16). LIMIT: email_events is a Phase 2 table; until it
 // exists the check throws and is skipped — a missing table must never
@@ -108,18 +114,50 @@ export default async function handler(
     }> = [];
 
     for (const sub of due) {
-      // Sunset (research B6, winback B9): silent 90 days → enroll in
-      // the winback sequence, don't suppress in place. Suppression
-      // happens only after the third winback email gets no reply.
-      // email_events is a Phase 2 table; until it exists the check
-      // throws and is skipped — a missing table must never break the
-      // sequence for everyone else.
+      // Send gate (Gavin 2026-11-23): while ON, only the allowlist
+      // receives marketing email. Checked FIRST — a non-allowlisted
+      // subscriber is never enrolled in winback either (winback is
+      // marketing). A gated skip is terminal for the sequence: the
+      // subscriber advances to finished (step 5), the step does not
+      // sit due for the day the gate lifts. Dry runs report the skip
+      // without changing anything.
+      if (!marketingSendAllowed(sub.email)) {
+        if (!dryRun) {
+          await logEmailSend(sql, {
+            email: sub.email,
+            kind: `sequence-${sub.sequence_step}`,
+            subject: "(skipped — send gate)",
+            status: "skipped-not-allowlisted",
+          });
+          await sql`
+            UPDATE newsletter_subscribers
+            SET sequence_step = 5, next_send_at = NULL
+            WHERE email = ${sub.email}
+          `;
+        }
+        results.push({
+          email: sub.email,
+          step: sub.sequence_step,
+          status: "skipped-not-allowlisted",
+          detail:
+            "Send gate is ON — only the allowlist receives marketing email.",
+        });
+        continue;
+      }
+
+      // Sunset (research B6, winback B9): silent SUNSET_SILENT_DAYS
+      // (lib/ladder.ts — the threshold is config, not a literal) →
+      // enroll in the winback sequence, don't suppress in place.
+      // Suppression happens only after the third winback email gets
+      // no reply. email_events is a Phase 2 table; until it exists
+      // the check throws and is skipped — a missing table must never
+      // break the sequence for everyone else.
       try {
         const engagement = (await sql`
           SELECT 1 FROM email_events
           WHERE email = ${sub.email}
             AND event_type IN ('open', 'click')
-            AND created_at >= NOW() - INTERVAL '90 days'
+            AND created_at >= NOW() - make_interval(days => ${SUNSET_SILENT_DAYS})
           LIMIT 1
         `) as unknown as Array<Record<string, unknown>>;
         const firstSend = (await sql`
@@ -131,14 +169,14 @@ export default async function handler(
           engagement.length === 0 &&
           firstSend.length > 0 &&
           Date.now() - new Date(firstSend[0].sent_at).getTime() >
-            90 * 24 * 60 * 60 * 1000
+            SUNSET_SILENT_DAYS * 24 * 60 * 60 * 1000
         ) {
           if (!dryRun) {
             await enrollWinback(sql, sub.email);
             await logEmailSend(sql, {
               email: sub.email,
               kind: "sunset-winback",
-              subject: "(enrolled in winback — 90 days silent)",
+              subject: `(enrolled in winback — ${SUNSET_SILENT_DAYS} days silent)`,
               status: "winback-enrolled",
             });
             await sql`
@@ -151,8 +189,7 @@ export default async function handler(
             email: sub.email,
             step: sub.sequence_step,
             status: "winback-enrolled",
-            detail:
-              "Silent 90 days — enrolled in the winback sequence; suppression only after the third winback email.",
+            detail: `Silent ${SUNSET_SILENT_DAYS} days — enrolled in the winback sequence; suppression only after the third winback email.`,
           });
           continue;
         }
@@ -203,9 +240,12 @@ export default async function handler(
               subject: emailDef.subject,
               status: "skipped-bought",
             });
+            // Advance to step 4, the Day-14 check-in — gap from the
+            // defs (step 3 -> step 4), never a literal.
+            const gapDays = sequenceGapDays(3, 4);
             await sql`
               UPDATE newsletter_subscribers
-              SET sequence_step = 4, next_send_at = now() + interval '7 days'
+              SET sequence_step = 4, next_send_at = now() + make_interval(days => ${gapDays})
               WHERE email = ${sub.email}
             `;
           }
@@ -265,24 +305,28 @@ export default async function handler(
         continue;
       }
 
-      // Advance: step 1 -> due day 4 (+2d), step 2 -> due day 7 (+3d),
-      // step 3 -> due day 14 (+7d), step 4 -> finished (step 5).
+      // Advance — gaps come from the defs' sendAfterDays (the defs
+      // are the timing config): step 1 -> due day 4, step 2 -> due
+      // day 7, step 3 -> due day 14, step 4 -> finished (step 5).
       if (step === 1) {
+        const gapDays = sequenceGapDays(1, 2);
         await sql`
           UPDATE newsletter_subscribers
-          SET sequence_step = 2, next_send_at = now() + interval '2 days'
+          SET sequence_step = 2, next_send_at = now() + make_interval(days => ${gapDays})
           WHERE email = ${sub.email}
         `;
       } else if (step === 2) {
+        const gapDays = sequenceGapDays(2, 3);
         await sql`
           UPDATE newsletter_subscribers
-          SET sequence_step = 3, next_send_at = now() + interval '3 days'
+          SET sequence_step = 3, next_send_at = now() + make_interval(days => ${gapDays})
           WHERE email = ${sub.email}
         `;
       } else if (step === 3) {
+        const gapDays = sequenceGapDays(3, 4);
         await sql`
           UPDATE newsletter_subscribers
-          SET sequence_step = 4, next_send_at = now() + interval '7 days'
+          SET sequence_step = 4, next_send_at = now() + make_interval(days => ${gapDays})
           WHERE email = ${sub.email}
         `;
       } else {

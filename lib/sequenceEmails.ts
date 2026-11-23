@@ -199,3 +199,18 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 export function sequenceEmailForStep(step: number): SequenceEmail | null {
   return SEQUENCE_EMAILS.find((e) => e.step === step) ?? null;
 }
+
+// Timing helpers — the defs ARE the timing config (no hardcoding,
+// Principle 25): the cron and the enrollment code derive every gap
+// from sendAfterDays instead of repeating the numbers as literals.
+// Throws on an unknown step — a missing def is a broken sequence,
+// and failing loud beats silently sending on the wrong day.
+export function sequenceDueInDays(step: number): number {
+  const def = sequenceEmailForStep(step);
+  if (!def) throw new Error(`No sequence def for step ${step}`);
+  return def.sendAfterDays;
+}
+
+export function sequenceGapDays(fromStep: number, toStep: number): number {
+  return sequenceDueInDays(toStep) - sequenceDueInDays(fromStep);
+}

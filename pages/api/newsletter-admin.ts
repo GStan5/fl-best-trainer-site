@@ -4,6 +4,7 @@ import {
   ensureNewsletterTables,
   starterBuyersFromEmail,
 } from "../../lib/newsletter";
+import { ADMIN_JOINED_WINDOW_DAYS } from "../../lib/ladder";
 
 // Newsletter admin stats — powers the newsletter section on
 // pages/admin/online.tsx. Admin only (same gate as the other admin
@@ -40,7 +41,7 @@ export default async function handler(
     const totals = (await sql`
       SELECT
         count(*) FILTER (WHERE unsubscribed_at IS NULL)::int AS subscribed,
-        count(*) FILTER (WHERE unsubscribed_at IS NULL AND subscribed_at >= now() - interval '7 days')::int AS joined7d,
+        count(*) FILTER (WHERE unsubscribed_at IS NULL AND subscribed_at >= now() - make_interval(days => ${ADMIN_JOINED_WINDOW_DAYS}))::int AS joined7d,
         count(*) FILTER (WHERE unsubscribed_at IS NOT NULL)::int AS unsubscribed
       FROM newsletter_subscribers
     `) as unknown as Array<{

@@ -4,7 +4,7 @@ import {
   ensureNewsletterTables,
   buildMarketingEmail,
   weeklyBodyHtml,
-  WEEKLY_DEALS,
+  weeklyDealForProducts,
 } from "../../lib/newsletter";
 
 // Weekly newsletter drafts — create, list, approve, preview. Admin only.
@@ -112,7 +112,10 @@ export default async function handler(
       // to resolve from); a legacy draft renders the old way.
       const { textToHtml } = await import("./newsletter-send");
       const structured = Boolean(draft.idea && draft.idea.trim());
-      const sampleDeal = WEEKLY_DEALS.starter;
+      // Sample deal for the preview: the non-buyer deal (Starter),
+      // resolved from the ladder — the preview has no real recipient,
+      // so no purchase history to resolve from.
+      const sampleDeal = weeklyDealForProducts([]);
       let built;
       try {
         built = buildMarketingEmail({

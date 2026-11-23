@@ -4,11 +4,13 @@ import { mailerConfigured } from "../../lib/mailer";
 import {
   ensureNewsletterTables,
   sendMarketingEmail,
+  logEmailSend,
   resolveWeeklyDeal,
   weeklyBodyHtml,
   textToHtml,
   TEST_RECIPIENTS,
 } from "../../lib/newsletter";
+import { marketingSendAllowed } from "../../lib/ladder";
 
 // Re-exported for the drafts preview action, which renders through
 // the same function (pages/api/newsletter-drafts.ts imports it from
@@ -133,6 +135,8 @@ export default async function handler(
     let sent = 0;
     let failed = 0;
     const failedEmails: string[] = [];
+    let skipped = 0;
+    const skippedEmails: string[] = [];
     // A structured draft (idea set) renders the 4-block weekly:
     // blocks 1–3 from the draft, block 4 (the deal) resolved per
     // recipient. A legacy draft (body only, no idea) renders the old
@@ -140,6 +144,23 @@ export default async function handler(
     // restructure still send.
     const structured = Boolean(draft.idea && draft.idea.trim());
     for (const r of recipients) {
+      // Send gate (Gavin 2026-11-23): while ON, only the allowlist
+      // receives marketing email. Skipped recipients are logged
+      // (status `skipped-not-allowlisted`) and counted, never sent —
+      // and a weekly skipped for everyone is NOT a failure (audit
+      // M4 is about sends that fail, not sends the gate blocks), so
+      // it does not mark the draft sent and does not 500.
+      if (!marketingSendAllowed(r.email)) {
+        await logEmailSend(sql, {
+          email: r.email,
+          kind: test ? "weekly-test" : "weekly",
+          subject: draft.subject,
+          status: "skipped-not-allowlisted",
+        });
+        skipped += 1;
+        skippedEmails.push(r.email);
+        continue;
+      }
       try {
         const deal = structured
           ? await resolveWeeklyDeal(sql, r.email)
@@ -196,10 +217,12 @@ export default async function handler(
         sent,
         failed,
         failedEmails,
+        skipped,
+        skippedEmails,
       });
     }
 
-    if (sent === 0) {
+    if (sent === 0 && failed > 0) {
       // Audit M4: a weekly that failed for everyone is NOT marked
       // sent — the draft stays approved so it can be retried, and the
       // failure comes back in the response instead of being swallowed.
@@ -210,6 +233,42 @@ export default async function handler(
         sent: 0,
         failed,
         failedEmails,
+        skipped,
+        skippedEmails,
+        error:
+          "Nobody got this weekly — the draft is still approved, so it can be sent again.",
+      });
+    }
+
+    if (sent === 0 && skipped > 0) {
+      // Everyone was skipped by the send gate — not a failure, so no
+      // 500 and no retry language: the draft stays approved, and the
+      // send can go out when the gate lifts.
+      return res.status(200).json({
+        ok: true,
+        draftId,
+        total: recipients.length,
+        sent: 0,
+        failed: 0,
+        failedEmails: [],
+        skipped,
+        skippedEmails,
+        note: "Everyone was skipped by the send gate — only the allowlist receives marketing email while it is ON.",
+      });
+    }
+
+    if (sent === 0) {
+      // Empty list (or a list with nobody left to send to): same M4
+      // shape as a total failure, without blaming the gate.
+      return res.status(500).json({
+        ok: false,
+        draftId,
+        total: recipients.length,
+        sent: 0,
+        failed,
+        failedEmails,
+        skipped,
+        skippedEmails,
         error:
           "Nobody got this weekly — the draft is still approved, so it can be sent again.",
       });
@@ -228,6 +287,8 @@ export default async function handler(
       sent,
       failed,
       failedEmails,
+      skipped,
+      skippedEmails,
     });
   } catch (err) {
     console.error("[newsletter-send] failed:", err);

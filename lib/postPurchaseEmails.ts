@@ -36,6 +36,13 @@ export interface PostPurchaseEmail {
   // Days after the purchase when this step is due.
   sendAfterDays: number;
   approved: boolean;
+  // The product slug this step pitches, if it pitches one (step 3
+  // only: the Self-Study nudge). The engine reads it from the def —
+  // never a hardcoded slug in the engine — and sends the step only
+  // when the buyer's next rung on the ladder IS this product (see
+  // lib/ladder.ts). The copy names Self-Study, so the target is
+  // Self-Study; if the copy ever changes, this field changes with it.
+  pitchProduct?: string;
   // Email 2 and 4 have no button (their links sit inline in the body
   // or PS). One primary button per email either way.
   cta?: { label: string; url: string };
@@ -94,6 +101,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     campaign: "post-purchase-3",
     sendAfterDays: 7,
     approved: true,
+    pitchProduct: "self-study",
     cta: {
       label: "See Self-Study — $197",
       url: "https://flbesttrainer.com/self-study",
@@ -134,4 +142,19 @@ export function postPurchaseEmailForStep(
   step: number
 ): PostPurchaseEmail | null {
   return POST_PURCHASE_EMAILS.find((e) => e.step === step) ?? null;
+}
+
+// Timing helpers — the defs ARE the timing config (no hardcoding,
+// Principle 25): the engine derives every gap from sendAfterDays
+// instead of repeating the numbers as literals. Throws on an unknown
+// step — a missing def is a broken sequence, and failing loud beats
+// silently sending on the wrong day.
+export function postPurchaseDueInDays(step: number): number {
+  const def = postPurchaseEmailForStep(step);
+  if (!def) throw new Error(`No post-purchase def for step ${step}`);
+  return def.sendAfterDays;
+}
+
+export function postPurchaseGapDays(fromStep: number, toStep: number): number {
+  return postPurchaseDueInDays(toStep) - postPurchaseDueInDays(fromStep);
 }
