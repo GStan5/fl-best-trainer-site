@@ -1,6 +1,6 @@
-import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
+import { sendMail, mailerConfigured } from "./mailer";
 
 // Independent for Life — purchase delivery emails (2026-10-08, Gavin
 // sign-off day). Called by the NEW online webhook route only; the
@@ -31,15 +31,6 @@ export function isOnlineProduct(v: unknown): v is OnlineProduct {
   );
 }
 
-function transporter() {
-  const { GMAIL_USER, GMAIL_PASS } = process.env;
-  if (!GMAIL_USER || !GMAIL_PASS) return null;
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: GMAIL_USER, pass: GMAIL_PASS },
-  });
-}
-
 const SIGN_OFF = `<p>Stay strong,<br/>Gavin Stanifer, NASM Certified Personal Trainer<br/>FL Best Trainer LLC — Longboat Key, Florida</p>`;
 
 export async function sendPurchaseEmail(
@@ -47,8 +38,8 @@ export async function sendPurchaseEmail(
   email: string,
   sessionId: string
 ): Promise<void> {
-  const tx = transporter();
-  if (!tx) {
+  // Transactional delivery mail — shared mailer, no marketing footer.
+  if (!mailerConfigured()) {
     throw new Error("Gmail env not set — cannot send purchase email");
   }
   const from = `"FL Best Trainer" <${process.env.GMAIL_USER}>`;
@@ -66,7 +57,7 @@ export async function sendPurchaseEmail(
           },
         ]
       : [];
-    await tx.sendMail({
+    await sendMail({
       from,
       to: email,
       subject: "Your 4-Week Starter Plan is here",
@@ -84,7 +75,7 @@ export async function sendPurchaseEmail(
 
   if (product === "self-study") {
     const link = `${SITE}/api/download/self-study?session_id=${encodeURIComponent(sessionId)}`;
-    await tx.sendMail({
+    await sendMail({
       from,
       to: email,
       subject: "Your Independent for Life — Self-Study program is here",
@@ -106,7 +97,7 @@ export async function sendPurchaseEmail(
       : product === "monthly-147"
         ? "Monthly Plus"
         : "Monthly";
-  await tx.sendMail({
+  await sendMail({
     from,
     to: email,
     subject: `You're in — Independent for Life ${tier}`,

@@ -188,7 +188,9 @@ export default function StartPage() {
             </div>
 
             <p className="text-white/50 text-sm text-center mt-10">
-              Free forever. No spam, no pressure. Unsubscribe anytime.
+              Free forever. No spam, no pressure. I&apos;ll also send you a
+              few short tips over the next week, then one short email a
+              week. Unsubscribe anytime.
             </p>
           </div>
         </div>

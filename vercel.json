@@ -1,4 +1,15 @@
 {
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
+  },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/daily-class-summary",
@@ -9,19 +20,12 @@
       "schedule": "30 9 * * 1"
     },
     {
+      "path": "/api/cron/email-sequence",
+      "schedule": "0 9 * * *"
+    },
+    {
       "path": "/api/cron/monthly-report",
       "schedule": "0 1 28-31 * *"
     }
-  ],
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "build": {
-    "env": {
-      "NEXT_TELEMETRY_DISABLED": "1"
-    }
-  }
+  ]
 }

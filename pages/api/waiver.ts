@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import nodemailer from "nodemailer";
 import { google } from "googleapis";
 import jsPDF from "jspdf";
 import { Readable } from "stream";
 import { Pool } from "pg";
 import sql from "../../lib/database";
+import { sendMail } from "../../lib/mailer";
 import { WAIVER_CANCELLATION_CLAUSE } from "../../config/cancellation";
 
 interface WaiverBody {
@@ -646,21 +646,14 @@ export default async function handler(
     const pdfBuffer = Buffer.from(pdfArrayBuffer);
     const pdfBase64 = pdfBuffer.toString("base64");
 
-    // Send emails with PDF attachment
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-      },
-    });
-
+    // Send emails with PDF attachment (shared Gmail mailer —
+    // transactional mail, no marketing footer).
     const fileName = `FL_Best_Trainer_Waiver_${name.replace(/\s+/g, "_")}_${
       new Date().toISOString().split("T")[0]
     }.pdf`;
 
     // Send email to business owner
-    await transporter.sendMail({
+    await sendMail({
       from: process.env.GMAIL_USER,
       to: process.env.GMAIL_USER,
       subject: `🏋️ New Liability Waiver Signed - ${name}`,
@@ -697,7 +690,7 @@ export default async function handler(
     });
 
     // Send confirmation email to participant
-    await transporter.sendMail({
+    await sendMail({
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Gavin R Stanifer - Liability Waiver Confirmation",
