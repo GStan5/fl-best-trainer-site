@@ -25,6 +25,7 @@ import {
 import {
   SITE,
   ladderRank,
+  highestOwnedRank,
   nextRungAfterProducts,
   weeklyDealForProducts,
   marketingSendAllowed,
@@ -177,7 +178,8 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
   // send state, NOT sequence_step — a buyer may also be mid-sequence
   // and the two run side by side. step 1 = thank-you (due at
   // purchase), 2 = Day 2, 3 = Day 7 (Self-Study nudge, Starter
-  // buyers only), 4 = Day 14 (referral ask), 5 = finished. product
+  // buyers only), 4 = Day 14 (referral ask), 5 = Day 28 (review ask,
+  // Starter buyers only), 6 = finished. product is the highest rung
   // is the highest rung bought (see ladderRank) — a later purchase
   // of a higher rung upgrades it, and the step-3 check reads it.
   await sql`
@@ -842,7 +844,7 @@ export interface EngineResult {
 // at step 1, due now. A later purchase of a higher rung upgrades the
 // stored product (the step-3 check reads purchase_emails anyway, so
 // an upgrade after enrolling still skips the nudge). A finished buyer
-// (step 5) who buys again starts a fresh cycle.
+// (step 6) who buys again starts a fresh cycle.
 export async function enrollPostPurchase(
   sql: SqlTag,
   email: string,
@@ -878,14 +880,14 @@ export async function enrollPostPurchase(
   }
 
   // Existing row: keep the higher-rung product. A finished buyer
-  // (step 5) who buys again starts a fresh cycle for that purchase;
+  // (step 6) who buys again starts a fresh cycle for that purchase;
   // a mid-sequence buyer keeps their place, and the step-3 check
   // reads purchase_emails, so an upgrade after enrolling still
   // skips the Self-Study nudge.
   const row = existing[0];
   const bestProduct =
     newRank >= ladderRank(row.product ?? "") ? product : row.product;
-  if (row.step >= 5) {
+  if (row.step >= 6) {
     const rows = (await sql`
       UPDATE post_purchase_sequences
       SET product = ${bestProduct}, step = ${freshStep}, next_send_at = ${freshDue}
@@ -941,7 +943,7 @@ export async function processPostPurchaseRow(
       });
       await sql`
         UPDATE post_purchase_sequences
-        SET step = 5, next_send_at = NULL
+        SET step = 6, next_send_at = NULL
         WHERE email = ${email}
       `;
     }
@@ -998,6 +1000,51 @@ export async function processPostPurchaseRow(
     }
   }
 
+  // Any step with def.onlyProduct (step 5 only: the review ask) —
+  // the email goes to buyers whose HIGHEST rung IS that product
+  // (def.onlyProduct, "starter-plan"). Checked against BOTH the
+  // stored product and purchase_emails at send time, same as step 3,
+  // so a buyer who upgrades past Starter after enrolling still
+  // skips it. A buyer past Starter, at the top, or holding an
+  // unrecognised product skips — the ladder decides, the engine
+  // never hardcodes a rank. A skip here is terminal: the review ask
+  // is the last step, so there is nothing after it to advance to.
+  if (def.onlyProduct) {
+    // lower() on the stored side: purchase_emails is written by the
+    // Stripe webhook, whose addresses arrive as the customer typed
+    // them — a mixed-case stored email must still match.
+    const bought = (await sql`
+      SELECT product FROM purchase_emails
+      WHERE lower(email) = ${email} AND status = 'sent'
+    `) as unknown as Array<{ product: string }>;
+    const highest = highestOwnedRank([
+      row.product ?? "",
+      ...bought.map((b) => b.product),
+    ]);
+    if (highest !== ladderRank(def.onlyProduct)) {
+      if (!dryRun) {
+        await logEmailSend(sql, {
+          email,
+          kind: `post-purchase-${step}`,
+          subject: def.subject,
+          status: "skipped-not-starter",
+        });
+        await sql`
+          UPDATE post_purchase_sequences
+          SET step = 6, next_send_at = NULL
+          WHERE email = ${email}
+        `;
+      }
+      return {
+        email,
+        step,
+        status: "skipped-not-starter",
+        detail:
+          "Highest owned product is not the review-ask product — skipped, sequence finished.",
+      };
+    }
+  }
+
   if (dryRun) {
     return {
       email,
@@ -1041,7 +1088,8 @@ export async function processPostPurchaseRow(
 
   // Advance — gaps come from the defs' sendAfterDays (the defs are
   // the timing config), never literals: step 1 -> Day 2, step 2 ->
-  // Day 7, step 3 -> Day 14, step 4 -> finished (step 5).
+  // Day 7, step 3 -> Day 14, step 4 -> Day 28, step 5 -> finished
+  // (step 6).
   if (step === 1) {
     const gapDays = postPurchaseGapDays(1, 2);
     await sql`
@@ -1063,10 +1111,17 @@ export async function processPostPurchaseRow(
       SET step = 4, next_send_at = now() + make_interval(days => ${gapDays})
       WHERE email = ${email}
     `;
+  } else if (step === 4) {
+    const gapDays = postPurchaseGapDays(4, 5);
+    await sql`
+      UPDATE post_purchase_sequences
+      SET step = 5, next_send_at = now() + make_interval(days => ${gapDays})
+      WHERE email = ${email}
+    `;
   } else {
     await sql`
       UPDATE post_purchase_sequences
-      SET step = 5, next_send_at = NULL
+      SET step = 6, next_send_at = NULL
       WHERE email = ${email}
     `;
   }

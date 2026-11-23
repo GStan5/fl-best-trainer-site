@@ -19,7 +19,7 @@ import { winbackEmailForStep } from "../../lib/winbackEmails";
 // the cron routes.
 //
 // POST { email, kind, step, dryRun }
-//   kind: "sequence" (default, steps 1–4), "post-purchase" (1–4),
+//   kind: "sequence" (default, steps 1–4), "post-purchase" (1–5),
 //         "winback" (1–3). Unknown kind → 400.
 //
 // Dry run is the default (?dryRun=1, or omit it): builds the email and
@@ -65,7 +65,7 @@ const KINDS: Record<
   },
   "post-purchase": {
     resolve: postPurchaseEmailForStep,
-    steps: "1, 2, 3, or 4",
+    steps: "1, 2, 3, 4, or 5",
     source: "purchase",
   },
   winback: {

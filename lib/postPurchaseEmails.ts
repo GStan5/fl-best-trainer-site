@@ -1,7 +1,7 @@
 // Post-purchase sequence — what a buyer gets instead of the Starter
-// pitch (research B7, design doc). Four emails, transcribed from the
-// approved draft file in the goal workspace
-// (post-purchase-sequence.md).
+// pitch (research B7, design doc). Five emails, transcribed from the
+// approved draft files in the goal workspace
+// (post-purchase-sequence.md, review-ask-email.md).
 //
 // APPROVED by Gavin 2026-11-23 ~14:32 ("email 1 post purchase
 // sequence email 2 email 3 email 4 all good"). These defs are approved
@@ -14,7 +14,9 @@
 // Self-Study nudge at Day 7 (step 3); Self-Study and monthly buyers
 // NEVER get it — the send checks purchase_emails again at step 3, so
 // a buyer who upgrades after enrolling still skips it. Everyone gets
-// the referral ask at Day 14 (step 4).
+// the referral ask at Day 14 (step 4). Starter buyers ONLY get the
+// review ask at Day 28 (step 5) — same send-time check, so a buyer
+// who upgrades past Starter after enrolling still skips it.
 //
 // This sequence does NOT reuse `sequence_step` (a buyer may also be
 // mid-sequence; the two run side by side, and the sequence cron's
@@ -30,7 +32,7 @@
 // the body — a footer button on top of it would ask twice.
 
 export interface PostPurchaseEmail {
-  step: 1 | 2 | 3 | 4;
+  step: 1 | 2 | 3 | 4 | 5;
   subject: string;
   campaign: string;
   // Days after the purchase when this step is due.
@@ -43,6 +45,13 @@ export interface PostPurchaseEmail {
   // lib/ladder.ts). The copy names Self-Study, so the target is
   // Self-Study; if the copy ever changes, this field changes with it.
   pitchProduct?: string;
+  // The product slug this step is FOR, if it is for one product only
+  // (step 5 only: the review ask). The engine reads it from the def
+  // and sends the step only when the buyer's highest rung IS this
+  // product — same max-of-purchase_emails-plus-row check as step 3,
+  // so a buyer who upgrades past Starter after enrolling still
+  // skips it. Self-Study / flagship / monthly buyers never see it.
+  onlyProduct?: string;
   // Email 2 and 4 have no button (their links sit inline in the body
   // or PS). One primary button per email either way.
   cta?: { label: string; url: string };
@@ -136,6 +145,34 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
 <p>Do you know someone over 50 who is getting weaker and more afraid of moving? A parent, a neighbor, someone at church? Send them the free guide. It is the same 7 days you started with, and it costs them nothing.</p>
 <p><a href="https://flbesttrainer.com/start">https://flbesttrainer.com/start</a></p>
 <p>That is it. No ask for you, just for them.</p>
+`,
+  },
+  {
+    // Review ask (Gavin 2026-11-23 ~15:17, his idea; words APPROVED
+    // ~15:25, "the wording is great"; trigger DECIDED ~15:30 by
+    // widget tap: Starter buyers at Day 28, after the Week 4 retest).
+    // Transcribed word for word from review-ask-email.md — the
+    // markdown review link is the CTA button here (Gavin's condition:
+    // same format as the other emails, with a button to leave a
+    // review), so the body carries no link of its own. No PS — the
+    // ask is the whole email. showReview false: the footer review
+    // button on top of this email would ask twice.
+    step: 5,
+    subject: "Quick favour?",
+    campaign: "post-purchase-5",
+    sendAfterDays: 28,
+    approved: true,
+    onlyProduct: "starter-plan",
+    cta: {
+      label: "Leave a review on Google",
+      url: "https://g.page/r/CaACepEsFdx0EBM/review",
+    },
+    preheader: "Takes about a minute.",
+    showReview: false,
+    html: `
+<p>Hi {first_name},</p>
+<p>If anything I sent you helped — the guide, the tips, any of it — would you leave a quick review on Google?</p>
+<p>Takes about a minute. It helps people like you find me.</p>
 `,
   },
 ];
