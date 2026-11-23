@@ -94,6 +94,8 @@ export default async function handler(
       bodyHtml: emailDef.html,
       kind: `sequence-${emailDef.step}`,
       campaign: emailDef.campaign,
+      cta: emailDef.cta,
+      ps: emailDef.ps,
     });
     return res.status(200).json({ ok: true, dryRun: false, sent: true });
   } catch (err) {

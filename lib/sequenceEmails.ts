@@ -21,6 +21,12 @@ export interface SequenceEmail {
   // Days after the guide signup when this step is due.
   sendAfterDays: number;
   approved: boolean;
+  // The email's one primary button — the email's existing link, rendered
+  // as a visual button by the template (UTM tags added at send time).
+  cta: { label: string; url: string };
+  // Optional postscript, rendered between the body and the button.
+  // Only email 3 has one.
+  ps?: string;
   html: string;
 }
 
@@ -36,6 +42,10 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     campaign: "sequence-1",
     sendAfterDays: 2,
     approved: SEQUENCE_APPROVED,
+    cta: {
+      label: "Read the full post",
+      url: "https://flbesttrainer.com/blog/slow-down-form-first-after-50",
+    },
     html: `
 <p>Hi {first_name},</p>
 <p>You got the guide. Good. Here is the one thing I want you to take from it first.</p>
@@ -53,6 +63,10 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     campaign: "sequence-2",
     sendAfterDays: 4,
     approved: SEQUENCE_APPROVED,
+    cta: {
+      label: "Read the full post",
+      url: "https://flbesttrainer.com/blog/farmer-carries-every-class",
+    },
     html: `
 <p>Hi {first_name},</p>
 <p>If you want to know how strong someone really is, watch them carry groceries in from the car.</p>
@@ -71,6 +85,11 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     campaign: "sequence-3",
     sendAfterDays: 7,
     approved: SEQUENCE_APPROVED,
+    cta: {
+      label: "Start the Starter plan — $37",
+      url: "https://flbesttrainer.com/starter",
+    },
+    ps: "$37 once, yours forever — and if you finish all 12 sessions and your numbers don't improve, email me for a full refund.",
     html: `
 <p>Hi {first_name},</p>
 <p>The guide was 7 days. It was meant to prove you can do this. And you can.</p>

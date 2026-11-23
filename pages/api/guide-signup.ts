@@ -156,6 +156,7 @@ async function sendGuideEmail(firstName: string, email: string): Promise<void> {
       `,
       kind: "guide",
       campaign: "guide",
+      cta: { label: "Download your guide", url: GUIDE_PDF_URL },
       attachments,
     });
   } catch (err) {

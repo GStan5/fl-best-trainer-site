@@ -15,6 +15,11 @@
 
 import { createHmac, timingSafeEqual } from "crypto";
 import { sendMail, mailerConfigured } from "./mailer";
+import {
+  renderEmailTemplate,
+  renderEmailFooterText,
+  type EmailCta,
+} from "./emailTemplate";
 
 export type SqlTag = (
   strings: TemplateStringsArray,
@@ -185,16 +190,18 @@ export function unsubscribeUrl(email: string): string {
 // Email building — footer, UTM tags, List-Unsubscribe header
 // ---------------------------------------------------------------------------
 
-// Adds utm_source=email&utm_medium=email&utm_campaign=<campaign> to
-// links on our own site that don't already carry UTM tags.
+// Adds utm_source=email&utm_medium=email&utm_campaign=<campaign> to a
+// link on our own site that doesn't already carry UTM tags.
+export function withUtmUrl(url: string, campaign: string): string {
+  if (url.includes("utm_source=")) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}utm_source=email&utm_medium=email&utm_campaign=${campaign}`;
+}
+
 export function withUtm(html: string, campaign: string): string {
   return html.replace(
     /href="(https:\/\/flbesttrainer\.com[^"]*)"/g,
-    (_match, url: string) => {
-      if (url.includes("utm_source=")) return `href="${url}"`;
-      const sep = url.includes("?") ? "&" : "?";
-      return `href="${url}${sep}utm_source=email&utm_medium=email&utm_campaign=${campaign}"`;
-    }
+    (_match, url: string) => `href="${withUtmUrl(url, campaign)}"`
   );
 }
 
@@ -219,33 +226,48 @@ export interface BuiltMarketingEmail {
   headers: Record<string, string>;
 }
 
-// Builds the full marketing email: body + footer (business name,
-// mailing address, one-click unsubscribe link) + List-Unsubscribe
-// header. The footer is added at send time, never stored in the
+// Builds the full marketing email through the shared template
+// (lib/emailTemplate.ts): header, body, one primary button, PS, footer
+// (review ask, follow-along, why-you-get-this, address, unsubscribe).
+// The plain-text version carries the same content as plain lines —
+// body text, CTA link, PS, footer asks — so it is never a lesser
+// email. The footer is added at send time, never stored in the
 // content — so the address can change in one place.
 export function buildMarketingEmail(opts: {
   subject: string;
   bodyHtml: string;
   email: string;
   campaign: string;
+  cta?: EmailCta;
+  ps?: string;
 }): BuiltMarketingEmail {
   const unsub = unsubscribeUrl(opts.email);
   const body = withUtm(opts.bodyHtml, opts.campaign);
-  const footerHtml = `
-    <hr style="border: none; border-top: 1px solid #ddd; margin: 24px 0 12px;" />
-    <p style="font-size: 12px; color: #666;">
-      ${FOOTER_BUSINESS}<br />${FOOTER_ADDRESS}
-    </p>
-    <p style="font-size: 12px; color: #666;">
-      You got this email because you signed up for the free 7-Day Starter Guide.
-      <a href="${unsub}">Unsubscribe</a> any time — one click, no questions.
-    </p>
-  `;
-  const footerText = `\n\n---\n${FOOTER_BUSINESS}\n${FOOTER_ADDRESS}\n\nYou got this email because you signed up for the free 7-Day Starter Guide.\nUnsubscribe any time: ${unsub}`;
+  const cta = opts.cta
+    ? { label: opts.cta.label, url: withUtmUrl(opts.cta.url, opts.campaign) }
+    : undefined;
+  const html = renderEmailTemplate({
+    bodyHtml: body,
+    cta,
+    ps: opts.ps,
+    unsubscribeUrl: unsub,
+    footerBusiness: FOOTER_BUSINESS,
+    footerAddress: FOOTER_ADDRESS,
+  });
+  const textParts = [stripTags(body)];
+  if (cta) textParts.push(`\n${cta.label}: ${cta.url}`);
+  if (opts.ps) textParts.push(`\nP.S. ${opts.ps}`);
+  const text =
+    textParts.join("\n") +
+    renderEmailFooterText({
+      unsubscribeUrl: unsub,
+      footerBusiness: FOOTER_BUSINESS,
+      footerAddress: FOOTER_ADDRESS,
+    });
   return {
     subject: opts.subject,
-    html: body + footerHtml,
-    text: stripTags(body) + footerText,
+    html,
+    text,
     headers: { "List-Unsubscribe": `<${unsub}>` },
   };
 }
@@ -283,6 +305,8 @@ export async function sendMarketingEmail(
     bodyHtml: string;
     kind: string;
     campaign: string;
+    cta?: EmailCta;
+    ps?: string;
     attachments?: Array<{
       filename: string;
       path?: string;
@@ -305,6 +329,8 @@ export async function sendMarketingEmail(
     bodyHtml,
     email: to,
     campaign: opts.campaign,
+    cta: opts.cta,
+    ps: opts.ps,
   });
   try {
     await sendMail({

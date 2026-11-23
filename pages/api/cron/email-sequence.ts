@@ -154,6 +154,8 @@ export default async function handler(
           bodyHtml: emailDef.html,
           kind: `sequence-${step}`,
           campaign: emailDef.campaign,
+          cta: emailDef.cta,
+          ps: emailDef.ps,
         });
       } catch (err) {
         // Logged as 'failed' inside sendMarketingEmail. Leave due —
