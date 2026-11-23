@@ -116,6 +116,35 @@ const CHECKOUT_STATUS: Record<
   },
 };
 
+interface NewsletterStats {
+  subscribed: number;
+  joined7d: number;
+  unsubscribed: number;
+  byStep: Array<{ step: number; count: number }>;
+  drafts: Array<{
+    id: number;
+    subject: string;
+    status: string;
+    created_at: string | null;
+    sent_at: string | null;
+  }>;
+  recentSends: Array<{
+    email: string;
+    kind: string;
+    subject: string;
+    sent_at: string | null;
+    status: string;
+  }>;
+}
+
+const STEP_LABEL: Record<number, string> = {
+  0: "On the list only (no sequence)",
+  1: "Due email 1 (day 2)",
+  2: "Due email 2 (day 4)",
+  3: "Due email 3 (day 7, Starter)",
+  4: "Finished the sequence",
+};
+
 function formatDate(value: string | null): string {
   if (!value) return "—";
   const d = new Date(value);
@@ -136,6 +165,49 @@ export default function AdminOnlinePage() {
 
   const [data, setData] = useState<AdminData | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [news, setNews] = useState<NewsletterStats | null>(null);
+  const [newsError, setNewsError] = useState(false);
+  const [draftSubject, setDraftSubject] = useState("");
+  const [draftBody, setDraftBody] = useState("");
+  const [draftMsg, setDraftMsg] = useState("");
+  const [sendingId, setSendingId] = useState<number | null>(null);
+
+  const loadNewsletter = () => {
+    fetch("/api/newsletter-admin")
+      .then((res) => {
+        if (!res.ok) throw new Error("newsletter feed failed");
+        return res.json();
+      })
+      .then((json) => {
+        setNews(json as NewsletterStats);
+        setNewsError(false);
+      })
+      .catch(() => setNewsError(true));
+  };
+
+  const newsletterAction = async (
+    url: string,
+    body: Record<string, unknown>
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDraftMsg(data.error || "That didn't work — try again.");
+        return false;
+      }
+      setDraftMsg("");
+      loadNewsletter();
+      return true;
+    } catch {
+      setDraftMsg("Something went wrong — try again.");
+      return false;
+    }
+  };
 
   useEffect(() => {
     if (status === "loading") return;
@@ -165,6 +237,7 @@ export default function AdminOnlinePage() {
       .catch(() => {
         if (!cancelled) setLoadError(true);
       });
+    if (!cancelled) loadNewsletter();
     return () => {
       cancelled = true;
     };
@@ -433,6 +506,193 @@ export default function AdminOnlinePage() {
               </section>
             </div>
           </div>
+
+          {/* Newsletter — subscribers, sequence, weekly drafts */}
+          <section className={`${CARD} p-6 mb-6`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+              <h2 className="font-heading text-xl font-bold text-white">
+                Newsletter
+              </h2>
+              <span className="text-white/45 text-xs">
+                follow-up sequence + weekly send
+              </span>
+            </div>
+            <p className="text-white/50 text-sm mb-5">
+              The guide list, the 3-email sequence, and the weekly draft.
+              Only an approved draft can be sent — your tap is the trigger,
+              every time.
+            </p>
+
+            {newsError && (
+              <p className="text-red-300 text-sm mb-4">
+                Couldn&apos;t load the newsletter numbers — refresh to try
+                again.
+              </p>
+            )}
+
+            <div className="flex flex-wrap gap-x-8 gap-y-2 mb-5">
+              {[
+                { label: "Subscribers", value: news?.subscribed ?? 0 },
+                { label: "Joined last 7 days", value: news?.joined7d ?? 0 },
+                { label: "Unsubscribed", value: news?.unsubscribed ?? 0 },
+              ].map((s) => (
+                <div key={s.label} className="flex items-baseline gap-2">
+                  <span className="font-heading text-2xl font-bold text-white">
+                    {s.value}
+                  </span>
+                  <span className="text-white/55 text-sm">{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              Where people are in the sequence
+            </h3>
+            {(news?.byStep.length ?? 0) === 0 ? (
+              <p className="text-white/60 text-sm mb-5">
+                Nobody on the list yet.
+              </p>
+            ) : (
+              <ul className="text-sm text-white/85 mb-5 space-y-1">
+                {(news?.byStep ?? []).map((row) => (
+                  <li key={row.step} className="flex justify-between gap-4">
+                    <span>{STEP_LABEL[row.step] ?? `Step ${row.step}`}</span>
+                    <span className="font-heading font-bold text-white">
+                      {row.count}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              Weekly drafts
+            </h3>
+            {(news?.drafts.length ?? 0) === 0 ? (
+              <p className="text-white/60 text-sm mb-5">
+                No weekly drafts yet — write one below.
+              </p>
+            ) : (
+              <ul className="space-y-3 mb-5">
+                {(news?.drafts ?? []).slice(0, 5).map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3 text-sm"
+                  >
+                    <div>
+                      <div className="text-white font-medium">{d.subject}</div>
+                      <div className="text-white/50 text-xs mt-0.5">
+                        {d.status}
+                        {d.sent_at ? ` · sent ${formatDate(d.sent_at)}` : ""}
+                        {` · ${formatDate(d.created_at)}`}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {d.status === "draft" && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            newsletterAction("/api/newsletter-drafts", {
+                              action: "approve",
+                              id: d.id,
+                            })
+                          }
+                          className="bg-white/10 hover:bg-white/20 text-white font-semibold px-4 py-2 rounded-xl transition"
+                        >
+                          Approve
+                        </button>
+                      )}
+                      {d.status === "approved" && (
+                        <button
+                          type="button"
+                          disabled={sendingId === d.id}
+                          onClick={async () => {
+                            if (
+                              !window.confirm(
+                                `Send "${d.subject}" to ${news?.subscribed ?? 0} subscriber(s)?`
+                              )
+                            )
+                              return;
+                            setSendingId(d.id);
+                            await newsletterAction("/api/newsletter-send", {
+                              draftId: d.id,
+                            });
+                            setSendingId(null);
+                          }}
+                          className="bg-royal hover:bg-royal-dark disabled:opacity-60 text-white font-semibold px-4 py-2 rounded-xl transition"
+                        >
+                          {sendingId === d.id ? "Sending…" : "Send"}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              New weekly draft
+            </h3>
+            <div className="space-y-3 max-w-2xl">
+              <input
+                type="text"
+                value={draftSubject}
+                onChange={(e) => setDraftSubject(e.target.value)}
+                placeholder="Subject"
+                className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <textarea
+                value={draftBody}
+                onChange={(e) => setDraftBody(e.target.value)}
+                placeholder="Body — one useful idea, then one nudge. Blank lines make paragraphs."
+                rows={5}
+                className="w-full rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              {draftMsg && (
+                <p className="text-red-400 text-sm" role="alert">
+                  {draftMsg}
+                </p>
+              )}
+              <div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const ok = await newsletterAction(
+                      "/api/newsletter-drafts",
+                      { subject: draftSubject, body: draftBody }
+                    );
+                    if (ok) {
+                      setDraftSubject("");
+                      setDraftBody("");
+                    }
+                  }}
+                  className="bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-2.5 rounded-xl transition"
+                >
+                  Save draft
+                </button>
+              </div>
+              <p className="text-white/40 text-xs">
+                Drafts are never sent automatically. Approve one above, then
+                press Send — and only an approved draft can be sent.
+              </p>
+            </div>
+
+            {(news?.recentSends.length ?? 0) > 0 && (
+              <>
+                <h3 className="font-heading font-bold text-white mt-6 mb-2">
+                  Recent sends
+                </h3>
+                <ul className="text-sm text-white/70 space-y-1">
+                  {(news?.recentSends ?? []).slice(0, 5).map((s, i) => (
+                    <li key={`${s.email}-${s.sent_at}-${i}`}>
+                      {s.kind} · {s.subject} · {s.email} · {s.status} ·{" "}
+                      {formatDate(s.sent_at)}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
 
           <div className="grid gap-6 lg:grid-cols-3 items-start">
             {/* Funnel */}

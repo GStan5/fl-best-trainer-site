@@ -1,7 +1,12 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
+import {
+  ensureNewsletterTables,
+  upsertSubscriber,
+  sendMarketingEmail,
+  type SqlTag,
+} from "../../lib/newsletter";
 
 // NOTE: lib/database is imported lazily inside saveLead, not at the top
 // level. The shared module throws at import time when DATABASE_URL is
@@ -70,6 +75,32 @@ async function saveLead(
   }
 }
 
+async function saveSubscriber(
+  firstName: string,
+  email: string,
+  source: string
+): Promise<void> {
+  // Same lazy pattern as saveLead: this route must still return success
+  // with no DB env so the on-page download chain never breaks.
+  if (!process.env.DATABASE_URL) return;
+  try {
+    const { default: sql } = (await import("../../lib/database")) as {
+      default: SqlTag;
+    };
+    await ensureNewsletterTables(sql);
+    // Only guide signups enroll in the follow-up sequence (design doc,
+    // gap 2). Flagship / niche / plans signups land on the list only.
+    await upsertSubscriber(sql, {
+      email,
+      firstName,
+      source,
+      enrollSequence: source === "guide",
+    });
+  } catch (err) {
+    console.error("[guide-signup] Subscriber save failed (continuing):", err);
+  }
+}
+
 async function sendGuideEmail(firstName: string, email: string): Promise<void> {
   const { GMAIL_USER, GMAIL_PASS } = process.env;
   if (!GMAIL_USER || !GMAIL_PASS) {
@@ -80,15 +111,6 @@ async function sendGuideEmail(firstName: string, email: string): Promise<void> {
     return;
   }
   try {
-    // Same Gmail/nodemailer transport pattern as pages/api/waiver.ts.
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: GMAIL_USER,
-        pass: GMAIL_PASS,
-      },
-    });
-
     const pdfPath = path.join(
       process.cwd(),
       "public/downloads/independent-for-life-guide.pdf"
@@ -102,18 +124,38 @@ async function sendGuideEmail(firstName: string, email: string): Promise<void> {
         ]
       : [];
 
-    await transporter.sendMail({
-      from: `"FL Best Trainer" <${GMAIL_USER}>`,
+    // Guide email = email 0 of the sequence: it goes through the
+    // marketing sender, so it carries the footer, the unsubscribe link,
+    // and the List-Unsubscribe header like every other sequence email.
+    // The DB log is best-effort — without DATABASE_URL the email still
+    // sends and the download chain never breaks.
+    let sql: SqlTag | null = null;
+    if (process.env.DATABASE_URL) {
+      try {
+        const mod = (await import("../../lib/database")) as {
+          default: SqlTag;
+        };
+        sql = mod.default;
+        await ensureNewsletterTables(sql);
+      } catch {
+        sql = null;
+      }
+    }
+
+    await sendMarketingEmail(sql, {
       to: email,
+      firstName,
       subject: "Your free 7-Day Starter Guide is here",
-      html: `
-        <p>Hi ${firstName},</p>
+      bodyHtml: `
+        <p>Hi {first_name},</p>
         <p>Thanks for requesting the <strong>Independent for Life 7-Day Starter Guide</strong> — it's attached to this email as a PDF.</p>
         <p>You can also download it any time here:<br/>
         <a href="${GUIDE_PDF_URL}">${GUIDE_PDF_URL}</a></p>
         <p>Start with Day 1 whenever you're ready. All you need is a sturdy chair, a clear wall, and two water bottles.</p>
         <p>Stay strong,<br/>Gavin Stanifer, NASM Certified Personal Trainer<br/>FL Best Trainer — Longboat Key, Florida</p>
       `,
+      kind: "guide",
+      campaign: "guide",
       attachments,
     });
   } catch (err) {
@@ -143,6 +185,7 @@ export default async function handler(
   }
 
   await saveLead(firstName, email, source);
+  await saveSubscriber(firstName, email, source);
   await sendGuideEmail(firstName, email);
 
   return res.status(200).json({
