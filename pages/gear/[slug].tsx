@@ -50,10 +50,24 @@ export default function GearPickPage({ pick }) {
               {pick.slot} — {group ? group.name : ""}
             </p>
 
-            {/* 2. Gavin's Pick label */}
+            {/* 2. Gavin's Pick label — or Proposed Pick. A proposed pick
+                is a Garage Gym Reviews roundup winner put here for Gavin
+                to confirm; he has not tested it in class yet, and the
+                page says so instead of pretending otherwise. */}
             <p className="text-white/80 mt-6 mb-2">
-              <span className="font-bold text-white">Gavin&apos;s Pick.</span>{" "}
-              I tested this myself, with my clients, in class.
+              {pick.proposed ? (
+                <>
+                  <span className="font-bold text-white">Proposed Pick.</span>{" "}
+                  This is Garage Gym Reviews&apos; top pick in this category,
+                  proposed here for me to confirm. I have not tested this one
+                  in class yet.
+                </>
+              ) : (
+                <>
+                  <span className="font-bold text-white">Gavin&apos;s Pick.</span>{" "}
+                  I tested this myself, with my clients, in class.
+                </>
+              )}
             </p>
 
             {/* 3. The verdict, first */}
@@ -73,8 +87,9 @@ export default function GearPickPage({ pick }) {
               Gavin&apos;s Score: {pick.score.average.toFixed(1)} / 5
             </h2>
             <p className="text-white/60 text-sm mb-4">
-              Five things, scored 1 to 5. The numbers are mine — I set them
-              from using it, not from reading about it.
+              {pick.proposed
+                ? "Five things, scored 1 to 5. These numbers are proposed, not from use. I set the final numbers once I have tested it in class."
+                : "Five things, scored 1 to 5. The numbers are mine, I set them from using it, not from reading about it."}
             </p>
             <table className="w-full text-left mb-8 border border-white/10 rounded-xl overflow-hidden">
               <tbody>
@@ -137,7 +152,8 @@ export default function GearPickPage({ pick }) {
                   href={plan.url}
                   className="inline-flex items-center justify-center border border-royal-light text-royal-light hover:bg-royal-light hover:text-royal-dark font-bold py-3 px-6 rounded-xl transition text-center"
                 >
-                  {pick.plan.label} — {plan.name} {plan.price}
+                  {pick.plan.label} — {plan.name}
+                  {plan.price !== "Free" ? ` ${plan.price}` : ""}
                 </Link>
               </div>
               {planSecondary && (
@@ -260,11 +276,23 @@ export default function GearPickPage({ pick }) {
               Why you should trust this pick
             </h2>
             <p className="text-white/85 leading-relaxed mb-2">
-              I&apos;m Gavin Stanifer, NASM-CPT. I train adults 50+ every day
-              — in-home and in small-group form classes, three times a week.
-              I bought this gear myself and I use it in class. If a brand
-              ever sends me something free, the page will say so, and the
-              verdict won&apos;t change. Free products never buy coverage.
+              I&apos;m Gavin Stanifer, NASM-CPT. I train adults 50+ every day,
+              in-home and in small-group form classes, three times a week.{" "}
+              {pick.proposed ? (
+                <>
+                  I have not used this one in class yet. This pick comes from
+                  Garage Gym Reviews&apos; testing, proposed here for me to
+                  confirm, and the scores are my starting point, not a verdict
+                  from use.
+                </>
+              ) : (
+                <>
+                  I bought this gear myself and I use it in class.
+                </>
+              )}{" "}
+              If a brand ever sends me something free, the page will say so,
+              and the verdict won&apos;t change. Free products never buy
+              coverage.
             </p>
             <p className="text-white/85 leading-relaxed mb-8">
               Not sure about your form?{" "}

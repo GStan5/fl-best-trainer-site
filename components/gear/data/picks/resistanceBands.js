@@ -1,6 +1,6 @@
-// Resistance bands — pick 2. Scores + method are PROPOSED (Grim drafts,
-// Gavin corrects — plan §7). ASIN identity is from search-index records,
-// NOT yet SiteStripe-verified — confirm in SiteStripe before treating the
+// Resistance bands, pick 2. Scores + method are PROPOSED (Grim drafts,
+// Gavin corrects, plan §7). ASIN identity is from search-index records,
+// NOT yet SiteStripe-verified, confirm in SiteStripe before treating the
 // link as settled.
 //
 // Note: the plan (§6.1) says a dedicated Daily Rep teaching post on bands
@@ -21,17 +21,17 @@ export const resistanceBands = {
   verdict:
     "The next step up from water bottles, and the travel version of the dumbbell. Same muscles, no weight to carry, fits in a drawer. Five strengths in one set, so you start where you are and work up.",
   score: {
-    // Proposed scores — Gavin sets the numbers.
+    // Proposed scores, Gavin sets the numbers.
     factors: [
       {
         name: "Grip",
         score: 4,
-        note: "Loop bands, no handle — easier than a dumbbell for hands that can't grip yet, harder to hold than a handle once it gets heavy.",
+        note: "Loop bands, no handle, easier than a dumbbell for hands that can't grip yet, harder to hold than a handle once it gets heavy.",
       },
       {
         name: "Safety at Home",
         score: 4,
-        note: "No weight to drop. Check the band for nicks before every use — a nicked band snaps.",
+        note: "No weight to drop. Check the band for nicks before every use, a nicked band snaps.",
       },
       {
         name: "Storage",
@@ -46,7 +46,7 @@ export const resistanceBands = {
       {
         name: "Value",
         score: 5,
-        note: "One set covers five strengths — the cheapest way into real resistance.",
+        note: "One set covers five strengths, the cheapest way into real resistance.",
       },
     ],
     average: 4.6,
@@ -55,26 +55,26 @@ export const resistanceBands = {
     "I use these in class for assisted work and for clients who can't grip a dumbbell comfortably yet. I looked at whether the band stays put, whether it helps or fights the movement, and whether a client can set it up alone. The test is the same as everything else: can my client use it, in a living room, without me standing next to them.",
   methodDate: "November 2026",
   outcome:
-    "The bridge — water bottles to bands to dumbbells. Grip and strength without a weight to hold, and the first step for hands that aren't ready for a handle yet.",
+    "The bridge, water bottles to bands to dumbbells. Grip and strength without a weight to hold, and the first step for hands that aren't ready for a handle yet.",
   plan: {
     product: "starter-plan",
     label: "Get the plan that uses it",
   },
   planSecondary: null,
   highlights: [
-    "Five color-coded bands, 5 to 125 lb — one set, five strengths",
+    "Five color-coded bands, 5 to 125 lb, one set, five strengths",
     "Carry bag and workout guide included",
-    "Fits in a drawer or a suitcase — the travel version of the dumbbell",
+    "Fits in a drawer or a suitcase, the travel version of the dumbbell",
     "Natural latex loop bands, no handles to grip",
   ],
   pros: [
-    "Start where you are and work up — five strengths in one box",
+    "Start where you are and work up, five strengths in one box",
     "No weight to drop on a foot or a floor",
-    "Goes anywhere — the whole set weighs almost nothing",
+    "Goes anywhere, the whole set weighs almost nothing",
   ],
   cons: [
-    "Natural latex — if you have a latex allergy, do not use these",
-    "Resistance changes through the range — lighter at the bottom, heavier at the top",
+    "Natural latex, if you have a latex allergy, do not use these",
+    "Resistance changes through the range, lighter at the bottom, heavier at the top",
     "No fixed number to track progress the way a dumbbell gives you",
   ],
   specs: [
@@ -84,15 +84,15 @@ export const resistanceBands = {
     { label: "Storage", value: "Fits in a drawer" },
   ],
   experience:
-    "Some clients can't grip a dumbbell comfortably yet. The bands are how they start — same muscles, no handle to hold, and the lightest band is light enough for anyone. When the lightest band gets easy, there's a heavier one in the same set. That's the whole point of a set.",
+    "Some clients can't grip a dumbbell comfortably yet. The bands are how they start, same muscles, no handle to hold, and the lightest band is light enough for anyone. When the lightest band gets easy, there's a heavier one in the same set. That's the whole point of a set.",
   chooseIf: [
     "You want the next step up from water bottles",
     "Your hands can't grip a dumbbell comfortably yet",
     "You travel and want something that fits in a bag",
   ],
   avoidIf: [
-    "You have a latex allergy — these are natural latex",
-    "You want one fixed weight to track — a dumbbell gives you a number, a band doesn't",
+    "You have a latex allergy, these are natural latex",
+    "You want one fixed weight to track, a dumbbell gives you a number, a band doesn't",
   ],
   teachingPost: {
     id: "farmer-carries-every-class",

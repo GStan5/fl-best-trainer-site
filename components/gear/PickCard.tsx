@@ -9,7 +9,7 @@ export default function PickCard({ pick }) {
   return (
     <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-6 flex flex-col">
       <p className="text-royal-light text-sm font-semibold mb-1">
-        Gavin&apos;s Pick — {pick.slot}
+        {pick.proposed ? "Proposed Pick" : "Gavin's Pick"} — {pick.slot}
       </p>
       <h3 className="font-heading text-xl font-bold text-white mb-2">
         {pick.brand} — {pick.title}
@@ -31,7 +31,8 @@ export default function PickCard({ pick }) {
           href={plan.url}
           className="inline-flex items-center justify-center border border-royal-light text-royal-light hover:bg-royal-light hover:text-royal-dark font-bold py-3 px-5 rounded-xl transition text-center"
         >
-          {pick.plan.label} — {plan.name} {plan.price}
+          {pick.plan.label} — {plan.name}
+          {plan.price !== "Free" ? ` ${plan.price}` : ""}
         </Link>
       </div>
       <p className="mt-4 text-sm">

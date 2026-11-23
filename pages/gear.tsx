@@ -14,8 +14,8 @@ export default function GearPage({ groups }) {
     <Layout>
       <SEO
         title="Gear I Use | FL Best Trainer"
-        description="The gear I use with my clients — dumbbells, bands, a watch that counts the walk, a bag for the road. Every pick tested by me, in class, with people your age."
-        keywords="home gym gear over 50, hex dumbbells, resistance bands, garmin watch walking, travel backpack trainer"
+        description="The gear I use with my clients, and the top picks I'm proposing for them. Tested picks were used in class with people your age; proposed picks are marked as such."
+        keywords="home gym gear over 50, hex dumbbells, resistance bands, kettlebells, treadmill, exercise bike, rower, elliptical, sauna, cold plunge, massage gun, foam roller, garmin watch walking, travel backpack trainer"
         url="/gear"
       />
 
@@ -26,9 +26,12 @@ export default function GearPage({ groups }) {
               Gear I use
             </h1>
             <p className="text-white/75 text-lg leading-relaxed mt-3 mb-2 max-w-2xl">
-              This is the gear I use with my clients. Not a store, not
-              sponsored picks — the things I&apos;d hand to my own clients,
-              tested in class with people your age.
+              This is the gear I use with my clients, plus the top picks
+              I&apos;m proposing for them. Not a store, not sponsored picks,
+              the things I&apos;d hand to my own clients. Picks I&apos;ve
+              tested in class say so. Picks I haven&apos;t tested yet are
+              marked Proposed, and the scores on those are a starting point
+              for me to correct.
             </p>
             <p className="text-white/50 text-sm mb-10">
               Last updated {GEAR_PAGE_LAST_UPDATED}
@@ -57,7 +60,7 @@ export default function GearPage({ groups }) {
               </h2>
               <p className="text-white/75 text-lg leading-relaxed mb-6 max-w-xl mx-auto">
                 Start with the free 7-day guide. Ten minutes a day, a chair,
-                a wall, and water bottles — no gear needed.
+                a wall, and water bottles, no gear needed.
               </p>
               <a
                 href="/start"

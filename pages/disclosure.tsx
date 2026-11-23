@@ -29,7 +29,7 @@ export default function DisclosurePage() {
             </p>
 
             <p className="text-white/85 text-lg leading-relaxed mb-6">
-              The main program is Amazon Associates — the gear links on the{" "}
+              The main program is Amazon Associates, the gear links on the{" "}
               <a href="/gear" className="text-royal-light hover:text-white underline">
                 gear page
               </a>{" "}
@@ -40,7 +40,7 @@ export default function DisclosurePage() {
 
             <p className="text-white/85 text-lg leading-relaxed mb-6">
               Brands never pay for placement. A brand can send me a product
-              to try, and the page will say so — but a free product never
+              to try, and the page will say so, but a free product never
               buys a good verdict. If I don&apos;t recommend something, the
               page says that too.
             </p>
