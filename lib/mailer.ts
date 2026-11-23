@@ -66,6 +66,15 @@ function getTransporter() {
   return nodemailer.createTransport({
     service: "gmail",
     auth: { user: GMAIL_USER, pass: GMAIL_PASS },
+    // Timeouts (added 2026-11-23): the test sends hung after two
+    // successes — the button stayed busy, the request never returned,
+    // no error surfaced. A transport with no timeouts waits forever
+    // on a stuck SMTP connection. These fail fast instead: the route
+    // returns its 500, the admin UI shows the error, the cron retries
+    // tomorrow. Healthy sends are unaffected.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
   });
 }
 
