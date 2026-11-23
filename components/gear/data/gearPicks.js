@@ -4,6 +4,7 @@ import { garminForerunner265s } from "./picks/garminForerunner265s";
 import { ospreyFarpointTrek55 } from "./picks/ospreyFarpointTrek55";
 import { repKettlebellSet } from "./picks/repKettlebellSet";
 import { repAdjustableKettlebell } from "./picks/repAdjustableKettlebell";
+import { repQuickDrawAdjustableDumbbell } from "./picks/repQuickDrawAdjustableDumbbell";
 import { repBalanceBallTrainer } from "./picks/repBalanceBallTrainer";
 import { nordicTrackCommercial1750 } from "./picks/nordicTrackCommercial1750";
 import { nordicTrackX24Bike } from "./picks/nordicTrackX24Bike";
@@ -30,6 +31,7 @@ export const gearPicks = [
   ospreyFarpointTrek55,
   repKettlebellSet,
   repAdjustableKettlebell,
+  repQuickDrawAdjustableDumbbell,
   repBalanceBallTrainer,
   nordicTrackCommercial1750,
   nordicTrackX24Bike,
