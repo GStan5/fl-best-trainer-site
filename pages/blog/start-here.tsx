@@ -63,6 +63,7 @@ const TOPICS = [
     title: "Training at home and gear",
     blurb: "In-home training, and the gear worth having at home.",
     ids: ["in-home-training-vs-public-gym", "beyond-power-voltra-1-review"],
+    link: { label: "See the gear I use", href: "/gear" },
   },
 ];
 
@@ -119,6 +120,16 @@ export default function BlogStartHere({ groups, ungrouped }) {
                     </li>
                   ))}
                 </ul>
+                {group.link && (
+                  <p className="mt-5">
+                    <a
+                      href={group.link.href}
+                      className="text-royal-light hover:text-white"
+                    >
+                      {group.link.label} →
+                    </a>
+                  </p>
+                )}
               </div>
             ))}
 

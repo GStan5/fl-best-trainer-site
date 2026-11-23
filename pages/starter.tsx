@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/shared/Layout";
 import SEO from "@/components/shared/SEO";
+import GearDisclosure from "@/components/gear/GearDisclosure";
+import { getPickBySlug } from "@/components/gear/data/gearPicks";
+import { gearPlanDetails } from "@/lib/gearConfig";
 import {
   FaCheckCircle,
   FaTimesCircle,
@@ -47,6 +50,11 @@ const faqs = [
     a: "The guide is 7 days to prove you can do this. This is the full 4-week system that actually changes your strength.",
   },
 ];
+
+// Gear that makes the program better once water bottles get light.
+// Dumbbells + bands only — the chair and the wall stay unlinked, you
+// already own them. Starter needs no gear; that stays the honest lead.
+const starterGear = ["hex-dumbbells", "resistance-bands"].map(getPickBySlug);
 
 export default function StarterPage() {
   const router = useRouter();
@@ -221,6 +229,49 @@ export default function StarterPage() {
                 </div>
               ))}
             </div>
+
+            {/* When you're ready for more — the gear list */}
+            <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-5">
+              When you&apos;re ready for more
+            </h2>
+            <p className="text-white/80 text-lg leading-relaxed mb-6">
+              You don&apos;t need any of this to do the program. A chair, a
+              wall, and water bottles are enough for the full 4 weeks. But
+              when the water bottles get light, this is what replaces them.
+            </p>
+            <div className="space-y-4 mb-4">
+              {starterGear.map((pick) => (
+                <div
+                  key={pick.slug}
+                  className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+                >
+                  <div className="flex-1">
+                    <p className="font-semibold text-white text-lg">
+                      {pick.brand} — {pick.title}
+                    </p>
+                    <p className="text-white/75 leading-relaxed">
+                      {pick.oneLine}
+                    </p>
+                    <p className="text-sm mt-1">
+                      <a
+                        href={`/gear/${pick.slug}`}
+                        className="text-royal-light hover:text-white underline"
+                      >
+                        Read the full pick →
+                      </a>
+                    </p>
+                  </div>
+                  <a
+                    href={`/go/${pick.slug}`}
+                    rel="sponsored nofollow"
+                    className="inline-flex items-center justify-center bg-royal hover:bg-royal-dark text-white font-bold py-3 px-6 rounded-xl transition whitespace-nowrap"
+                  >
+                    Check Price
+                  </a>
+                </div>
+              ))}
+            </div>
+            <GearDisclosure className="mb-14" />
 
             {/* Price box */}
             <div className="bg-gradient-to-b from-navy to-[#0A0A0A] border border-royal/40 rounded-2xl p-8 text-center shadow-xl shadow-black/50">

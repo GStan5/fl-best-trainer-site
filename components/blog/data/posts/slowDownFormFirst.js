@@ -26,6 +26,8 @@ Take the time to do the form correctly, to the best of your ability, every singl
 
 When you slow a rep down, something changes: the muscle you're targeting actually has to do the work. More strain lands exactly where you want it. And here's the part most people don't believe until they feel it — less weight becomes more effective. A lighter dumbbell, lifted with control, builds more strength than a heavy one you have to heave around.
 
+The dumbbell I hand a client when they're ready for weight is a hex dumbbell. [Here's the one I use and why →](/gear/hex-dumbbells)
+
 Slowing down also makes you more efficient with your time in the gym. Every rep counts. You're not spending an hour throwing weight around and wondering why nothing changes. You're doing fewer, better reps — and getting actual results you can see and feel.
 
 ## Three cues to take into your next workout

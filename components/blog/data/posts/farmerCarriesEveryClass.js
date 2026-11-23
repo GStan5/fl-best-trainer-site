@@ -20,6 +20,8 @@ First, go slow. Focusing on going slow will greatly increase the challenge for y
 
 Second, squeeze. Squeeze the weight with your hands, and squeeze your back to have good posture. The grip work alone is worth it. Jars, bags, anything you pick up all day. And squeezing your back is what keeps you standing tall instead of folding over the weight.
 
+The dumbbell I use for these is a hex dumbbell. [Here's the one I use and why I picked it →](/gear/hex-dumbbells)
+
 Something most people don't realize about farmer carries is they stretch out your shoulders and traps. That can help people with neck pain, which can cause headaches.
 
 So next time you bring the groceries in, pay attention. When that trip starts feeling easy, when the bags don't feel as heavy and your grip doesn't quit halfway and you're not out of breath at the door, that's your training working. That's the whole point.

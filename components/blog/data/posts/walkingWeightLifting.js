@@ -16,6 +16,8 @@ After 50, you lose muscle every year. Walking doesn't stop that. Lifting does.
 
 So walk every day, lift two or three times a week. Start light, form first, slow movements. Add a little weight when you're ready. You don't have to lift heavy. You just have to lift.
 
+If you walk every day and want the walk to count, a watch helps. [Most people don't need a running watch — here's the one I use and who it's for →](/gear/garmin-forerunner-265s)
+
 That's how you stay strong enough to keep doing what you want to do.
 
 ---

@@ -1,5 +1,6 @@
 import { GetServerSideProps } from 'next';
 import { getAllPosts } from '../utils/markdown';
+import { gearPicks } from '../components/gear/data/gearPicks';
 
 const EXTERNAL_DATA_URL = 'https://flbesttrainer.com';
 
@@ -29,6 +30,8 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
   // Every blog post gets its own URL (see pages/blog/[id].tsx), plus the
   // start-here hub, so search engines can find and rank single posts.
   const postPages = getAllPosts().map((post) => `/blog/${post.id}`);
+  // Gear picks get their own URLs too, same as blog posts.
+  const gearPages = gearPicks.map((pick) => `/gear/${pick.slug}`);
   const pages = [
     '/',
     '/about',
@@ -37,6 +40,9 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
     '/blog',
     '/blog/start-here',
     ...postPages,
+    '/gear',
+    '/disclosure',
+    ...gearPages,
     '/contact',
     '/privacy',
     '/terms',

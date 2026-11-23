@@ -19,19 +19,19 @@ import { useState, useEffect } from "react";
 // Update your social media links here
 const SOCIAL_MEDIA = {
   instagram: {
-    url: "https://instagram.com/flbesttrainer",
+    url: "https://www.instagram.com/flbesttrainer/",
     enabled: true,
     icon: FaInstagram,
     label: "Follow us on Instagram",
   },
   facebook: {
-    url: "https://facebook.com/flbesttrainer",
+    url: "https://www.facebook.com/FLBestTrainer/",
     enabled: true,
     icon: FaFacebook,
     label: "Follow us on Facebook",
   },
   youtube: {
-    url: "https://youtube.com/@flbesttrainer",
+    url: "https://www.youtube.com/@FLBestTrainer",
     enabled: true,
     icon: FaYoutube,
     label: "Subscribe to our YouTube channel",
@@ -74,6 +74,7 @@ export default function Footer() {
       { name: "In-Home Personal Training", href: "/training" },
       { name: "Custom Workout Plans", href: "/plans" },
       { name: "Classes", href: "/classes" },
+      { name: "Gear I Use", href: "/gear" },
     ],
     company: [
       { name: "About", href: "/about" },
@@ -83,6 +84,7 @@ export default function Footer() {
     legal: [
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
+      { name: "Affiliate Disclosure", href: "/disclosure" },
     ],
   };
 
@@ -304,6 +306,19 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="relative border-t border-white/10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p className="text-xs text-white/50 leading-relaxed mb-5 max-w-3xl">
+              If you buy through my link, I earn a small commission. It
+              doesn&apos;t cost you anything, and I only pick gear I&apos;d
+              hand to my own clients. As an Amazon Associate I earn from
+              qualifying purchases.{" "}
+              <Link
+                href="/disclosure"
+                className="underline hover:text-royal-light transition-colors"
+              >
+                Read the full disclosure
+              </Link>
+              .
+            </p>
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <div className="flex flex-col items-center md:items-start space-y-2">
                 <p className="text-sm text-white/60">

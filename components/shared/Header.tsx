@@ -118,6 +118,7 @@ export default function Header() {
     },
     { name: "Free Guide", path: "/start", icon: <FaBookOpen className="mr-1.5" /> },
     { name: "Blog", path: "/blog", icon: <FaBlog className="mr-1.5" /> },
+    { name: "Gear", path: "/gear", icon: <FaDumbbell className="mr-1.5" /> },
     { name: "About", path: "/about", icon: <FaUserAlt className="mr-1.5" /> },
   ];
 
