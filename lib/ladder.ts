@@ -61,7 +61,7 @@ export const LADDER: LadderRung[] = [
     url: `${SITE}/starter`,
     dealLabel: "Start the Starter plan — $37",
     dealLine:
-      "The Starter plan is $37, one time. Four weeks, 12 sessions, 30 minutes each. A chair, a wall, and water bottles or your preferred dumbbell weight.",
+      "The Starter plan is $37, one time, less than one session with me ($160). Four weeks, 12 sessions. Finish all 12, retest on Day 28, and if your numbers didn't improve, email me for a full $37 refund.",
   },
   {
     rank: 2,
