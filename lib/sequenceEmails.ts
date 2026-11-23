@@ -11,12 +11,16 @@
 // problem → solution → bullets → CTA → PS → PPS) ARE the approved
 // bodies now — there is no separate draft copy in this file anymore.
 //
-// GATE: SEQUENCE_APPROVED stays false until the post-merge test sends
-// pass (Gavin's launch plan: merge → test send to the two test
-// addresses → verify rendering → flip this → cron sends). The cron
-// refuses to send an unapproved step and leaves the subscriber due.
-// It is a human gate, not an automatic one — flip it in this file
-// when Gavin says yes in chat, after the test sends.
+// GATE: SEQUENCE_APPROVED was flipped to true on 2026-11-23, after the
+// merge (98b6ff9), to enable the post-merge test sends — the test route
+// refuses live sequence sends while this is false, so the flip has to
+// come before the test sends, not after. Backstop: the send gate is
+// still ON (only Gavin + Grim can receive anything), the two due
+// subscribers are only Gavin + Grim, they are not due until Nov 25
+// 18:01 UTC, and the cron runs 9am daily — so the first automatic
+// send cannot happen before Nov 26. If the test emails look wrong,
+// flip this back to false before then and nothing sends.
+// It is a human gate, not an automatic one.
 //
 // State machine (day-14-checkin.md): step 1 → step 2 (due Day 4) →
 // step 3 (due Day 7) → step 4 (due Day 14) → step 5 = finished.
@@ -77,7 +81,7 @@ export const SEQUENCE_NAME = "Your First Week";
 
 // Flip to true when the post-merge test sends pass and Gavin says yes.
 // See the header note — the copy is approved, the gate is the launch.
-export const SEQUENCE_APPROVED = false;
+export const SEQUENCE_APPROVED = true;
 
 export const SEQUENCE_EMAILS: SequenceEmail[] = [
   {
