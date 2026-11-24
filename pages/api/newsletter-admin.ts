@@ -3,7 +3,14 @@ import { requireAdmin, getSql } from "../../lib/programAdmin";
 import {
   ensureNewsletterTables,
   starterBuyersFromEmail,
+  leadsByPost,
+  leadsByChannel,
+  cohortRevenue,
+  clickStats,
+  segmentCounts,
+  adSpendCac,
 } from "../../lib/newsletter";
+import { getAllPosts } from "../../utils/markdown";
 import { ADMIN_JOINED_WINDOW_DAYS } from "../../lib/ladder";
 
 // Newsletter admin stats — powers the newsletter section on
@@ -102,6 +109,28 @@ export default async function handler(
       (b) => b.subscribed_at !== null
     ).length;
 
+    // Analytics (Hormozi measurement, built 2026-11-24): per-post
+    // engaged leads, per-channel leads, 30-day revenue per customer
+    // by signup cohort, clicks/opens, segments, CAC per ad channel.
+    // Every query degrades to zeros / [] on a missing table, so this
+    // never breaks the admin page. Post ids resolve to titles here
+    // (unknown ids fall back to the raw id).
+    const [byPost, byChannel, cohorts, clicks, segments, cac] =
+      await Promise.all([
+        leadsByPost(sql),
+        leadsByChannel(sql),
+        cohortRevenue(sql),
+        clickStats(sql),
+        segmentCounts(sql),
+        adSpendCac(sql),
+      ]);
+    const postTitles = new Map(
+      (getAllPosts() as Array<{ id: string; title: string }>).map((p) => [
+        p.id,
+        p.title,
+      ])
+    );
+
     return res.status(200).json({
       subscribed: Number(totals[0]?.subscribed ?? 0),
       joined7d: Number(totals[0]?.joined7d ?? 0),
@@ -113,6 +142,17 @@ export default async function handler(
       })),
       drafts,
       recentSends,
+      analytics: {
+        byPost: byPost.map((r) => ({
+          ...r,
+          title: postTitles.get(r.postId) ?? r.postId,
+        })),
+        byChannel,
+        cohorts,
+        clicks,
+        segments,
+        cac,
+      },
     });
   } catch (err) {
     console.error("[newsletter-admin] stats failed:", err);

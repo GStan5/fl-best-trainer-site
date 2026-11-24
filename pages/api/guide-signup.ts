@@ -9,6 +9,7 @@ import {
   type SqlTag,
 } from "../../lib/newsletter";
 import { NEWSLETTER_SEND_GATE_ON } from "../../lib/ladder";
+import { getPostById } from "../../utils/markdown";
 
 // NOTE: lib/database is imported lazily inside saveLead, not at the top
 // level. The shared module throws at import time when DATABASE_URL is
@@ -45,10 +46,32 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Attribution for the analytics build (2026-11-24): which post sent
+// the reader, and which channel (UTM) they arrived with. postId must
+// be a real blog post id — a made-up ?from= value stores as null, so
+// junk never pollutes the per-post numbers. UTM values are free text
+// (they come from ad platforms), capped at 100 chars.
+function normalizePostId(raw: unknown): string | null {
+  if (typeof raw !== "string" || raw.length > 80) return null;
+  return getPostById(raw) ? raw : null;
+}
+
+function normalizeUtm(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const v = raw.trim().slice(0, 100);
+  return v === "" ? null : v;
+}
+
 async function saveLead(
   firstName: string,
   email: string,
-  source: string
+  source: string,
+  attribution?: {
+    postId?: string | null;
+    utmSource?: string | null;
+    utmMedium?: string | null;
+    utmCampaign?: string | null;
+  }
 ): Promise<void> {
   if (!process.env.DATABASE_URL) {
     console.log(
@@ -68,9 +91,17 @@ async function saveLead(
         created_at timestamptz default now()
       )
     `;
+    // Attribution columns (analytics, 2026-11-24): ADD COLUMN IF
+    // NOT EXISTS so the live table (created before these existed)
+    // gains them on the next signup — same safe additive shape as
+    // the newsletter tables.
+    await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS post_id text`;
+    await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source text`;
+    await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_medium text`;
+    await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign text`;
     await sql`
-      INSERT INTO leads (first_name, email, source)
-      VALUES (${firstName}, ${email}, ${source})
+      INSERT INTO leads (first_name, email, source, post_id, utm_source, utm_medium, utm_campaign)
+      VALUES (${firstName}, ${email}, ${source}, ${attribution?.postId ?? null}, ${attribution?.utmSource ?? null}, ${attribution?.utmMedium ?? null}, ${attribution?.utmCampaign ?? null})
     `;
   } catch (err) {
     console.error("[guide-signup] Lead save failed (continuing):", err);
@@ -219,6 +250,16 @@ export default async function handler(
       ? normalizeEmail(req.body.email)
       : "";
   const source = normalizeSource(req.body?.source);
+  // Attribution (analytics, 2026-11-24): the post that sent the
+  // reader (?from= on the /start link, added by the blog post view)
+  // and the UTM channel (ad URLs carry utm_source=facebook /
+  // instagram / google). Validated, never trusted raw.
+  const attribution = {
+    postId: normalizePostId(req.body?.postId),
+    utmSource: normalizeUtm(req.body?.utm_source),
+    utmMedium: normalizeUtm(req.body?.utm_medium),
+    utmCampaign: normalizeUtm(req.body?.utm_campaign),
+  };
 
   if (!firstName || !email || !isValidEmail(email)) {
     return res
@@ -226,7 +267,7 @@ export default async function handler(
       .json({ error: "Please provide your first name and a valid email." });
   }
 
-  await saveLead(firstName, email, source);
+  await saveLead(firstName, email, source, attribution);
   await saveSubscriber(firstName, email, source);
   await sendGuideEmail(firstName, email, source);
 
