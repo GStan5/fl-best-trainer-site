@@ -751,7 +751,7 @@ export async function sendMarketingEmail(
   }
 ): Promise<void> {
   if (!mailerConfigured()) {
-    throw new Error("Gmail env not set — cannot send email");
+    throw new Error("No mail transport configured — cannot send email");
   }
   const to = normalizeEmail(opts.to);
   const bodyHtml = opts.bodyHtml.replace(

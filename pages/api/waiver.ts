@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import { Readable } from "stream";
 import { Pool } from "pg";
 import sql from "../../lib/database";
-import { sendMail } from "../../lib/mailer";
+import { sendMail, defaultFrom } from "../../lib/mailer";
 import { WAIVER_CANCELLATION_CLAUSE } from "../../config/cancellation";
 
 interface WaiverBody {
@@ -654,7 +654,7 @@ export default async function handler(
 
     // Send email to business owner
     await sendMail({
-      from: process.env.GMAIL_USER,
+      from: defaultFrom(),
       to: process.env.GMAIL_USER,
       subject: `🏋️ New Liability Waiver Signed - ${name}`,
       html: `
@@ -691,7 +691,7 @@ export default async function handler(
 
     // Send confirmation email to participant
     await sendMail({
-      from: process.env.GMAIL_USER,
+      from: defaultFrom(),
       to: email,
       subject: "Gavin R Stanifer - Liability Waiver Confirmation",
       html: `

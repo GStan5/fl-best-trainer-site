@@ -9,6 +9,7 @@ import {
   type SqlTag,
 } from "../../lib/newsletter";
 import { NEWSLETTER_SEND_GATE_ON } from "../../lib/ladder";
+import { mailerConfigured } from "../../lib/mailer";
 
 // NOTE: lib/database is imported lazily inside saveLead, not at the top
 // level. The shared module throws at import time when DATABASE_URL is
@@ -114,10 +115,14 @@ async function sendGuideEmail(
   email: string,
   source: string
 ): Promise<void> {
-  const { GMAIL_USER, GMAIL_PASS } = process.env;
-  if (!GMAIL_USER || !GMAIL_PASS) {
+  // Guide email goes through the marketing sender, which picks the
+  // active transport (Resend when its key is set, Gmail otherwise).
+  // Gate on the shared mailer check, not the Gmail env directly —
+  // a Gmail-only gate would silently skip the guide email on the
+  // Resend transport.
+  if (!mailerConfigured()) {
     console.log(
-      "[guide-signup] Gmail env not set — skipping guide email for",
+      "[guide-signup] No mail transport configured — skipping guide email for",
       email
     );
     return;

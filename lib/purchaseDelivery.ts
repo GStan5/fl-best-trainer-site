@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { sendMail, mailerConfigured } from "./mailer";
+import { sendMail, mailerConfigured, receiptFrom } from "./mailer";
 
 // Independent for Life — purchase delivery emails (2026-10-08, Gavin
 // sign-off day). Called by the NEW online webhook route only; the
@@ -40,9 +40,9 @@ export async function sendPurchaseEmail(
 ): Promise<void> {
   // Transactional delivery mail — shared mailer, no marketing footer.
   if (!mailerConfigured()) {
-    throw new Error("Gmail env not set — cannot send purchase email");
+    throw new Error("No mail transport configured — cannot send purchase email");
   }
-  const from = `"FL Best Trainer" <${process.env.GMAIL_USER}>`;
+  const from = receiptFrom();
 
   if (product === "starter-plan") {
     const pdfPath = path.join(

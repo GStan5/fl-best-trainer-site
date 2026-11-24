@@ -1,12 +1,16 @@
 import nodemailer from "nodemailer";
 
-// Shared Gmail mailer — one transport for the whole site (guide, waiver,
+// Shared mailer — one transport for the whole site (guide, waiver,
 // purchase delivery, follow-up sequence, weekly newsletter).
 //
-// Before this module, each route built its own nodemailer transport with
-// the same GMAIL_USER / GMAIL_PASS pair. Nothing about the sending
-// changes: same account, same from name. Callers that used to create a
-// transport inline now call sendMail() here instead.
+// Two transports behind one interface, picked per send from env:
+//   - RESEND_API_KEY set → Resend SMTP (smtp.resend.com). From is an
+//     address on flbesttrainer.com; replies go to the Gmail inbox.
+//   - No key → Gmail SMTP, exactly as before. The code is safe to
+//     deploy before the key exists (Gavin 2026-11-24: build the code
+//     now, create the Resend account last — the free tier has no
+//     expiry, but the account is created last so the first real sends
+//     go through a finished system).
 //
 // sendMail() is deliberately plain: it sends exactly what it is given
 // (transactional mail — waiver, purchase delivery). Marketing mail
@@ -20,6 +24,10 @@ export interface MailOptions {
   html: string;
   text?: string;
   from?: string;
+  // Optional override for Reply-To. When unset, the Resend path sets
+  // it to the Gmail inbox (see emailSender.send) and the Gmail path
+  // leaves it unset (replies already go to the Gmail From).
+  replyTo?: string;
   attachments?: Array<{
     filename: string;
     path?: string;
@@ -30,9 +38,31 @@ export interface MailOptions {
   headers?: Record<string, string>;
 }
 
-export function mailerConfigured(): boolean {
-  return Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+// Resend is the active transport when its key is set. The gate is
+// read per send (not at module load), so setting or removing the key
+// in Vercel takes effect on the next send with no code change.
+export function resendActive(): boolean {
+  return Boolean(process.env.RESEND_API_KEY);
 }
+
+// Which transport a send would use — "resend" | "gmail" | "none".
+// Exported so the gate is provable without sending anything.
+export function mailerTransportName(): "resend" | "gmail" | "none" {
+  if (process.env.RESEND_API_KEY) return "resend";
+  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) return "gmail";
+  return "none";
+}
+
+export function mailerConfigured(): boolean {
+  return mailerTransportName() !== "none";
+}
+
+// From address on the verified domain (Resend 2026-11-24). The domain
+// has no mail hosting (no MX), so replies must go to the Gmail inbox
+// — see replyTo in emailSender.send. One constant, no hardcoding
+// elsewhere. Local part "hello" is the generic contact address; the
+// sender NAME ("Gavin from FL Best Trainer") is what the inbox shows.
+export const RESEND_FROM_ADDRESS = "hello@flbesttrainer.com";
 
 // Channel sender — the seam for SMS later (Gavin 2026-11-23: texting
 // is NOT built now, but the email system is built so it can be wired
@@ -57,10 +87,40 @@ export function defaultFrom(): string {
   // DMARC on the address. Note: lib/purchaseDelivery.ts hardcodes its
   // own brand from-name for transactional receipts — this change
   // affects marketing sends only, not receipts.
+  if (resendActive()) {
+    return `"Gavin from FL Best Trainer" <${RESEND_FROM_ADDRESS}>`;
+  }
   return `"Gavin from FL Best Trainer" <${process.env.GMAIL_USER}>`;
 }
 
-function getTransporter() {
+// Receipts keep the brand from-name (not Gavin's name) — deliberate,
+// unchanged from before. Only the address follows the active
+// transport, so receipts stay DMARC-aligned on either path.
+export function receiptFrom(): string {
+  if (resendActive()) {
+    return `"FL Best Trainer" <${RESEND_FROM_ADDRESS}>`;
+  }
+  return `"FL Best Trainer" <${process.env.GMAIL_USER}>`;
+}
+
+// Exported (was module-private) so the gate is provable without
+// sending: a verification script can assert the transport's host /
+// auth user / timeouts from the constructed object. createTransport
+// does not connect, so constructing it sends nothing.
+export function getTransporter() {
+  if (process.env.RESEND_API_KEY) {
+    return nodemailer.createTransport({
+      host: "smtp.resend.com",
+      port: 465,
+      secure: true,
+      auth: { user: "resend", pass: process.env.RESEND_API_KEY },
+      // Same timeouts as the Gmail path (2026-11-23 mailer fix): a
+      // stuck SMTP connection fails fast instead of hanging the route.
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
+    });
+  }
   const { GMAIL_USER, GMAIL_PASS } = process.env;
   if (!GMAIL_USER || !GMAIL_PASS) return null;
   return nodemailer.createTransport({
@@ -78,19 +138,31 @@ function getTransporter() {
   });
 }
 
-// The Gmail sender — the `email` implementation of ChannelSender.
-// Sends one email. Throws when Gmail env is missing or the send fails —
-// callers decide whether a failure is fatal (waiver, purchase delivery)
-// or logged-and-retried (sequence cron).
+// The email sender — the `email` implementation of ChannelSender.
+// Sends one email. Throws when no transport is configured or the send
+// fails — callers decide whether a failure is fatal (waiver, purchase
+// delivery) or logged-and-retried (sequence cron).
 export const emailSender: ChannelSender = {
   channel: "email",
   async send(opts: MailOptions): Promise<void> {
     const transporter = getTransporter();
     if (!transporter) {
-      throw new Error("Gmail env not set — cannot send email");
+      throw new Error(
+        "No mail transport configured — set RESEND_API_KEY or GMAIL_USER/GMAIL_PASS"
+      );
     }
     await transporter.sendMail({
       from: opts.from ?? defaultFrom(),
+      // Reply-To: the domain From has no mailbox behind it (no MX),
+      // so replies must land in the monitored Gmail inbox. Only set
+      // on the Resend path — Gmail sends already reply to the Gmail
+      // From. A caller may override with opts.replyTo. If Resend is
+      // active and GMAIL_USER is unset, replyTo is omitted and
+      // replies to the domain address bounce — the runbook says to
+      // keep GMAIL_USER set in Vercel, so this should not happen.
+      replyTo:
+        opts.replyTo ??
+        (resendActive() ? process.env.GMAIL_USER : undefined),
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
@@ -101,7 +173,7 @@ export const emailSender: ChannelSender = {
   },
 };
 
-// Sends one email, through the Gmail sender. Kept so every existing
+// Sends one email, through the email sender. Kept so every existing
 // call site works unchanged — the sender interface is the seam, this
 // function is the email door through it.
 export async function sendMail(opts: MailOptions): Promise<void> {
