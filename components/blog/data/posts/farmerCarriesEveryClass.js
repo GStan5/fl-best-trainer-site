@@ -26,7 +26,7 @@ So next time you bring the groceries in, pay attention. When that trip starts fe
 
 ---
 
-**Come try a class.** Farmer carries are in every one I teach. Five people max, form first, every time. [See the class schedule →](/classes)
+**Start with the free guide.** My free 7-day starter guide teaches you the fundamentals the right way — 10 minutes a day, just a chair, a wall, and water bottles. [Get the free guide →](/start)
 `,
   image: "/images/brandphoto14.jpg",
   date: "November 13, 2026",
