@@ -3,31 +3,38 @@
 // approved draft file in the goal workspace (winback-sequence.md).
 //
 // APPROVED by Gavin 2026-11-23 ~14:32 ("windback all good excellent
-// job"). These defs are approved copy — no separate gate here. The
-// trigger is 90 days of silence (no opens or clicks in email_events),
-// found by the sequence cron's sunset check; the subscriber is
-// enrolled in this sequence instead of being suppressed in place, and
-// suppression happens only after email 3 gets no reply.
+// job") — that approval covered the OLD reply-based copy. The copy
+// below was REBUILT click-based 2026-11-24 under the zero-contact
+// rule (Gavin 2026-11-24) and is NOT approved until Gavin says so
+// from the exact renders. These defs are approved: true in code
+// (the winback engine has no separate gate — the send gate is the
+// only backstop), so do NOT merge this branch until he re-approves.
+// The trigger is 90 days of silence (no opens or clicks in
+// email_events), found by the sequence cron's sunset check; the
+// subscriber is enrolled in this sequence instead of being
+// suppressed in place, and suppression happens only after email 3
+// is sent.
 //
-// Hormozi's shape: value first, no pitch until the last email, and
-// the last email asks them to choose — reply Y to stay, or do nothing
-// and we stop. None of the three is a pitch, and none shows the
-// footer review button (showReview false — a review ask in a
-// re-engage email would be noise; email 3's PS points at the blog
-// instead).
+// Hormozi's shape, adapted to zero contact: value first, no pitch
+// until the last email, and the last email asks them to choose —
+// click to stay on the blog, or do nothing and we stop. None of the
+// three is a pitch, and none shows the footer review button
+// (showReview false — a review ask in a re-engage email would be
+// noise; email 3's body points at the blog instead).
 //
 // Own send state in the `winback_sequences` table (lib/newsletter.ts),
 // never `sequence_step`. Suppression is a state, never a delete;
 // resubscribing restarts everything at step 1.
 //
-// LIMIT, stated plainly: "no reply" is judged by the absence of a
-// reply we can see. Replies are not tracked in the database yet
-// (no email_events / reply tracking until Phase 2) — so after email 3
-// the cron suppresses on the send, and a reply that comes in is
-// caught by the manual inbox process (research B1: Grim checks
-// replies) and re-adds the person. The trigger itself is also dormant
-// until the email_events table exists: without it the sunset check
-// throws and is skipped, exactly as it does today.
+// LIMIT, stated plainly: the "stay" click cannot yet stop
+// suppression. Click tracking (email_events) is Phase 2 and does not
+// exist — so after email 3 the cron suppresses on the send, and the
+// step 3 copy must NOT promise the click keeps them subscribed: it
+// frames the start-here hub link as where the ideas live without
+// the emails. When click tracking lands, wire the click to cancel
+// suppression and reword step 3 to say so. The trigger itself is
+// also dormant until the email_events table exists: without it the
+// sunset check throws and is skipped, exactly as it does today.
 
 export interface WinbackEmail {
   step: 1 | 2 | 3;
@@ -51,17 +58,20 @@ export interface WinbackEmail {
 export const WINBACK_EMAILS: WinbackEmail[] = [
   {
     step: 1,
-    subject: "It's been a while",
+    subject: "Still looking to stay independent for life?",
     campaign: "winback-1",
     sendAfterDays: 0,
     approved: true,
-    preheader: "No pitch in this one — just checking in.",
+    // No CTA button: the link is inline in the body (a question
+    // with a link to /start, not a reply ask).
+    headline: "Still looking to stay independent for life?",
+    preheader: "It's been a while. The guide is still yours.",
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
-<p>It has been a while since you heard from me. No pitch in this one — I just wanted to check in.</p>
-<p>Are you still lifting? Still moving? If you stopped, that is fine. Most people do. The guide is still yours, and Day 1 is still there whenever you want it.</p>
-<p>Hit reply and tell me where you are with it. I read every reply.</p>
+<p>It's been a while since you got the guide. Are you still looking to stay independent for life?</p>
+<p>If you are, the guide is still yours. Start again from Day 1: <a href="https://www.flbesttrainer.com/start">the free 7-day guide</a>.</p>
+<p>Seven days. Twelve minutes a day. A chair, a wall, and water bottles or your preferred dumbbell weight. That is all it takes to start.</p>
 `,
   },
   {
@@ -83,19 +93,23 @@ export const WINBACK_EMAILS: WinbackEmail[] = [
   },
   {
     step: 3,
-    subject: "Should I stop sending these?",
+    subject: "This is the last one",
     campaign: "winback-3",
     sendAfterDays: 10,
     approved: true,
-    ps: "If you want to stay but email is not the way, the blog is at flbesttrainer.com/blog. Same ideas, no inbox needed.",
-    preheader: "Reply Y to stay, or do nothing and I'll stop.",
+    // No CTA button, no PS: the link is inline in the body (the
+    // start-here hub). No reply ask. See the LIMIT note at the top
+    // of this file: the copy does not promise the click keeps them
+    // subscribed, because the engine still suppresses after this
+    // send until Phase 2 click tracking exists.
+    headline: "This is the last one.",
+    preheader: "One last email, then I'll stop.",
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
-<p>I have sent you a couple of emails and I have not heard back. That is fine — inboxes are full, and life gets in the way.</p>
-<p>But I do not want to keep sending emails nobody reads. So here is the deal.</p>
-<p>If you want to keep getting one useful idea a week, hit reply and type Y. That is all. I will keep you on the list.</p>
-<p>If I do not hear from you, I will stop sending. No hard feelings, and you can come back any time — the guide is still yours.</p>
+<p>This is the last one. After this, I will stop emailing you.</p>
+<p>If you want the ideas without the emails, they are all on the blog: <a href="https://www.flbesttrainer.com/blog/start-here">start here</a>. The guide is there too, free, whenever you want it.</p>
+<p>Thanks for reading.</p>
 `,
   },
 ];

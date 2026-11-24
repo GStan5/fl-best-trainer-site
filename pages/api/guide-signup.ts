@@ -159,9 +159,13 @@ async function sendGuideEmail(
       firstName,
       subject: "Your free 7-Day Starter Guide is here",
       // Guide email = email 0, restructured per Hormozi and APPROVED
-      // by Gavin 2026-11-23 ~14:32 ("guide email 0 good"). Headline
-      // is the immediate reward; the reply-yes line is the first
-      // reply (research B1); the PS restates the setup. No sign-off
+      // by Gavin 2026-11-23 ~14:32 ("guide email 0 good") — that
+      // approval covered the copy as it stood then. The reply prompt
+      // was removed 2026-11-24 under the zero-contact rule (Gavin
+      // 2026-11-24): the email now ends with a link to the
+      // start-here hub instead. Those new words are NOT approved
+      // until Gavin says so from the exact renders. Headline is the
+      // immediate reward; the PS restates the setup. No sign-off
       // paragraph — the template's signature block closes the letter.
       // Water-bottle line (Gavin ~14:32): "water bottles or your
       // preferred dumbbell weight". Expectation line unchanged (audit
@@ -169,11 +173,11 @@ async function sendGuideEmail(
       // surprise.
       bodyHtml: `
         <p>Hi {first_name},</p>
-        <p>Thanks for requesting the <strong>Independent for Life 7-Day Starter Guide</strong> — it's attached to this email as a PDF.</p>
+        <p>Thanks for requesting the <strong>Independent for Life 7-Day Starter Guide</strong>, it's attached to this email as a PDF.</p>
         <p>You can also download it any time here:<br/>
         <a href="${GUIDE_PDF_URL}">${GUIDE_PDF_URL}</a></p>
         <p>Start with Day 1 whenever you're ready. All you need is a sturdy chair, a clear wall, and water bottles or your preferred dumbbell weight.</p>
-        <p>Hit reply and tell me the one thing that hurts most when you try to lift. I read every reply.</p>
+        <p>When you finish Day 1, here is what to read next: <a href="https://www.flbesttrainer.com/blog/start-here">start here</a>. It is every idea from the blog, grouped by what you need.</p>
         <p>Over the next week I'll send you three short tips. After that, one useful idea a week.</p>
       `,
       kind: "guide",
@@ -185,7 +189,7 @@ async function sendGuideEmail(
       // weekly. Audit S1: no review ask in email 0 — value first.
       // No hero photo — Hormozi's no-images rule (research Part B):
       // the template renders the signature headshot only.
-      preheader: "Your free guide is attached — start with Day 1.",
+      preheader: "Your free guide is attached. Start with Day 1.",
       showReview: false,
       source,
       attachments,

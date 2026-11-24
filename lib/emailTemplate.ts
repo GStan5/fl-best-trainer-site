@@ -161,7 +161,7 @@ function socialLinksText(): string {
 // referral: one line, no per-subscriber links, no tracking, no
 // rewards. The real referral program waits for Phase 2 tracking.
 export const FORWARD_LINE =
-  "Know someone over 50 who'd like this? Forward it — or send them to www.flbesttrainer.com/start.";
+  "Know someone over 50 who'd like this? Forward it, or send them to www.flbesttrainer.com/start.";
 
 // The footer block — review ask (gated: only once value has been
 // delivered — audit S1), follow-along, forward line (weekly only),
@@ -200,7 +200,7 @@ export function renderEmailFooterHtml(opts: {
     ${forward}
     <p style="margin: 0 0 10px;">${escapeHtml(whyYouGetThisLine(opts.source))}</p>
     <p style="margin: 0 0 10px;">${opts.footerBusiness}<br />${opts.footerAddress}</p>
-    <p style="margin: 0;"><a href="${opts.unsubscribeUrl}" style="color: #1D4ED8; text-decoration: underline;">Unsubscribe</a> any time &mdash; one click, no questions.</p>
+    <p style="margin: 0;"><a href="${opts.unsubscribeUrl}" style="color: #1D4ED8; text-decoration: underline;">Unsubscribe</a> any time. One click, no questions.</p>
   `;
 }
 
@@ -235,9 +235,10 @@ export function renderEmailFooterText(opts: {
 // Signature block (research F4) — the person in the email. Renders
 // after the body, in place of a one-word "Gavin" sign-off: the
 // restructured bodies end without a sign-off line and this block
-// closes the letter. Small headshot, name, title, place, and the
-// reply line — replies are a deliverability signal (research A2.8)
-// and the raw material for the next post.
+// closes the letter. Small headshot, name, title, place. No reply
+// line — the zero-contact rule (Gavin 2026-11-24): no email invites
+// a reply, so the signature does not ask for one either. (The reply
+// line was research B1, superseded by that rule.)
 export function renderSignatureHtml(): string {
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 20px 0 0;">
@@ -248,8 +249,7 @@ export function renderSignatureHtml(): string {
         <td style="vertical-align: top; font-family: ${FONT_STACK};">
           <div class="email-sig-name" style="font-size: 15px; font-weight: 700; color: #1F2937;">Gavin Stanifer</div>
           <div class="email-sig-line" style="font-size: 14px; color: #4B5563;">NASM-CPT</div>
-          <div class="email-sig-line" style="font-size: 14px; color: #4B5563;">FL Best Trainer &mdash; Longboat Key, Florida</div>
-          <div class="email-sig-line" style="font-size: 14px; color: #4B5563; margin-top: 4px;">Hit reply &mdash; I read every reply.</div>
+          <div class="email-sig-line" style="font-size: 14px; color: #4B5563;">FL Best Trainer, Longboat Key, Florida</div>
         </td>
       </tr>
     </table>`;
@@ -259,20 +259,19 @@ export function renderSignatureText(): string {
   return [
     "Gavin Stanifer",
     "NASM-CPT",
-    "FL Best Trainer — Longboat Key, Florida",
-    "Hit reply — I read every reply.",
+    "FL Best Trainer, Longboat Key, Florida",
   ].join("\n");
 }
 
 // Full email HTML: navy header band (wordmark + tagline), optional
 // progress eyebrow ("Tip 1 of 3"), headline, body slot, optional
-// "One deal" block (weekly only — the per-recipient deal, resolved
-// from purchase_emails; renders as the fourth weekly block with its
-// own button, after the body and before the signature), signature,
-// optional PS / PPS, optional primary button (repeated once in the
-// long email 3 — see ctaRepeat), footer. Body HTML is the email's
-// content as written — paragraphs inherit the font from the wrapping
-// cell. Body type is 17px / 1.7 (research F10, 50+ audience).
+// deal P.S. (weekly only — the per-recipient deal, resolved from
+// purchase_emails; renders as one short P.S. line after the
+// signature), signature, optional PS / PPS, optional primary button
+// (repeated once in the long email 3 — see ctaRepeat), footer. Body
+// HTML is the email's content as written — paragraphs inherit the
+// font from the wrapping cell. Body type is 17px / 1.7 (research
+// F10, 50+ audience).
 export function renderEmailTemplate(opts: {
   bodyHtml: string;
   cta?: EmailCta;
@@ -295,10 +294,13 @@ export function renderEmailTemplate(opts: {
   showReview?: boolean;
   source?: string | null;
   forwardLine?: boolean;
-  // Weekly only: block 4 — the per-recipient deal (see
-  // resolveWeeklyDeal in lib/newsletter.ts). One primary button per
-  // email: a weekly has a deal and no cta; a sequence email has a
-  // cta and no deal.
+  // Weekly only: the per-recipient deal (see resolveWeeklyDeal in
+  // lib/newsletter.ts). It renders as a short P.S. line after the
+  // signature (Gavin 2026-11-24 — was the fourth weekly block with
+  // its own button; the deal is still resolved per recipient, only
+  // its rendering changed). A weekly has a deal and no cta; a
+  // sequence email has a cta and no deal — one primary button per
+  // email either way.
   deal?: { line: string; cta: EmailCta };
   // Campaign name for UTM tags on PS / PPS links (the body links are
   // tagged by buildMarketingEmail before they reach the template).
@@ -340,15 +342,14 @@ export function renderEmailTemplate(opts: {
     : [opts.bodyHtml, ""];
   const firstButton = hasMarker && opts.cta ? button(opts.cta) : "";
   const endButton = opts.cta ? button(opts.cta) : "";
-  // The deal block (weekly only): the fourth block of the weekly
-  // container — "One deal", the one-line why, and its button. It
-  // renders after the body (blocks 1–3) and before the signature, so
-  // the pitch sits last, after the teaching.
-  const dealBlock = opts.deal
-    ? `
-    <p style="margin: 16px 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #4169E1;">One deal</p>
-    <p>${escapeHtml(opts.deal.line)}</p>
-    ${button(opts.deal.cta)}`
+  // The deal as a P.S. (weekly only — Gavin 2026-11-24, reverses
+  // the 2026-11-23 four-block weekly): the per-recipient deal is no
+  // longer a fourth block with its own button. It renders as one
+  // short P.S. line after the signature, with the deal link inline —
+  // a smaller ask than a full block. It sits after the signature
+  // like every other P.S., so the teaching ends the body.
+  const dealPs = opts.deal
+    ? `<p style="margin: 16px 0 0;">P.S. ${escapeHtml(opts.deal.line)} <a href="${opts.deal.cta.url}" style="color: #1D4ED8; text-decoration: underline;">${escapeHtml(opts.deal.cta.label)}</a></p>`
     : "";
   const tagline = opts.headerTagline ?? "Independent for Life";
   return `<!doctype html>
@@ -402,8 +403,8 @@ ${preheader}
 ${eyebrow}${headline}${bodyBefore}
 ${firstButton}
 ${bodyAfter}
-${dealBlock}
 ${renderSignatureHtml()}
+${dealPs}
 ${ps}
 ${pps}
 ${endButton}
