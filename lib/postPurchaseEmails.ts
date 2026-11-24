@@ -4,10 +4,17 @@
 // (post-purchase-sequence.md, review-ask-email.md).
 //
 // APPROVED by Gavin 2026-11-23 ~14:32 ("email 1 post purchase
-// sequence email 2 email 3 email 4 all good"). These defs are approved
-// copy — no separate gate here, unlike the guide sequence. The trigger
-// is a real purchase (the webhook enrolls the buyer), so nothing sends
-// until someone actually buys.
+// sequence email 2 email 3 email 4 all good") — that approval
+// covered the copy as it stood then. Steps 1 and 3 changed
+// 2026-11-24 under the zero-contact rule (Gavin 2026-11-24): step
+// 1's PS asked for a reply (now a link to the Starter page FAQ) and
+// gained a referral line; step 3 gained a P.P.S. review + referral
+// ask at the first win. Those new words are NOT approved until Gavin
+// says so from the exact renders. These defs are approved: true in
+// code (the post-purchase engine has no separate gate — the send
+// gate is the only backstop), so do NOT merge this branch until he
+// re-approves. The trigger is a real purchase (the webhook enrolls
+// the buyer), so nothing sends until someone actually buys.
 //
 // The ladder rule, in one line: a buyer never gets pitched the thing
 // they already bought, or anything below it. Starter buyers get the
@@ -56,6 +63,12 @@ export interface PostPurchaseEmail {
   // or PS). One primary button per email either way.
   cta?: { label: string; url: string };
   ps?: string;
+  // The P.P.S. line (step 3 only, the first-win review + referral
+  // ask, 2026-11-24). Rendered by the template after the PS; the
+  // engine passes it through (see sendPostPurchaseEmail in
+  // lib/newsletter.ts) — without that pass-through the real send
+  // would silently drop it while the preview showed it.
+  pps?: string;
   headline?: string;
   preheader: string;
   eyebrow?: string;
@@ -74,15 +87,16 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
       label: "Open your Starter plan",
       url: "https://www.flbesttrainer.com/starter",
     },
-    ps: "If anything in the plan is confusing, hit reply and tell me what. I would rather fix it now than have you stuck on Day 3.",
-    preheader: "You did the hard part — you started.",
+    ps: "If anything in the plan is confusing, the answers are on the Starter page: [Starter plan](https://www.flbesttrainer.com/starter). I would rather fix it now than have you stuck on Day 3.",
+    preheader: "You did the hard part. You started.",
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
-<p>You are in. Thank you — I mean that. You just did the hard part, which is starting.</p>
-<p>Here is what to do first. Open the Starter plan and do Day 1. Not all of it if you are tired — just Day 1, slow. A chair, a wall, water bottles or your preferred dumbbell weight. That is the whole setup.</p>
-<p>Your plan, your movement library, and your tracker are all in your account. The exercise videos are still being filmed — every buyer gets them free as each one publishes.</p>
+<p>You are in. Thank you. I mean that. You just did the hard part, which is starting.</p>
+<p>Here is what to do first. Open the Starter plan and do Day 1. Not all of it if you are tired, just Day 1, slow. A chair, a wall, water bottles or your preferred dumbbell weight. That is the whole setup.</p>
+<p>Your plan, your movement library, and your tracker are all in your account. The exercise videos are still being filmed. Every buyer gets them free as each one publishes.</p>
 <p>And remember the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
+<p>Know someone over 50 who could use this? Send them the free guide: <a href="https://www.flbesttrainer.com/start">the free 7-day guide</a>.</p>
 `,
   },
   {
@@ -112,16 +126,20 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     approved: true,
     pitchProduct: "self-study",
     cta: {
-      label: "See Self-Study — $197",
+      label: "See Self-Study ($197)",
       url: "https://www.flbesttrainer.com/self-study",
     },
     ps: "If you are not sure, finish Starter first. The Day 28 retest will tell you more than I can.",
+    // First-win review + referral ask (2026-11-24): Week 1 done is
+    // the first win, so the review ask comes here too — the Day 28
+    // ask (step 5) is the second ask. Links only, no reply ask.
+    pps: "You finished Week 1. That is the first win. If the guide or the plan helped you, a quick Google review helps more people over 50 find us: [Leave a review on Google](https://g.page/r/CaACepEsFdx0EBM/review). Know someone over 50 who could use this? Send them the free guide: [the free 7-day guide](https://www.flbesttrainer.com/start).",
     preheader: "Starter is complete on its own. This is for when you want more.",
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
 <p>You are a week in. You proved you can do this. That was the hard part.</p>
-<p>Starter is 4 weeks, and it will carry you a long way. But if you are the kind of person who wants the whole system — the full program, the deeper library, everything in one place — that is what Self-Study is for.</p>
+<p>Starter is 4 weeks, and it will carry you a long way. But if you are the kind of person who wants the whole system, the full program, the deeper library, everything in one place, that is what Self-Study is for.</p>
 <p>It is $197, one time. Same idea as Starter, just the full version. No monthly anything.</p>
 <p>You do not need it to finish Starter. Starter is complete on its own. This is for when you want more.</p>
 `,
@@ -141,7 +159,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
-<p>Two weeks in. You know what this is now — not a gym, not a bootcamp. Slow, a little at a time, and it adds up.</p>
+<p>Two weeks in. You know what this is now. Not a gym, not a bootcamp. Slow, a little at a time, and it adds up.</p>
 <p>Do you know someone over 50 who is getting weaker and more afraid of moving? A parent, a neighbor, someone at church? Send them the free guide. It is the same 7 days you started with, and it costs them nothing.</p>
 <p><a href="https://www.flbesttrainer.com/start">https://www.flbesttrainer.com/start</a></p>
 <p>That is it. No ask for you, just for them.</p>
@@ -171,7 +189,7 @@ export const POST_PURCHASE_EMAILS: PostPurchaseEmail[] = [
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
-<p>If anything I sent you helped — the guide, the tips, any of it — would you leave a quick review on Google?</p>
+<p>If anything I sent you helped, the guide, the tips, any of it, would you leave a quick review on Google?</p>
 <p>Takes about a minute. It helps people like you find me.</p>
 `,
   },

@@ -31,12 +31,14 @@ export { textToHtml } from "../../lib/newsletter";
 // M4) — the draft stays approved so it can be retried, and the failed
 // addresses come back in the response instead of being swallowed.
 //
-// The weekly is four blocks (Gavin 2026-11-23): One idea, One focus,
-// One item, One deal. Blocks 1–3 come from the draft; block 4 (the
-// deal) is resolved PER RECIPIENT at send time from purchase_emails
-// (resolveWeeklyDeal) — two readers can get the same weekly with a
-// different deal. That is also the audit S5 fix, done properly:
-// buyers never get pitched what they already own, because the deal
+// The weekly is three blocks + the deal as a P.S. line (Gavin
+// 2026-11-23 for the blocks, 2026-11-24 for the deal as a P.S. —
+// was a fourth block, "One deal", with its own button). Blocks 1–3
+// come from the draft; the deal is resolved PER RECIPIENT at send
+// time from purchase_emails (resolveWeeklyDeal) — two readers can
+// get the same weekly with a different deal line. That is also the
+// audit S5 fix, done properly: buyers never get pitched what they
+// already own, because the deal
 // is the next rung up from what they bought — never the Starter
 // pitch to a Starter buyer, never two rungs up.
 
@@ -137,8 +139,9 @@ export default async function handler(
     const failedEmails: string[] = [];
     let skipped = 0;
     const skippedEmails: string[] = [];
-    // A structured draft (idea set) renders the 4-block weekly:
-    // blocks 1–3 from the draft, block 4 (the deal) resolved per
+    // A structured draft (idea set) renders the weekly: blocks 1–3
+    // from the draft, the deal resolved per recipient and rendered
+    // as a P.S. line after the signature (Gavin 2026-11-24).
     // recipient. A legacy draft (body only, no idea) renders the old
     // way — body + its own CTA button — so drafts written before the
     // restructure still send.

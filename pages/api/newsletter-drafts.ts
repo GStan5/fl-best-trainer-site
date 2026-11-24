@@ -11,11 +11,12 @@ import {
 // Drafts are the weekly send's content; the Send button lives in
 // pages/api/newsletter-send.ts and only works on approved drafts.
 //
-// A weekly draft is the 4-block container (Gavin 2026-11-23): an idea,
-// a focus/strategy, and a gear item. The deal (block 4) is NOT in the
-// draft — it is resolved per recipient at send time from
-// purchase_emails, so the draft carries no deal and the preview shows
-// a sample one (the Starter deal, for a non-buyer).
+// A weekly draft is the 3-block container (Gavin 2026-11-23): an idea,
+// a focus/strategy, and a gear item. The deal is NOT in the draft —
+// it is resolved per recipient at send time from purchase_emails
+// and renders as a short P.S. line, so the draft carries no deal
+// and the preview shows a sample one (the Starter deal, for a
+// non-buyer).
 //
 // POST { subject, idea, strategy, itemName, itemBody, itemUrl } ->
 //   create a structured draft (status 'draft')
@@ -106,10 +107,11 @@ export default async function handler(
         return res.status(404).json({ error: "Draft not found." });
       }
       // Same rendering the send path uses (shared textToHtml shape is
-      // in lib/newsletter.ts). A structured draft renders the 4-block
-      // weekly with the SAMPLE deal (the Starter deal, for a non-buyer
-      // — the preview has no real recipient, so no purchase history
-      // to resolve from); a legacy draft renders the old way.
+      // in lib/newsletter.ts). A structured draft renders the weekly
+      // (3 blocks + the deal as a P.S. line) with the SAMPLE deal
+      // (the Starter deal, for a non-buyer — the preview has no real
+      // recipient, so no purchase history to resolve from); a legacy
+      // draft renders the old way.
       const { textToHtml } = await import("./newsletter-send");
       const structured = Boolean(draft.idea && draft.idea.trim());
       // Sample deal for the preview: the non-buyer deal (Starter),
@@ -193,7 +195,7 @@ export default async function handler(
       typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
     const str = (v: unknown): string =>
       typeof v === "string" ? v.trim() : "";
-    // Structured draft (the 4-block weekly): idea + strategy + item
+    // Structured draft (the weekly): idea + strategy + item
     // are all required — a weekly without its item is not a weekly.
     const idea = str(req.body?.idea);
     const strategy = str(req.body?.strategy);

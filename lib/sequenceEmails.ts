@@ -144,17 +144,20 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
   },
   {
     step: 3,
+    // The closing paragraph is the dated next step: "Tomorrow,
+    // start Day 1" + the Starter link. It is a link, not a booking
+    // or a reply ask (zero-contact rule, Gavin 2026-11-24).
     subject: "The guide was 7 days. This is the full 4 weeks.",
     campaign: "sequence-3",
     sendAfterDays: 7,
     approved: SEQUENCE_APPROVED,
     cta: {
-      label: "Start the Starter plan — $37",
+      label: "Start the Starter plan ($37)",
       url: "https://www.flbesttrainer.com/starter",
     },
     ctaRepeat: true,
     headline: "Seven days proves you can do it. Four weeks changes your strength.",
-    ps: "$37 once, yours forever — the full 4 weeks, the 14-exercise library, and the Day 1 and Day 28 retest.",
+    ps: "$37 once, yours forever, the full 4 weeks, the 14-exercise library, and the Day 1 and Day 28 retest.",
     pps: "The guide stays yours either way.",
     preheader: "Four weeks. Twelve sessions. One plan.",
     eyebrow: "Tip 3 of 3",
@@ -175,7 +178,7 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
 <p>Starter won't make you 25 again. It'll make the stairs easier.</p>
 <p><strong>One session with me is $160. Twelve sessions one-on-one would be $1,920. The Starter plan is $37.</strong> One time. Yours forever, including future updates.</p>
 <p>And the guarantee. Finish all 12 sessions and retest on Day 28. If your numbers didn't improve, email me for a full $37 refund.</p>
-<p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. If you want the full 4 weeks, it is here: <a href="https://www.flbesttrainer.com/starter">Start the Starter plan</a>.</p>
+<p>This is the last email in this first-week series. After this, you'll get one short email a week with one useful idea. Tomorrow, start Day 1: <a href="https://www.flbesttrainer.com/starter">the Starter plan</a>. First session is 30 minutes. You will know by the end of it whether this is for you.</p>
 `,
   },
   {
@@ -184,18 +187,20 @@ export const SEQUENCE_EMAILS: SequenceEmail[] = [
     campaign: "sequence-4",
     sendAfterDays: 14,
     approved: SEQUENCE_APPROVED,
-    // No CTA: a check-in, reply only (draft: "Link: none — no CTA
-    // button, reply only"). No headline: it opens with the question.
-    // No eyebrow, no review ask — the only ask is "hit reply".
+    // No CTA button: a check-in with a link, not a reply ask (the
+    // old copy asked the reader to hit reply — removed 2026-11-24
+    // under the zero-contact rule, Gavin 2026-11-24; the ask is now
+    // a link to the start-here hub). No headline: it opens with the
+    // question. No eyebrow, no review ask.
     ps: "If you did the Week 1 sessions, the Day 28 retest is where you will see it. Keep going.",
-    preheader: "Two weeks in — how's it going?",
+    preheader: "Two weeks in. How's it going?",
     showReview: false,
     html: `
 <p>Hi {first_name},</p>
 <p>It has been two weeks since you got the guide. How is it going?</p>
-<p>Did you start Day 1? Did something hurt, or feel harder than you thought? Hit reply and tell me. I read every reply, and I answer them.</p>
+<p>Did you start Day 1? Did something hurt, or feel harder than you thought? If it did, the start-here hub has it covered: <a href="https://www.flbesttrainer.com/blog/start-here">start here</a>.</p>
 <p>I started doing this because I watched people get weaker and more afraid of moving, year after year, and nobody told them it was fixable. It is fixable. Slow, a little at a time, and it adds up. That is the whole idea behind everything I teach.</p>
-<p>If you are stuck on something, tell me what it is. That is what I am here for.</p>
+<p>If you are stuck on something, the hub is the best place to start. It is all in one place.</p>
 `,
   },
 ];

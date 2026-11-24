@@ -149,11 +149,12 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
     ALTER TABLE newsletter_drafts
     ADD COLUMN IF NOT EXISTS cta_url text
   `;
-  // Weekly 4-block structure (Gavin 2026-11-23): a weekly draft is
-  // an idea, a focus/strategy, and a gear item — not a free-form
-  // body. The deal (block 4) is NOT in the draft: it is resolved per
-  // recipient at send time from purchase_emails (see
-  // resolveWeeklyDeal). Same additive shape as above.
+  // Weekly structure (Gavin 2026-11-23, deal rendering changed
+  // 2026-11-24): a weekly draft is an idea, a focus/strategy, and a
+  // gear item — not a free-form body. The deal is NOT in the draft:
+  // it is resolved per recipient at send time from purchase_emails
+  // (see resolveWeeklyDeal) and renders as a short P.S. line, not a
+  // fourth block. Same additive shape as above.
   await sql`
     ALTER TABLE newsletter_drafts
     ADD COLUMN IF NOT EXISTS idea text
@@ -192,11 +193,17 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
       created_at timestamptz default now()
     )
   `;
-  // Winback sequence (research B9, wired 2026-11-23): the re-engage
-  // step of the sunset policy. step 1 = "It's been a while" (due at
-  // enrollment), 2 = one big useful thing (+5d), 3 = "Should I stop
-  // sending these?" (+5d), 4 = done — suppression happens only after
-  // step 3. Suppression is a state, never a delete.
+  // Winback sequence (research B9, wired 2026-11-23, copy rebuilt
+  // click-based 2026-11-24): the re-engage step of the sunset policy.
+  // step 1 = "Still looking to stay independent for life?" (due at
+  // enrollment), 2 = one big useful thing (+5d), 3 = "This is the
+  // last one" (+5d), 4 = done — suppression happens only after step
+  // 3, on send. No reply ask anywhere: the zero-contact rule means
+  // a click on a link is the only signal the reader can send back,
+  // and until Phase 2 click tracking exists (email_events) the click
+  // cannot stop suppression — the copy must not promise that it can
+  // (see the limit note on the defs in lib/winbackEmails.ts).
+  // Suppression is a state, never a delete.
   await sql`
     CREATE TABLE IF NOT EXISTS winback_sequences (
       id serial primary key,
@@ -351,10 +358,12 @@ export function withUtm(html: string, campaign: string): string {
 // clickable, or the blog -> trust -> gear + plans loop is a dead end
 // (audit M3). Markdown links [label](url) render as a labelled link.
 // A block that is exactly one of the fixed weekly section names
-// ("One idea", "One focus", "One item", "One deal" — the weekly's
-// 4-block container, Gavin 2026-11-23) renders as a bold uppercase
-// 14px heading instead of a body paragraph, so the fixed container
-// reads as a container and not stray paragraphs.
+// ("One idea", "One focus", "One item" — the weekly's container,
+// Gavin 2026-11-23; "One deal" stays in the list only for legacy
+// body-only drafts written before the deal became a P.S. on
+// 2026-11-24) renders as a bold uppercase 14px heading instead of a
+// body paragraph, so the fixed container reads as a container and
+// not stray paragraphs.
 const WEEKLY_SECTION_HEADINGS = [
   "one idea",
   "one focus",
@@ -401,19 +410,24 @@ export function textToHtml(body: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Weekly — the 4-block container + the per-recipient deal
+// Weekly — three blocks + the per-recipient deal as a P.S.
 // ---------------------------------------------------------------------------
 //
-// The weekly (Gavin 2026-11-23) is four blocks, in this order:
+// The weekly (Gavin 2026-11-23; deal rendering changed 2026-11-24)
+// is three blocks, in this order:
 //   1. One idea — one useful idea.
 //   2. One focus — one focus or strategy that helps with every single
 //      workout.
 //   3. One item — one gear pick (bought via OUR affiliate link) + why
 //      it helps / what it helps with.
-//   4. One deal — the next-rung offer for THAT reader, resolved per
-//      recipient at send time from purchase_emails. "Deal" means the
-//      next rung, NOT a discount — never discount to convert (Hormozi).
-//      Blocks 1–2 teach (value first), blocks 3–4 sell (pitch last).
+//   Then the deal as a short P.S. line after the signature — the
+// next-rung offer for THAT reader, resolved per recipient at send
+// time from purchase_emails. "Deal" means the next rung, NOT a
+// discount — never discount to convert (Hormozi). Blocks 1–3 teach
+// (value first); the P.S. deal is the one small ask. The deal was a
+// full fourth block ("One deal", with its own button) until Gavin
+// approved the change on 2026-11-24, reversing his 2026-11-23
+// four-block decision.
 // The draft carries blocks 1–3 only. The deal is never in the draft.
 //
 // The deal comes from lib/ladder.ts — the Value Ladder, ONLINE
@@ -464,8 +478,9 @@ export interface WeeklyDraftContent {
 // Composes blocks 1–3 of the weekly (idea, focus, item) into HTML
 // through textToHtml, so the section headings render as headings and
 // the item link renders as a labelled "Check the price" link. The
-// deal (block 4) is NOT composed here — it is resolved per recipient
-// and passed to buildMarketingEmail as `deal`.
+// deal is NOT composed here — it is resolved per recipient and
+// passed to buildMarketingEmail as `deal`, which renders it as a
+// short P.S. line after the signature (Gavin 2026-11-24).
 export function weeklyBodyHtml(content: WeeklyDraftContent): string {
   const body = [
     "One idea",
@@ -478,7 +493,7 @@ export function weeklyBodyHtml(content: WeeklyDraftContent): string {
     "",
     "One item",
     "",
-    `${content.itemName.trim()} — ${content.itemBody.trim()}`,
+    `${content.itemName.trim()}: ${content.itemBody.trim()}`,
     "",
     `[Check the price](${content.itemUrl.trim()})`,
   ].join("\n");
@@ -534,11 +549,11 @@ export function buildMarketingEmail(opts: {
   source?: string | null;
   // Weekly only (research B10): the forward/share line in the footer.
   forwardLine?: boolean;
-  // Weekly only: block 4 — the per-recipient deal, resolved from
-  // purchase_emails (resolveWeeklyDeal). Renders as the "One deal"
-  // section with its own button, after the body and before the
-  // signature. A weekly has a deal and no cta; a sequence email has
-  // a cta and no deal — one primary button per email either way.
+  // Weekly only: the per-recipient deal, resolved from
+  // purchase_emails (resolveWeeklyDeal). Renders as a short P.S.
+  // line after the signature (Gavin 2026-11-24 — was the fourth
+  // weekly block). A weekly has a deal and no cta; a sequence email
+  // has a cta and no deal — one primary button per email either way.
   deal?: { line: string; cta: EmailCta };
   // Preview only: render with a placeholder unsubscribe URL instead
   // of signing one (the admin draft preview has no real recipient).
@@ -586,10 +601,10 @@ export function buildMarketingEmail(opts: {
       `[newsletter] WARNING: rendered email "${opts.subject}" is ${Math.round(html.length / 1024)}KB — over the 100KB Gmail clipping guardrail.`
     );
   }
-  // Text version mirrors the HTML order: headline, body, deal,
-  // signature, PS, PPS, CTA link, footer asks — so it is never a
-  // lesser email. A PS that carries a markdown link renders in plain
-  // text as "label: url" (never raw "[label](url)" syntax).
+  // Text version mirrors the HTML order: headline, body,
+  // signature, deal P.S., PS, PPS, CTA link, footer asks — so it is
+  // never a lesser email. A PS that carries a markdown link renders
+  // in plain text as "label: url" (never raw "[label](url)" syntax).
   const plainPs = (s: string): string =>
     s.replace(
       /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
@@ -598,10 +613,10 @@ export function buildMarketingEmail(opts: {
   const textParts = [
     ...(opts.headline ? [opts.headline, ""] : []),
     stripTags(body),
-    ...(deal
-      ? [`\nOne deal\n${deal.line}\n${deal.cta.label}: ${deal.cta.url}`]
-      : []),
     renderSignatureText(),
+    ...(deal
+      ? [`\nP.S. ${deal.line}\n${deal.cta.label}: ${deal.cta.url}`]
+      : []),
   ];
   if (cta) textParts.push(`\n${cta.label}: ${cta.url}`);
   if (opts.ps) textParts.push(`\nP.S. ${plainPs(opts.ps)}`);
@@ -1065,6 +1080,12 @@ export async function processPostPurchaseRow(
       campaign: def.campaign,
       cta: def.cta,
       ps: def.ps,
+      // P.P.S. pass-through (step 3 only, the first-win review /
+      // referral ask, 2026-11-24): the template already renders it
+      // and the test route already passes it generically — without
+      // this line the real send would silently drop it while the
+      // preview showed it.
+      pps: def.pps,
       headline: def.headline,
       preheader: def.preheader,
       eyebrow: def.eyebrow,
