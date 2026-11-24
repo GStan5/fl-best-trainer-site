@@ -29,6 +29,7 @@ import {
   nextRungAfterProducts,
   weeklyDealForProducts,
   marketingSendAllowed,
+  priceCentsForProduct,
   type WeeklyDeal,
 } from "./ladder";
 // Re-exported so existing import sites keep working: the ladder is
@@ -213,6 +214,50 @@ export async function ensureNewsletterTables(sql: SqlTag): Promise<void> {
       created_at timestamptz default now()
     )
   `;
+  // First-party email events (analytics, Phase 2 — BUILT 2026-11-24,
+  // branch analytics-tracking). One row per open or click, in our own
+  // database — no third-party tracker. The column is event_type, not
+  // kind: the sequence cron's sunset check (already live, waiting on
+  // this table) reads event_type IN ('open','click'). The design doc
+  // said "kind" — the live code is the authority, and this is the
+  // name it queries. Opens come from the pixel, clicks from the /r/
+  // redirect; both are best-effort (a failed log never blocks a
+  // send or a redirect).
+  await sql`
+    CREATE TABLE IF NOT EXISTS email_events (
+      id serial primary key,
+      email text not null,
+      event_type text not null,
+      campaign_id text,
+      url text,
+      created_at timestamptz default now()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS email_events_email_created_idx
+    ON email_events (email, created_at)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS email_events_campaign_created_idx
+    ON email_events (campaign_id, created_at)
+  `;
+  // Ad spend, recorded by hand (analytics, 2026-11-24): what Gavin
+  // spent per channel per month on Facebook / Instagram / Google ads.
+  // There is no ad-platform API pulling this — the spend is entered
+  // in the admin screen when ads run, and CAC is spend divided by
+  // the buyers that channel brought in that month (attribution from
+  // the lead's utm_source). One row per channel per month.
+  await sql`
+    CREATE TABLE IF NOT EXISTS ad_spend (
+      id serial primary key,
+      channel text not null,
+      period text not null,
+      spend_cents integer not null default 0,
+      note text,
+      created_at timestamptz default now(),
+      UNIQUE (channel, period)
+    )
+  `;
 }
 
 // ---------------------------------------------------------------------------
@@ -350,6 +395,176 @@ export function withUtm(html: string, campaign: string): string {
     /href="(https:\/\/www\.flbesttrainer\.com[^"]*)"/g,
     (_match, url: string) => `href="${withUtmUrl(url, campaign)}"`
   );
+}
+
+// ---------------------------------------------------------------------------
+// First-party click + open tracking (analytics, Phase 2 — 2026-11-24)
+// ---------------------------------------------------------------------------
+//
+// Clicks: every link in a sent email is rewritten to /r/<token>.
+// The redirect route verifies the token, logs the click to
+// email_events (best-effort — a failed log never blocks the redirect),
+// and forwards with a 302. Clicks are exact, and they are the number
+// that matters. Opens: a 1x1 pixel appended to the sent HTML logs an
+// open the same way. Opens are approximate (Gmail image proxy, Apple
+// Mail Privacy Protection) — reported as approximate, never exact,
+// never the decision metric.
+//
+// Tokens are signed exactly like the unsubscribe tokens (HMAC with
+// the existing NEXTAUTH_SECRET, no new secret): base64url(JSON) +
+// "." + hex(hmac). A token can only point where our code minted it.
+// The redirect allowlist is a second guard: even a validly signed
+// token for a host outside it is refused — the redirect is never an
+// open redirect.
+//
+// Only real sends get tracked links: this rewriting happens in
+// sendMarketingEmail, not in the template builder, so admin previews
+// render the direct destination and never mint tokens or fire the
+// pixel. The unsubscribe link is never rewritten (it must stay a
+// direct signed link), and neither are mailto: / tel: / # links.
+
+export interface EventTokenPayload {
+  /** Recipient email (normalized). */
+  e: string;
+  /** Campaign id (the same string UTM carries). */
+  c: string;
+  /** Target URL (click tokens only). */
+  u?: string;
+}
+
+function eventSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error("NEXTAUTH_SECRET not set — cannot sign event token");
+  }
+  return secret;
+}
+
+export function signEventToken(payload: EventTokenPayload): string {
+  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString(
+    "base64url"
+  );
+  const sig = createHmac("sha256", eventSecret())
+    .update(encoded)
+    .digest("hex");
+  return `${encoded}.${sig}`;
+}
+
+export function verifyEventToken(token: string): EventTokenPayload | null {
+  try {
+    const [encoded, sig] = token.split(".");
+    if (!encoded || !sig) return null;
+    const expected = createHmac("sha256", eventSecret())
+      .update(encoded)
+      .digest("hex");
+    const sigBuf = Buffer.from(sig, "utf8");
+    const expBuf = Buffer.from(expected, "utf8");
+    if (sigBuf.length !== expBuf.length) return null;
+    if (!timingSafeEqual(sigBuf, expBuf)) return null;
+    const payload = JSON.parse(
+      Buffer.from(encoded, "base64url").toString("utf8")
+    ) as EventTokenPayload;
+    if (typeof payload.e !== "string" || typeof payload.c !== "string")
+      return null;
+    if (payload.u !== undefined && typeof payload.u !== "string") return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+// Hosts a tracked redirect may forward to: our own site (www + apex,
+// in case an old link still carries it) and the Google review short
+// link (the only external domain emails link to — gear links are our
+// own /go/ redirects, so they are same-domain). Anything else is
+// refused, even with a valid signature.
+const REDIRECT_ALLOWED_HOSTS = [
+  "www.flbesttrainer.com",
+  "flbesttrainer.com",
+  "g.page",
+];
+
+export function redirectTargetAllowed(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return REDIRECT_ALLOWED_HOSTS.includes(host);
+  } catch {
+    return false;
+  }
+}
+
+export function clickRedirectUrl(email: string, campaign: string, url: string): string {
+  const token = signEventToken({ e: normalizeEmail(email), c: campaign, u: url });
+  return `${SITE}/r/${token}`;
+}
+
+export function openPixelUrl(email: string, campaign: string): string {
+  const token = signEventToken({ e: normalizeEmail(email), c: campaign });
+  return `${SITE}/api/email-pixel?t=${token}`;
+}
+
+// Rewrite every trackable link in sent HTML to the /r/ redirect.
+// Skips the unsubscribe link (direct signed link, never wrapped),
+// links already pointing at /r/, and mailto:/tel:/# links.
+export function withClickTracking(
+  html: string,
+  email: string,
+  campaign: string
+): string {
+  return html.replace(
+    /href="(https?:\/\/[^"]*)"/g,
+    (_match, url: string) => {
+      if (
+        url.includes("/api/newsletter-unsubscribe") ||
+        // Already a /r/ link (ours — relative or absolute on our
+        // domain). NOT a bare "/r/" substring test: the Google review
+        // short link is g.page/r/... and must still be wrapped.
+        url.startsWith("/r/") ||
+        url.startsWith(`${SITE}/r/`) ||
+        url.startsWith("mailto:") ||
+        url.startsWith("tel:") ||
+        url.startsWith("#")
+      ) {
+        return `href="${url}"`;
+      }
+      if (!redirectTargetAllowed(url)) return `href="${url}"`;
+      return `href="${clickRedirectUrl(email, campaign, url)}"`;
+    }
+  );
+}
+
+// The 1x1 open pixel, appended to the sent HTML only (never in
+// previews). Invisible, no layout effect.
+export function appendOpenPixel(
+  html: string,
+  email: string,
+  campaign: string
+): string {
+  const pixel = `<img src="${openPixelUrl(email, campaign)}" width="1" height="1" alt="" style="display:none;" />`;
+  if (html.includes("</body>")) return html.replace("</body>", `${pixel}</body>`);
+  return html + pixel;
+}
+
+// Best-effort event log: a failed insert never throws — tracking
+// must never break a send or a redirect.
+export async function logEmailEvent(
+  sql: SqlTag | null,
+  opts: {
+    email: string;
+    eventType: "open" | "click";
+    campaignId?: string | null;
+    url?: string | null;
+  }
+): Promise<void> {
+  if (!sql) return;
+  try {
+    await sql`
+      INSERT INTO email_events (email, event_type, campaign_id, url)
+      VALUES (${normalizeEmail(opts.email)}, ${opts.eventType}, ${opts.campaignId ?? null}, ${opts.url ?? null})
+    `;
+  } catch (err) {
+    console.error("[newsletter] email_events log failed (continuing):", err);
+  }
 }
 
 // Draft bodies are stored as plain text (Grim writes them in chat
@@ -691,6 +906,340 @@ export async function starterBuyersFromEmail(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Analytics (Hormozi measurement, built 2026-11-24 — branch
+// analytics-tracking). Every query returns [] / zeros on a missing
+// table or an error, so the admin numbers never break the page.
+// The numbers are the audit's top 3, in order: (1) engaged leads per
+// post, (2) 30-day revenue per customer per signup cohort, (3) clicks
+// from the first-party events. CAC per ad channel lives in
+// adSpendCac below — it needs spend entered by hand (there is no
+// ad-platform API pulling it), and buyers attributed by the lead's
+// utm_source.
+// ---------------------------------------------------------------------------
+
+export interface LeadsByPostRow {
+  postId: string;
+  downloads: number;
+  starterSales: number;
+}
+
+// Engaged leads per blog post (audit B1): guide downloads attributed
+// to the post that sent the reader (leads.post_id, written by the
+// /start form from ?from=<post-id>), plus the Starter sales those
+// downloads turned into (purchase_emails join on the email). This is
+// the constraint metric — which post converts — and the funnel math
+// for the 20-in-90-days goal. Posts with no downloads do not appear;
+// the dashboard shows them as zero rows, not missing rows.
+export async function leadsByPost(sql: SqlTag): Promise<LeadsByPostRow[]> {
+  try {
+    const rows = (await sql`
+      SELECT l.post_id AS "postId",
+             count(DISTINCT l.id)::int AS downloads,
+             count(DISTINCT CASE WHEN pe.product = 'starter-plan' AND pe.status = 'sent' THEN lower(pe.email) END)::int AS "starterSales"
+      FROM leads l
+      LEFT JOIN purchase_emails pe ON lower(pe.email) = lower(l.email)
+      WHERE l.post_id IS NOT NULL AND l.post_id <> ''
+      GROUP BY l.post_id
+      ORDER BY downloads DESC
+    `) as unknown as LeadsByPostRow[];
+    return rows;
+  } catch (err) {
+    console.error("[newsletter] leadsByPost failed (returning []):", err);
+    return [];
+  }
+}
+
+export interface LeadsByChannelRow {
+  source: string | null;
+  medium: string | null;
+  campaign: string | null;
+  downloads: number;
+  starterSales: number;
+}
+
+// Engaged leads per channel (ads readiness, 2026-11-24): guide
+// downloads grouped by the UTM the reader arrived with
+// (leads.utm_source / utm_medium / utm_campaign, written by the
+// /start form from the URL), plus the Starter sales from each group.
+// When ads start, the ad URLs carry utm_source=facebook (or
+// instagram / google) — this is the table that shows what each
+// channel brought in. Rows with no UTM at all appear as nulls:
+// direct / untagged traffic.
+export async function leadsByChannel(
+  sql: SqlTag
+): Promise<LeadsByChannelRow[]> {
+  try {
+    const rows = (await sql`
+      SELECT l.utm_source AS source,
+             l.utm_medium AS medium,
+             l.utm_campaign AS campaign,
+             count(DISTINCT l.id)::int AS downloads,
+             count(DISTINCT CASE WHEN pe.product = 'starter-plan' AND pe.status = 'sent' THEN lower(pe.email) END)::int AS "starterSales"
+      FROM leads l
+      LEFT JOIN purchase_emails pe ON lower(pe.email) = lower(l.email)
+      GROUP BY l.utm_source, l.utm_medium, l.utm_campaign
+      ORDER BY downloads DESC
+    `) as unknown as LeadsByChannelRow[];
+    return rows;
+  } catch (err) {
+    console.error("[newsletter] leadsByChannel failed (returning []):", err);
+    return [];
+  }
+}
+
+export interface CohortRevenueRow {
+  /** Signup month, YYYY-MM. */
+  cohort: string;
+  subscribers: number;
+  /** Subscribers who bought anything within 30 days of signing up. */
+  buyers30d: number;
+  /** Gross revenue from those buyers in their first 30 days, cents. */
+  revenueCents30d: number;
+  /** revenueCents30d / subscribers, cents. 0 when the cohort is empty. */
+  revenuePerCustomerCents: number;
+}
+
+// 30-day revenue per customer, per signup cohort (audit B2 — the
+// Money Models test, revenue half). A subscriber's first-30-days
+// purchases come from purchase_emails (any product, status sent);
+// the price of each purchase comes from the ladder config
+// (priceCentsForProduct — no price is a literal here). The COST half
+// does not exist as data (no ad spend yet, Gavin's hours are not
+// logged), so this is honestly "30-day REVENUE per customer", not
+// profit — the dashboard labels it that way. A cohort with no
+// subscribers contributes no row.
+export async function cohortRevenue(sql: SqlTag): Promise<CohortRevenueRow[]> {
+  try {
+    const subs = (await sql`
+      SELECT lower(email) AS email,
+             to_char(subscribed_at, 'YYYY-MM') AS cohort,
+             subscribed_at
+      FROM newsletter_subscribers
+      WHERE subscribed_at IS NOT NULL
+    `) as unknown as Array<{
+      email: string;
+      cohort: string;
+      subscribed_at: string;
+    }>;
+    const purchases = (await sql`
+      SELECT lower(email) AS email, product, created_at
+      FROM purchase_emails
+      WHERE status = 'sent'
+    `) as unknown as Array<{
+      email: string;
+      product: string;
+      created_at: string;
+    }>;
+    const byEmail = new Map<string, Array<{ product: string; created_at: string }>>();
+    for (const p of purchases) {
+      const list = byEmail.get(p.email) ?? [];
+      list.push(p);
+      byEmail.set(p.email, list);
+    }
+    const cohorts = new Map<
+      string,
+      { subscribers: number; buyers: Set<string>; revenueCents: number }
+    >();
+    for (const s of subs) {
+      const c = cohorts.get(s.cohort) ?? {
+        subscribers: 0,
+        buyers: new Set<string>(),
+        revenueCents: 0,
+      };
+      c.subscribers += 1;
+      const start = new Date(s.subscribed_at).getTime();
+      for (const p of byEmail.get(s.email) ?? []) {
+        const boughtAt = new Date(p.created_at).getTime();
+        if (boughtAt >= start && boughtAt <= start + 30 * 24 * 60 * 60 * 1000) {
+          c.buyers.add(s.email);
+          c.revenueCents += priceCentsForProduct(p.product);
+        }
+      }
+      cohorts.set(s.cohort, c);
+    }
+    return [...cohorts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([cohort, c]) => ({
+        cohort,
+        subscribers: c.subscribers,
+        buyers30d: c.buyers.size,
+        revenueCents30d: c.revenueCents,
+        revenuePerCustomerCents:
+          c.subscribers > 0 ? Math.round(c.revenueCents / c.subscribers) : 0,
+      }));
+  } catch (err) {
+    console.error("[newsletter] cohortRevenue failed (returning []):", err);
+    return [];
+  }
+}
+
+export interface ClickStats {
+  clicks30d: number;
+  /** Opens are approximate (Gmail proxy, Apple Mail Privacy Protection). */
+  opens30d: number;
+  uniqueClickers30d: number;
+  clicksByCampaign: Array<{ campaign: string | null; clicks: number }>;
+  topUrls: Array<{ url: string | null; clicks: number }>;
+}
+
+// Clicks + opens from the first-party events (audit B5/B6). Clicks
+// are exact and are the decision metric; opens are approximate and
+// are labelled so on the dashboard. Empty tables read as zeros.
+export async function clickStats(sql: SqlTag): Promise<ClickStats> {
+  const empty: ClickStats = {
+    clicks30d: 0,
+    opens30d: 0,
+    uniqueClickers30d: 0,
+    clicksByCampaign: [],
+    topUrls: [],
+  };
+  try {
+    const totals = (await sql`
+      SELECT
+        count(*) FILTER (WHERE event_type = 'click' AND created_at >= now() - interval '30 days')::int AS clicks30d,
+        count(*) FILTER (WHERE event_type = 'open' AND created_at >= now() - interval '30 days')::int AS opens30d,
+        count(DISTINCT email) FILTER (WHERE event_type = 'click' AND created_at >= now() - interval '30 days')::int AS "uniqueClickers30d"
+      FROM email_events
+    `) as unknown as Array<{
+      clicks30d: number;
+      opens30d: number;
+      uniqueClickers30d: number;
+    }>;
+    const byCampaign = (await sql`
+      SELECT campaign_id AS campaign, count(*)::int AS clicks
+      FROM email_events
+      WHERE event_type = 'click' AND created_at >= now() - interval '30 days'
+      GROUP BY campaign_id
+      ORDER BY clicks DESC
+      LIMIT 10
+    `) as unknown as Array<{ campaign: string | null; clicks: number }>;
+    const topUrls = (await sql`
+      SELECT url, count(*)::int AS clicks
+      FROM email_events
+      WHERE event_type = 'click' AND created_at >= now() - interval '30 days'
+      GROUP BY url
+      ORDER BY clicks DESC
+      LIMIT 10
+    `) as unknown as Array<{ url: string | null; clicks: number }>;
+    return {
+      clicks30d: Number(totals[0]?.clicks30d ?? 0),
+      opens30d: Number(totals[0]?.opens30d ?? 0),
+      uniqueClickers30d: Number(totals[0]?.uniqueClickers30d ?? 0),
+      clicksByCampaign: byCampaign,
+      topUrls,
+    };
+  } catch (err) {
+    console.error("[newsletter] clickStats failed (returning zeros):", err);
+    return empty;
+  }
+}
+
+export interface SegmentCounts {
+  /** Subscribed readers with any open/click in the last 30 days. */
+  engaged30d: number;
+  /** Subscribed readers with no open/click in the last 90 days. */
+  cold90d: number;
+}
+
+// Segments as counts (audit B6): engaged-30d and cold-90d, computed
+// from email_events at read time. The send-time segment rules are a
+// later build — this makes the segments visible first.
+export async function segmentCounts(sql: SqlTag): Promise<SegmentCounts> {
+  const empty: SegmentCounts = { engaged30d: 0, cold90d: 0 };
+  try {
+    const rows = (await sql`
+      SELECT
+        count(DISTINCT ns.email) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM email_events ee
+            WHERE lower(ee.email) = lower(ns.email)
+              AND ee.created_at >= now() - interval '30 days'
+          )
+        )::int AS "engaged30d",
+        count(DISTINCT ns.email) FILTER (
+          WHERE NOT EXISTS (
+            SELECT 1 FROM email_events ee
+            WHERE lower(ee.email) = lower(ns.email)
+              AND ee.created_at >= now() - interval '90 days'
+          )
+        )::int AS "cold90d"
+      FROM newsletter_subscribers ns
+      WHERE ns.unsubscribed_at IS NULL
+    `) as unknown as Array<{ engaged30d: number; cold90d: number }>;
+    return {
+      engaged30d: Number(rows[0]?.engaged30d ?? 0),
+      cold90d: Number(rows[0]?.cold90d ?? 0),
+    };
+  } catch (err) {
+    console.error("[newsletter] segmentCounts failed (returning zeros):", err);
+    return empty;
+  }
+}
+
+export interface AdSpendCacRow {
+  channel: string;
+  period: string;
+  spendCents: number;
+  /** Buyers (any product) attributed to this channel in this month. */
+  buyers: number;
+  /** spendCents / buyers, or null when there are no buyers yet. */
+  cacCents: number | null;
+}
+
+// CAC per ad channel per month (ads readiness, 2026-11-24): spend
+// from ad_spend (entered by hand in the admin screen — no
+// ad-platform API), buyers from the attribution chain
+// purchase_emails → leads.utm_source, matched on the calendar month
+// of the purchase. A channel with spend and no buyers yet shows CAC
+// as null ("no customers yet"), never a made-up number. Spend rows
+// with no matching buyers still appear (spend with zero buyers is
+// itself the signal).
+export async function adSpendCac(sql: SqlTag): Promise<AdSpendCacRow[]> {
+  try {
+    const spend = (await sql`
+      SELECT channel, period, spend_cents AS "spendCents"
+      FROM ad_spend
+      ORDER BY period DESC, channel ASC
+    `) as unknown as Array<{
+      channel: string;
+      period: string;
+      spendCents: number;
+    }>;
+    if (spend.length === 0) return [];
+    const buyers = (await sql`
+      SELECT l.utm_source AS channel,
+             to_char(pe.created_at, 'YYYY-MM') AS period,
+             count(DISTINCT lower(pe.email))::int AS buyers
+      FROM purchase_emails pe
+      JOIN leads l ON lower(l.email) = lower(pe.email)
+      WHERE pe.status = 'sent'
+        AND l.utm_source IS NOT NULL AND l.utm_source <> ''
+      GROUP BY l.utm_source, to_char(pe.created_at, 'YYYY-MM')
+    `) as unknown as Array<{
+      channel: string;
+      period: string;
+      buyers: number;
+    }>;
+    const buyerMap = new Map(
+      buyers.map((b) => [`${b.channel}|||${b.period}`, b.buyers])
+    );
+    return spend.map((s) => {
+      const n = buyerMap.get(`${s.channel}|||${s.period}`) ?? 0;
+      return {
+        channel: s.channel,
+        period: s.period,
+        spendCents: Number(s.spendCents),
+        buyers: n,
+        cacCents: n > 0 ? Math.round(Number(s.spendCents) / n) : null,
+      };
+    });
+  } catch (err) {
+    console.error("[newsletter] adSpendCac failed (returning []):", err);
+    return [];
+  }
+}
+
 export async function logEmailSend(
   sql: SqlTag | null,
   opts: {
@@ -776,11 +1325,21 @@ export async function sendMarketingEmail(
     forwardLine: opts.forwardLine,
     deal: opts.deal,
   });
+  // First-party click + open tracking (analytics, 2026-11-24): links
+  // are rewritten to the /r/ redirect (which logs the click, then
+  // forwards), and a 1x1 pixel logs the open. Only on real sends —
+  // previews render through buildMarketingEmail directly, so a
+  // preview never mints tokens or fires the pixel.
+  const trackedHtml = appendOpenPixel(
+    withClickTracking(built.html, to, opts.campaign),
+    to,
+    opts.campaign
+  );
   try {
     await sendMail({
       to,
       subject: built.subject,
-      html: built.html,
+      html: trackedHtml,
       text: built.text,
       headers: built.headers,
       attachments: opts.attachments,

@@ -18,6 +18,25 @@ import BlogImage from "./BlogImage"; // Import the BlogImage component
 import Head from "next/head";
 import { useEffect, useState } from "react";
 
+// Guide-link attribution (analytics, 2026-11-24): a /start link in a
+// post's body carries the post id (?from=<post-id>) so a guide signup
+// is attributed to the post that sent the reader. Only /start links
+// (relative, or absolute on our domain) — every other link passes
+// through untouched. Existing query params are kept (?from= is
+// appended with &).
+function appendPostAttribution(
+  href: string | undefined,
+  postId: string
+): string | undefined {
+  if (!href) return href;
+  const match = href.match(
+    /^(https:\/\/www\.flbesttrainer\.com)?\/start(\?.*)?$/
+  );
+  if (!match) return href;
+  const query = match[2] ? `${match[2]}&from=${postId}` : `?from=${postId}`;
+  return `/start${query}`;
+}
+
 export default function BlogPostView({
   selectedPost,
   handleClosePost,
@@ -181,11 +200,17 @@ export default function BlogPostView({
                       {...props}
                     />
                   ),
-                  // Links
+                  // Links — guide links carry the post id so the
+                  // signup attributes to this post (analytics,
+                  // 2026-11-24; see appendPostAttribution above).
                   a: ({ node, ...props }) => (
                     <a
                       className="text-royal-light hover:text-royal hover:underline"
                       {...props}
+                      href={appendPostAttribution(
+                        props.href,
+                        selectedPost.id
+                      )}
                     />
                   ),
                   // Lists

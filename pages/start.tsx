@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "../components/shared/Layout";
 import SEO from "@/components/shared/SEO";
 import { FaCheckCircle, FaDownload, FaEnvelope } from "react-icons/fa";
@@ -16,10 +17,32 @@ const bullets = [
 type FormState = "idle" | "submitting" | "success" | "error";
 
 export default function StartPage() {
+  const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  // Attribution (analytics, 2026-11-24): carried from the URL into
+  // the signup so the lead is attributed to the post that sent the
+  // reader (?from=<post-id>, added by the blog post view) and the
+  // channel (utm_source/medium/campaign — ad URLs carry these).
+  const [attribution, setAttribution] = useState({
+    postId: "",
+    utm_source: "",
+    utm_medium: "",
+    utm_campaign: "",
+  });
+  useEffect(() => {
+    if (!router.isReady) return;
+    const first = (v: string | string[] | undefined) =>
+      Array.isArray(v) ? v[0] ?? "" : v ?? "";
+    setAttribution({
+      postId: first(router.query.from),
+      utm_source: first(router.query.utm_source),
+      utm_medium: first(router.query.utm_medium),
+      utm_campaign: first(router.query.utm_campaign),
+    });
+  }, [router.isReady, router.query]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +52,14 @@ export default function StartPage() {
       const res = await fetch("/api/guide-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, email }),
+        body: JSON.stringify({
+          firstName,
+          email,
+          postId: attribution.postId || undefined,
+          utm_source: attribution.utm_source || undefined,
+          utm_medium: attribution.utm_medium || undefined,
+          utm_campaign: attribution.utm_campaign || undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

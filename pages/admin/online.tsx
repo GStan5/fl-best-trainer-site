@@ -143,6 +143,45 @@ interface NewsletterStats {
     sent_at: string | null;
     status: string;
   }>;
+  // Analytics (Hormozi measurement, 2026-11-24). Optional so the
+  // page keeps rendering if an older API response has none.
+  analytics?: {
+    byPost: Array<{
+      postId: string;
+      title: string;
+      downloads: number;
+      starterSales: number;
+    }>;
+    byChannel: Array<{
+      source: string | null;
+      medium: string | null;
+      campaign: string | null;
+      downloads: number;
+      starterSales: number;
+    }>;
+    cohorts: Array<{
+      cohort: string;
+      subscribers: number;
+      buyers30d: number;
+      revenueCents30d: number;
+      revenuePerCustomerCents: number;
+    }>;
+    clicks: {
+      clicks30d: number;
+      opens30d: number;
+      uniqueClickers30d: number;
+      clicksByCampaign: Array<{ campaign: string | null; clicks: number }>;
+      topUrls: Array<{ url: string | null; clicks: number }>;
+    };
+    segments: { engaged30d: number; cold90d: number };
+    cac: Array<{
+      channel: string;
+      period: string;
+      spendCents: number;
+      buyers: number;
+      cacCents: number | null;
+    }>;
+  };
 }
 
 const STEP_LABEL: Record<number, string> = {
@@ -164,6 +203,13 @@ function formatDate(value: string | null): string {
   });
 }
 
+function formatMoney(cents: number): string {
+  return (cents / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+}
+
 const CARD = "bg-white/[0.04] border border-white/10 rounded-2xl";
 
 export default function AdminOnlinePage() {
@@ -175,6 +221,15 @@ export default function AdminOnlinePage() {
   const [loadError, setLoadError] = useState(false);
   const [news, setNews] = useState<NewsletterStats | null>(null);
   const [newsError, setNewsError] = useState(false);
+  // Ad-spend form (analytics, 2026-11-24): channel + month + dollars.
+  const [spendChannel, setSpendChannel] = useState("facebook");
+  const [spendPeriod, setSpendPeriod] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [spendAmount, setSpendAmount] = useState("");
+  const [spendNote, setSpendNote] = useState("");
+  const [spendMsg, setSpendMsg] = useState("");
   const [draftSubject, setDraftSubject] = useState("");
   const [draftIdea, setDraftIdea] = useState("");
   const [draftStrategy, setDraftStrategy] = useState("");
@@ -940,6 +995,371 @@ export default function AdminOnlinePage() {
                   ))}
                 </ul>
               </>
+            )}
+          </section>
+
+          {/* Analytics — Hormozi measurement: what converts, what a customer is worth, what ads cost */}
+          <section className={`${CARD} p-6 mb-6`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-3 mb-1">
+              <h2 className="font-heading text-xl font-bold text-white">
+                Analytics
+              </h2>
+              <span className="text-white/45 text-xs">
+                per-post leads · 30-day revenue · clicks · ad CAC
+              </span>
+            </div>
+            <p className="text-white/50 text-sm mb-5">
+              Which posts bring guide downloads, what a new subscriber is
+              worth in their first 30 days, and what each ad channel costs
+              per customer. Clicks are exact; opens are approximate.
+            </p>
+
+            <div className="flex flex-wrap gap-x-8 gap-y-2 mb-5">
+              {[
+                {
+                  label: "Clicks, last 30 days",
+                  value: news?.analytics?.clicks.clicks30d ?? 0,
+                },
+                {
+                  label: "Opens, last 30 days (approx.)",
+                  value: news?.analytics?.clicks.opens30d ?? 0,
+                },
+                {
+                  label: "Engaged, last 30 days",
+                  value: news?.analytics?.segments.engaged30d ?? 0,
+                },
+                {
+                  label: "Cold, 90 days silent",
+                  value: news?.analytics?.segments.cold90d ?? 0,
+                },
+              ].map((s) => (
+                <div key={s.label} className="flex items-baseline gap-2">
+                  <span className="font-heading text-2xl font-bold text-white">
+                    {s.value}
+                  </span>
+                  <span className="text-white/55 text-sm">{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              Guide downloads by post
+            </h3>
+            {(news?.analytics?.byPost.length ?? 0) === 0 ? (
+              <p className="text-white/60 text-sm mb-5">
+                No attributed downloads yet — posts start attributing the
+                moment a reader clicks a guide link in a post.
+              </p>
+            ) : (
+              <div className="overflow-x-auto mb-5">
+                <table className="w-full text-left text-sm min-w-[480px]">
+                  <thead>
+                    <tr className="text-white/50 border-b border-white/10">
+                      <th className="py-2 pr-3 font-medium">Post</th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Guide downloads
+                      </th>
+                      <th className="py-2 font-medium text-right">
+                        Starter sales
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(news?.analytics?.byPost ?? []).map((row) => (
+                      <tr
+                        key={row.postId}
+                        className="border-b border-white/5 text-white/85"
+                      >
+                        <td className="py-3 pr-3 text-white font-medium">
+                          {row.title}
+                        </td>
+                        <td className="py-3 pr-3 text-right">
+                          {row.downloads}
+                        </td>
+                        <td className="py-3 text-right">
+                          {row.starterSales}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              Guide downloads by channel
+            </h3>
+            {(news?.analytics?.byChannel.length ?? 0) === 0 ? (
+              <p className="text-white/60 text-sm mb-5">
+                No downloads yet. When ads run, their links carry
+                utm_source=facebook / instagram / google — this is where
+                each channel shows up.
+              </p>
+            ) : (
+              <div className="overflow-x-auto mb-5">
+                <table className="w-full text-left text-sm min-w-[480px]">
+                  <thead>
+                    <tr className="text-white/50 border-b border-white/10">
+                      <th className="py-2 pr-3 font-medium">Source</th>
+                      <th className="py-2 pr-3 font-medium">Medium</th>
+                      <th className="py-2 pr-3 font-medium">Campaign</th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Downloads
+                      </th>
+                      <th className="py-2 font-medium text-right">
+                        Starter sales
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(news?.analytics?.byChannel ?? []).map((row, i) => (
+                      <tr
+                        key={`${row.source}-${row.medium}-${row.campaign}-${i}`}
+                        className="border-b border-white/5 text-white/85"
+                      >
+                        <td className="py-3 pr-3">{row.source ?? "—"}</td>
+                        <td className="py-3 pr-3">{row.medium ?? "—"}</td>
+                        <td className="py-3 pr-3">{row.campaign ?? "—"}</td>
+                        <td className="py-3 pr-3 text-right">
+                          {row.downloads}
+                        </td>
+                        <td className="py-3 text-right">
+                          {row.starterSales}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              30-day revenue per customer, by signup month
+            </h3>
+            <p className="text-white/50 text-sm mb-3">
+              This is 30-day REVENUE per customer, not profit — the cost
+              half (ad spend below, plus your hours) isn&apos;t tracked
+              here yet. Your hours go in the monthly review.
+            </p>
+            {(news?.analytics?.cohorts.length ?? 0) === 0 ? (
+              <p className="text-white/60 text-sm mb-5">
+                No signup months yet.
+              </p>
+            ) : (
+              <div className="overflow-x-auto mb-5">
+                <table className="w-full text-left text-sm min-w-[480px]">
+                  <thead>
+                    <tr className="text-white/50 border-b border-white/10">
+                      <th className="py-2 pr-3 font-medium">Signed up</th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Subscribers
+                      </th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Bought in 30 days
+                      </th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        30-day revenue
+                      </th>
+                      <th className="py-2 font-medium text-right">
+                        Revenue / customer
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(news?.analytics?.cohorts ?? []).map((row) => (
+                      <tr
+                        key={row.cohort}
+                        className="border-b border-white/5 text-white/85"
+                      >
+                        <td className="py-3 pr-3 text-white font-medium">
+                          {row.cohort}
+                        </td>
+                        <td className="py-3 pr-3 text-right">
+                          {row.subscribers}
+                        </td>
+                        <td className="py-3 pr-3 text-right">
+                          {row.buyers30d}
+                        </td>
+                        <td className="py-3 pr-3 text-right">
+                          {formatMoney(row.revenueCents30d)}
+                        </td>
+                        <td className="py-3 text-right">
+                          {formatMoney(row.revenuePerCustomerCents)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {(news?.analytics?.clicks.clicksByCampaign.length ?? 0) > 0 && (
+              <>
+                <h3 className="font-heading font-bold text-white mb-2">
+                  Clicks by email campaign, last 30 days
+                </h3>
+                <ul className="text-sm text-white/85 mb-5 space-y-1">
+                  {(news?.analytics?.clicks.clicksByCampaign ?? []).map(
+                    (row) => (
+                      <li
+                        key={row.campaign ?? "none"}
+                        className="flex justify-between gap-4"
+                      >
+                        <span>{row.campaign ?? "—"}</span>
+                        <span className="font-heading font-bold text-white">
+                          {row.clicks}
+                        </span>
+                      </li>
+                    )
+                  )}
+                </ul>
+              </>
+            )}
+
+            {(news?.analytics?.clicks.topUrls.length ?? 0) > 0 && (
+              <>
+                <h3 className="font-heading font-bold text-white mb-2">
+                  Most-clicked links, last 30 days
+                </h3>
+                <ul className="text-sm text-white/85 mb-5 space-y-1">
+                  {(news?.analytics?.clicks.topUrls ?? []).map((row) => (
+                    <li
+                      key={row.url ?? "none"}
+                      className="flex justify-between gap-4"
+                    >
+                      <span className="break-all">{row.url ?? "—"}</span>
+                      <span className="font-heading font-bold text-white whitespace-nowrap">
+                        {row.clicks}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            <h3 className="font-heading font-bold text-white mb-2">
+              Ad spend and cost per customer
+            </h3>
+            <p className="text-white/50 text-sm mb-3">
+              Record what you spent per channel per month. CAC is that
+              spend divided by the customers that channel brought in that
+              month. No buyers yet in a month shows CAC as —.
+            </p>
+            {(news?.analytics?.cac.length ?? 0) === 0 ? (
+              <p className="text-white/60 text-sm mb-5">
+                No ad spend recorded yet.
+              </p>
+            ) : (
+              <div className="overflow-x-auto mb-5">
+                <table className="w-full text-left text-sm min-w-[480px]">
+                  <thead>
+                    <tr className="text-white/50 border-b border-white/10">
+                      <th className="py-2 pr-3 font-medium">Channel</th>
+                      <th className="py-2 pr-3 font-medium">Month</th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Spend
+                      </th>
+                      <th className="py-2 pr-3 font-medium text-right">
+                        Customers
+                      </th>
+                      <th className="py-2 font-medium text-right">
+                        Cost per customer
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(news?.analytics?.cac ?? []).map((row) => (
+                      <tr
+                        key={`${row.channel}-${row.period}`}
+                        className="border-b border-white/5 text-white/85"
+                      >
+                        <td className="py-3 pr-3 text-white font-medium">
+                          {row.channel}
+                        </td>
+                        <td className="py-3 pr-3">{row.period}</td>
+                        <td className="py-3 pr-3 text-right">
+                          {formatMoney(row.spendCents)}
+                        </td>
+                        <td className="py-3 pr-3 text-right">{row.buyers}</td>
+                        <td className="py-3 text-right">
+                          {row.cacCents === null
+                            ? "—"
+                            : formatMoney(row.cacCents)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-3 max-w-2xl">
+              <select
+                value={spendChannel}
+                onChange={(e) => setSpendChannel(e.target.value)}
+                className="rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white focus:outline-none focus:border-royal"
+              >
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+                <option value="google">Google</option>
+                <option value="other">Other</option>
+              </select>
+              <input
+                type="text"
+                value={spendPeriod}
+                onChange={(e) => setSpendPeriod(e.target.value)}
+                placeholder="YYYY-MM"
+                className="w-32 rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={spendAmount}
+                onChange={(e) => setSpendAmount(e.target.value)}
+                placeholder="Spent, $"
+                className="w-36 rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <input
+                type="text"
+                value={spendNote}
+                onChange={(e) => setSpendNote(e.target.value)}
+                placeholder="Note (optional)"
+                className="flex-1 min-w-[160px] rounded-xl bg-black/40 border border-white/20 px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-royal"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  setSpendMsg("");
+                  const res = await fetch("/api/ad-spend", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      channel: spendChannel,
+                      period: spendPeriod,
+                      amount: Number(spendAmount),
+                      note: spendNote || undefined,
+                    }),
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    setSpendMsg(
+                      data.error || "Could not save the spend."
+                    );
+                    return;
+                  }
+                  setSpendAmount("");
+                  setSpendNote("");
+                  setSpendMsg("Saved.");
+                  loadNewsletter();
+                }}
+                className="bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-2.5 rounded-xl transition"
+              >
+                Save spend
+              </button>
+            </div>
+            {spendMsg && (
+              <p className="text-white/70 text-sm mt-3">{spendMsg}</p>
             )}
           </section>
 

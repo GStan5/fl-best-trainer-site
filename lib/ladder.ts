@@ -35,6 +35,21 @@ export interface LadderRung {
   name: string;
   /** Price as shown in a deal button, e.g. "$37", "$97/mo". */
   priceLabel: string;
+  /**
+   * Price in cents for the revenue math (analytics, 2026-11-24).
+   * One-time price for Starter / Self-Study / Flagship; for Monthly
+   * it is the first month's payment — a monthly buyer pays this once
+   * inside the first 30 days. The Flagship rung is waitlist-only
+   * today (no Stripe product), so no flagship rows exist yet; the
+   * figure is the real one-time price for when it opens.
+   */
+  priceCents: number;
+  /**
+   * Per-alias prices in cents, for rungs with productAliases whose
+   * tiers cost differently (Monthly 147 / 197). A product not listed
+   * here falls back to priceCents.
+   */
+  aliasPriceCents?: Record<string, number>;
   /** Where the deal button goes. */
   url: string;
   /** Button label for the weekly deal pitching THIS rung. Absent on the guide rung — it is the base, never a pitch. */
@@ -49,6 +64,7 @@ export const LADDER: LadderRung[] = [
     product: null,
     name: "Free guide",
     priceLabel: "$0",
+    priceCents: 0,
     url: `${SITE}/start`,
     // No dealLabel / dealLine: the guide is the base of the ladder,
     // never something the weekly pitches.
@@ -58,6 +74,7 @@ export const LADDER: LadderRung[] = [
     product: "starter-plan",
     name: "Starter",
     priceLabel: "$37",
+    priceCents: 3700,
     url: `${SITE}/starter`,
     dealLabel: "Start the Starter plan — $37",
     dealLine:
@@ -68,6 +85,7 @@ export const LADDER: LadderRung[] = [
     product: "self-study",
     name: "Self-Study",
     priceLabel: "$197",
+    priceCents: 19700,
     url: `${SITE}/self-study`,
     dealLabel: "Get the Self-Study plan — $197",
     dealLine:
@@ -78,6 +96,7 @@ export const LADDER: LadderRung[] = [
     product: "flagship",
     name: "Flagship",
     priceLabel: "$497",
+    priceCents: 49700,
     url: `${SITE}/flagship`,
     // WAITLIST, not a purchase (verified 2026-11-23 in
     // pages/flagship.tsx): the founding cohort is not yet enrolling,
@@ -101,6 +120,8 @@ export const LADDER: LadderRung[] = [
     productAliases: ["monthly-147", "monthly-197"],
     name: "Monthly",
     priceLabel: "$97/mo",
+    priceCents: 9700,
+    aliasPriceCents: { "monthly-147": 14700, "monthly-197": 19700 },
     url: `${SITE}/monthly`,
     dealLabel: "Keep going with Monthly — $97/mo",
     dealLine:
@@ -136,6 +157,18 @@ export function rungForProduct(product: string): LadderRung | null {
         r.product === product || (r.productAliases ?? []).includes(product)
     ) ?? null
   );
+}
+
+/**
+ * Revenue value of one purchase of a product, in cents (analytics,
+ * 2026-11-24). Reads the ladder config — no price is a literal here.
+ * An unrecognised product is worth 0: unknown revenue must never
+ * inflate the number.
+ */
+export function priceCentsForProduct(product: string): number {
+  const rung = rungForProduct(product);
+  if (!rung) return 0;
+  return rung.aliasPriceCents?.[product] ?? rung.priceCents;
 }
 
 /**

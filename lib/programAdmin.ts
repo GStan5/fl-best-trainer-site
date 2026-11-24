@@ -53,6 +53,13 @@ export async function ensureProgramTables(sql: SqlTag): Promise<void> {
       created_at timestamptz default now()
     )
   `;
+  // Attribution columns (analytics, 2026-11-24 — same columns as
+  // pages/api/guide-signup.ts saveLead, kept in step here so the two
+  // DDL copies stay identical).
+  await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS post_id text`;
+  await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_source text`;
+  await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_medium text`;
+  await sql`ALTER TABLE leads ADD COLUMN IF NOT EXISTS utm_campaign text`;
   await sql`
     CREATE TABLE IF NOT EXISTS events (
       id serial primary key,
