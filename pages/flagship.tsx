@@ -32,8 +32,8 @@ const abilities = [
 ];
 
 const coaching = [
-  "Weekly form-check videos: film one set, Gavin corrects your form personally",
-  "1:1 text access: questions answered between sessions, not just during them",
+  "Form demos for every move: filmed step by step, with a self-check list for each one",
+  "Common mistakes listed for every move, so you know what to watch for",
   "Cohort accountability: 12 people starting together, finishing together",
   "Week 4 progress review + Day 42 guarantee test",
 ];
@@ -49,7 +49,7 @@ const faqs = [
   },
   {
     q: "What if I have a bad knee/shoulder?",
-    a: 'Every exercise has regressions and "skip or modify" guidance — plus a coach reviewing your form weekly.',
+    a: 'Every exercise has regressions and "skip or modify" guidance — plus a filmed demo and a self-check list for every move.',
   },
   {
     q: "How much time?",
@@ -144,14 +144,14 @@ export default function FlagshipPage() {
               <FaShieldAlt className="text-royal text-2xl mr-4 mt-1 flex-shrink-0" />
               <p className="text-white/85 text-base md:text-lg leading-relaxed">
                 Test on Day 1. Test on Day 42. If you complete all 18 sessions,
-                submit your weekly form checks, and don't hit all three — full
+                complete your weekly self-check, and don't hit all three — full
                 refund.
               </p>
             </div>
 
-            {/* How coaching works */}
+            {/* How the program works */}
             <h2 className="font-heading text-2xl md:text-3xl font-bold text-white mb-5">
-              How coaching works
+              How the program works
             </h2>
             <ul className="space-y-4 mb-12">
               {coaching.map((item) => (
@@ -292,7 +292,7 @@ export default function FlagshipPage() {
 
             {/* Decline path */}
             <p className="text-center text-white/70 text-base md:text-lg mt-10">
-              Not ready for coaching?{" "}
+              Not ready for the Flagship?{" "}
               <a href="/self-study" className="underline text-royal-light">
                 Get the same 6-week program, do-it-yourself, for $197 →
               </a>
