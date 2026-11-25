@@ -12,7 +12,7 @@ interface LocalBusinessSchemaProps {
 export function LocalBusinessSchema({
   name = "FL Best Trainer",
   description = "Premium in-home personal training in Bradenton, Sarasota, Anna Maria Island, & Longboat Key",
-  image = "https://flbesttrainer.com/images/og-image.jpg",
+  image = "https://www.flbesttrainer.com/images/og-image.jpg",
   telephone = "+19285871309",
   areaServed = ["Bradenton", "Anna Maria Island", "Longboat Key", "Sarasota"],
   priceRange = "$$$",

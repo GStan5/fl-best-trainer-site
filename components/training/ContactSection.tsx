@@ -26,7 +26,7 @@ N:Stanifer;Gavin;;;
 FN:Gavin Stanifer
 TEL;TYPE=CELL:(928) 587-1309
 EMAIL:flbesttrainer@gmail.com
-URL:https://flbesttrainer.com
+URL:https://www.flbesttrainer.com
 NOTE:Personal Trainer - Serving Manatee and Sarasota Counties
 END:VCARD`;
 

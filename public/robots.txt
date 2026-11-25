@@ -1,4 +1,26 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://flbesttrainer.com/sitemap.xml
+# AI search bots — explicitly allowed so a future edit cannot
+# accidentally catch them. Training bots (GPTBot, ClaudeBot,
+# Google-Extended, CCBot) are not blocked here; no decision has
+# been made on those.
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+Sitemap: https://www.flbesttrainer.com/sitemap.xml

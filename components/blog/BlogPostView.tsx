@@ -69,7 +69,7 @@ export default function BlogPostView({
                 content={
                   selectedPost.image.startsWith("http")
                     ? selectedPost.image
-                    : `https://flbesttrainer.com${selectedPost.image}`
+                    : `https://www.flbesttrainer.com${selectedPost.image}`
                 }
               />
             )}
@@ -139,6 +139,13 @@ export default function BlogPostView({
 
           {/* Post header with meta */}
           <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-8">
+            {/* Author byline — visible author + credentials + published date */}
+            <p className="text-sm text-white/70 mb-4">
+              By Gavin Stanifer, NASM-CPT · Published {selectedPost.date}
+              {selectedPost.dateModified
+                ? ` · Updated ${selectedPost.dateModified}`
+                : ""}
+            </p>
             <div className="flex flex-wrap items-center gap-4 text-sm text-white/60 mb-8">
               {/* Post date */}
               <div className="flex items-center">

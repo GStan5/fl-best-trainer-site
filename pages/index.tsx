@@ -61,7 +61,7 @@ export default function Home() {
 
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://flbesttrainer.com" />
+        <meta property="og:url" content="https://www.flbesttrainer.com" />
         <meta
           property="og:title"
           content="FL Best Trainer | In-Home Personal Training in Southwest Florida"
@@ -72,12 +72,12 @@ export default function Home() {
         />
         <meta
           property="og:image"
-          content="https://flbesttrainer.com/images/og-image.jpg"
+          content="https://www.flbesttrainer.com/images/og-image.jpg"
         />
 
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://flbesttrainer.com" />
+        <meta property="twitter:url" content="https://www.flbesttrainer.com" />
         <meta
           property="twitter:title"
           content="FL Best Trainer | In-Home Personal Training in Southwest Florida"
@@ -88,11 +88,11 @@ export default function Home() {
         />
         <meta
           property="twitter:image"
-          content="https://flbesttrainer.com/images/og-image.jpg"
+          content="https://www.flbesttrainer.com/images/og-image.jpg"
         />
 
         {/* Canonical URL */}
-        <link rel="canonical" href="https://flbesttrainer.com" />
+        <link rel="canonical" href="https://www.flbesttrainer.com" />
       </Head>
 
       <Layout>

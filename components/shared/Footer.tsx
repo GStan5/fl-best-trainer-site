@@ -118,7 +118,7 @@ export default function Footer() {
             name: "FL Best Trainer",
             description:
               "Southwest Florida's premier in-home personal training service",
-            url: "https://flbesttrainer.com",
+            url: "https://www.flbesttrainer.com",
             telephone: CONTACT_INFO.phone.number,
             email: CONTACT_INFO.email,
             address: {

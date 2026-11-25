@@ -20,8 +20,8 @@ export default function About() {
     jobTitle: "NASM Certified Personal Trainer",
     description:
       "Personal trainer with over 10 years of experience serving Southwest Florida, including Bradenton, Sarasota, Anna Maria Island, and Longboat Key.",
-    image: "https://flbesttrainer.com/images/gavin-trainer.jpg",
-    url: "https://flbesttrainer.com/about",
+    image: "https://www.flbesttrainer.com/images/gavin-trainer.jpg",
+    url: "https://www.flbesttrainer.com/about",
     sameAs: [
       "https://instagram.com/flbesttrainer",
       "https://facebook.com/flbesttrainer",
@@ -29,7 +29,7 @@ export default function About() {
     worksFor: {
       "@type": "Organization",
       name: "FL Best Trainer",
-      url: "https://flbesttrainer.com",
+      url: "https://www.flbesttrainer.com",
     },
     address: {
       "@type": "PostalAddress",

@@ -5,7 +5,7 @@ import Layout from "@/components/shared/Layout";
 import BlogPostView from "@/components/blog/BlogPostView";
 import { getAllPosts, getPostById } from "../../utils/markdown";
 
-const SITE = "https://flbesttrainer.com";
+const SITE = "https://www.flbesttrainer.com";
 
 function absoluteImage(image) {
   if (!image) return undefined;
@@ -38,6 +38,13 @@ export default function BlogPostPage({ post }) {
       "@type": "Person",
       name: "Gavin Stanifer",
       url: `${SITE}/about`,
+      jobTitle: "NASM Certified Personal Trainer",
+      knowsAbout: [
+        "Strength training for adults over 50",
+        "Balance training",
+        "Bone density",
+        "Corrective exercise",
+      ],
     },
     publisher: {
       "@type": "Organization",
@@ -48,6 +55,8 @@ export default function BlogPostPage({ post }) {
       },
     },
     ...(dateISO ? { datePublished: dateISO } : {}),
+    // Posts carry no modified date, so dateModified equals datePublished.
+    ...(dateISO ? { dateModified: dateISO } : {}),
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": postUrl,
@@ -100,9 +109,16 @@ export async function getStaticProps({ params }) {
     return { notFound: true };
   }
 
+  // Attach an ISO published date so the article meta in BlogPostView is a
+  // real ISO value, not the display string.
+  const parsedDate = new Date(post.date);
+  const dateISO = isNaN(parsedDate.getTime())
+    ? undefined
+    : parsedDate.toISOString();
+
   return {
     props: {
-      post,
+      post: dateISO ? { ...post, dateISO } : post,
     },
   };
 }

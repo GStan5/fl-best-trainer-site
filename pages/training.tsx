@@ -57,7 +57,7 @@ export default function InHomeTraining() {
         unitText: "session",
       },
     },
-    termsOfService: "https://flbesttrainer.com/terms",
+    termsOfService: "https://www.flbesttrainer.com/terms",
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Personal Training Packages",

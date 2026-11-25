@@ -25,14 +25,14 @@ export default function Blog({ posts }) {
       name: "FL Best Trainer",
       logo: {
         "@type": "ImageObject",
-        url: "https://flbesttrainer.com/images/logo.png",
+        url: "https://www.flbesttrainer.com/images/logo.png",
       },
     },
     author: {
       "@type": "Person",
       name: "Gavin Stanifer",
       jobTitle: "NASM Certified Personal Trainer",
-      url: "https://flbesttrainer.com/about",
+      url: "https://www.flbesttrainer.com/about",
     },
     blogPost: posts.map((post) => ({
       "@type": "BlogPosting",
@@ -43,7 +43,7 @@ export default function Blog({ posts }) {
         "@type": "Person",
         name: "Gavin Stanifer",
       },
-      url: `https://flbesttrainer.com/blog/${post.id}`,
+      url: `https://www.flbesttrainer.com/blog/${post.id}`,
     })),
   };
 

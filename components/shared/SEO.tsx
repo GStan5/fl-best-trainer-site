@@ -15,16 +15,16 @@ export default function SEO({
   description,
   keywords,
   ogImage = "/images/og-image.jpg",
-  url = "https://flbesttrainer.com",
+  url = "https://www.flbesttrainer.com",
   isArticle = false,
   schema,
 }: SEOProps) {
   const fullUrl = url.startsWith("http")
     ? url
-    : `https://flbesttrainer.com${url}`;
+    : `https://www.flbesttrainer.com${url}`;
   const fullImageUrl = ogImage.startsWith("http")
     ? ogImage
-    : `https://flbesttrainer.com${ogImage}`;
+    : `https://www.flbesttrainer.com${ogImage}`;
 
   return (
     <Head>
@@ -49,7 +49,7 @@ export default function SEO({
 
       {/* Canonical */}
       <link rel="canonical" href={fullUrl} />
-      <link rel="alternate" href="https://flbesttrainer.com" hrefLang="en-us" />
+      <link rel="alternate" href="https://www.flbesttrainer.com" hrefLang="en-us" />
 
       {schema && (
         <script

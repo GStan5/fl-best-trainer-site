@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next';
 import { getAllPosts } from '../utils/markdown';
 
-const EXTERNAL_DATA_URL = 'https://flbesttrainer.com';
+const EXTERNAL_DATA_URL = 'https://www.flbesttrainer.com';
 
 function generateSiteMap(pages: string[]) {
   return `<?xml version="1.0" encoding="UTF-8"?>

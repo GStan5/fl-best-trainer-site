@@ -111,7 +111,7 @@ export default async function handler(
 
     const origin =
       req.headers.origin ||
-      (req.headers.host ? `https://${req.headers.host}` : "https://flbesttrainer.com");
+      (req.headers.host ? `https://${req.headers.host}` : "https://www.flbesttrainer.com");
 
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
